@@ -5,9 +5,20 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "test": "echo \"To be done\" && exit 1",
     "build": "tsc && vite build",
     "preview": "vite preview",
-    "tauri": "tauri"
+    "lint": "eslint . --ext .ts,.tsx",
+    "lint:fix": "eslint . --ext .ts,.tsx --fix",
+    "format": "prettier --write \"**/src/*.ts,**/src/*.tsx\"",
+    "tauri": "tauri",
+    "prepare": "husky"
+  },
+  "lint-staged": {
+    "src/*.js": [
+      "npm run format",
+      "npm run lint"
+    ]
   },
   "dependencies": {
     "@tauri-apps/api": "^2",
@@ -21,7 +32,17 @@
     "@tauri-apps/cli": "^2",
     "@types/react": "^18.3.1",
     "@types/react-dom": "^18.3.1",
+    "@typescript-eslint/eslint-plugin": "^8.38.0",
+    "@typescript-eslint/parser": "^8.38.0",
     "@vitejs/plugin-react": "^4.3.4",
+    "eslint": "^9.32.0",
+    "eslint-config-prettier": "^10.1.8",
+    "eslint-plugin-import": "^2.32.0",
+    "eslint-plugin-jsx-a11y": "^6.10.2",
+    "eslint-plugin-react": "^7.37.5",
+    "eslint-plugin-react-hooks": "^5.2.0",
+    "husky": "^9.1.7",
+    "prettier": "^3.6.2",
     "typescript": "~5.6.2",
     "vite": "^6.0.3"
   },
