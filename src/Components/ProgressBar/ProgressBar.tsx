@@ -1,5 +1,4 @@
-import './ProgressBar.css';
-import { ProgressBarInner, StyledProgressBar } from './styles';
+import { ProgressBarInner, CustomProgressBar } from './styles';
 
 interface ProgressBarProps {
   progress: string;
@@ -7,9 +6,9 @@ interface ProgressBarProps {
 
 const ProgressBar = ({ progress }: ProgressBarProps) => {
   return (
-    <StyledProgressBar>
+    <CustomProgressBar>
       <ProgressBarInner style={{ width: progress }} />
-    </StyledProgressBar>
+    </CustomProgressBar>
   );
 };
 

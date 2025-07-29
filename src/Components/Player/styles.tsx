@@ -12,7 +12,7 @@ import {
   FaHeart,
   FaHeartCrack,
 } from 'react-icons/fa6';
-import styled from 'styled-components';
+import { styled } from 'styled-components';
 
 const PlayerContainer = styled.div`
   background-color: #9b7ebd;

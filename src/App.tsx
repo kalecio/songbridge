@@ -1,4 +1,4 @@
-import styled from 'styled-components';
+import { styled } from 'styled-components';
 import './App.css';
 import Player from './Components/Player/Player';
 
