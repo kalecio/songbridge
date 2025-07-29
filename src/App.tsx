@@ -1,14 +1,25 @@
+import styled from "styled-components";
 import "./App.css";
-
 import Player from "./Components/Player/Player";
 
 function App() {
   return (
-    <div className="main">
-      <div className="app">app</div>
+    <Container>
+      <Main>app</Main>
       <Player />
-    </div>
+    </Container>
   );
 }
+
+const Container = styled.div`
+  display: flex;
+  flex-direction: column;
+  justify-content: stretch;
+  align-items: stretch;
+`;
+
+const Main = styled.div`
+  background-color: #FFE1E0;
+`;
 
 export default App;

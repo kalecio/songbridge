@@ -1,4 +1,3 @@
-import "./Player.css"
 import ProgressBar from "../ProgressBar/ProgressBar";
 import { PlayerContainer, StyledPlayer, Song, Controls, Shuffle, Prev, Play, Next, Repeat, Volume } from "./styles";
 

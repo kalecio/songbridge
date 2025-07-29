@@ -13,14 +13,3 @@
   width: 100vw;
 }
 
-.main {
-  display: flex;
-  flex-direction: column;
-  justify-content: stretch;
-  align-items: stretch;
-}
-
-.app {
-  background-color: blue;
-}
-
