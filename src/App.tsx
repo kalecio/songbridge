@@ -1,6 +1,6 @@
-import styled from "styled-components";
-import "./App.css";
-import Player from "./Components/Player/Player";
+import styled from 'styled-components';
+import './App.css';
+import Player from './Components/Player/Player';
 
 function App() {
   return (
@@ -19,7 +19,7 @@ const Container = styled.div`
 `;
 
 const Main = styled.div`
-  background-color: #FFE1E0;
+  background-color: #ffe1e0;
 `;
 
 export default App;

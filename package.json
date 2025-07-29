@@ -10,7 +10,7 @@
     "preview": "vite preview",
     "lint": "eslint . --ext .ts,.tsx",
     "lint:fix": "eslint . --ext .ts,.tsx --fix",
-    "format": "prettier --write \"**/src/*.ts,**/src/*.tsx\"",
+    "format": "prettier --write \"**/*.{ts,tsx,json}\"",
     "tauri": "tauri",
     "prepare": "husky"
   },
