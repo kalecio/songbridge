@@ -1,0 +1,13 @@
+.progress-bar {
+  background-color: black;
+  border-radius: 0px;
+  padding: 0px;
+  height: 20px;
+}
+
+.inner-progress-bar {
+  background-color: orange;
+  width: 0; /* Adjust with JavaScript */
+  height: 20px;
+  border-radius: 0px 10px 10px 0px;
+}
