@@ -1,15 +1,19 @@
+@font-face {
+  font-family: 'Inter';
+  src: url('/src/assets/fonts/Inter/web/InterVariable.woff2') format('woff2');
+  font-weight: 100 900;
+  font-display: swap;
+}
+
+body {
+  font-family: 'Inter', sans-serif;
+}
+
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
-  /* Height and width fallback for older browsers. */
   height: 100%;
   width: 100%;
-
-  /* Set the height to match that of the viewport. */
-  height: 100vh;
-
-  /* Set the width to match that of the viewport. */
-  width: 100vw;
 }
 
