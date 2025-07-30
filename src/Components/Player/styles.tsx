@@ -20,18 +20,11 @@ const PlayerContainer = styled.div`
   flex-direction: column;
   justify-content: stretch;
   align-items: stretch;
-  height: 10%;
+  min-height: 100px;
+  max-height: 10%;
 `;
 
 const StyledPlayer = styled.div`
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  height: 100%;
-`;
-
-const Song = styled.div`
-  height: 100%;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -41,7 +34,6 @@ const Controls = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  height: 100%;
   gap: 5px;
 `;
 
@@ -88,7 +80,6 @@ const Pause = styled(FaPause)`
 `;
 
 const Volume = styled.div`
-  height: 100%;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -109,7 +100,6 @@ const HeartCrack = styled(FaHeartCrack)``;
 export {
   PlayerContainer,
   StyledPlayer,
-  Song,
   Controls,
   Shuffle,
   Next,

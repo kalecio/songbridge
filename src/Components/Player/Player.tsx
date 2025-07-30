@@ -1,12 +1,14 @@
 import ProgressBar from '../ProgressBar/ProgressBar';
-import { PlayerContainer, StyledPlayer, Song, Controls, Shuffle, Prev, Play, Next, Repeat, Volume } from './styles';
+import Song from '../Song/Song';
+
+import { PlayerContainer, StyledPlayer, Controls, Shuffle, Prev, Play, Next, Repeat, Volume } from './styles';
 
 const Player = () => {
   return (
     <PlayerContainer>
       <ProgressBar progress="70%" />
       <StyledPlayer>
-        <Song>song</Song>
+        <Song songName="Song Name" artistName="Artist Name" />
         <Controls>
           <Shuffle />
           <Prev />
