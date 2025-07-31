@@ -15,9 +15,9 @@
     "prepare": "husky"
   },
   "lint-staged": {
-    "src/*.js": [
+    "src/*.{ts,tsx,json}": [
       "npm run format",
-      "npm run lint"
+      "npm run lint:fix"
     ]
   },
   "dependencies": {

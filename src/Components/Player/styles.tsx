@@ -5,12 +5,6 @@ import {
   FaRepeat,
   FaPlay,
   FaPause,
-  FaVolumeXmark,
-  FaVolumeOff,
-  FaVolumeLow,
-  FaVolumeHigh,
-  FaHeart,
-  FaHeartCrack,
 } from 'react-icons/fa6';
 import { styled } from 'styled-components';
 
@@ -79,24 +73,6 @@ const Pause = styled(FaPause)`
   color: #f49bab;
 `;
 
-const Volume = styled.div`
-  display: flex;
-  justify-content: center;
-  align-items: center;
-`;
-
-const VolumeXmark = styled(FaVolumeXmark)``;
-
-const VolumeOff = styled(FaVolumeOff)``;
-
-const VolumeLow = styled(FaVolumeLow)``;
-
-const VolumeHigh = styled(FaVolumeHigh)``;
-
-const Heart = styled(FaHeart)``;
-
-const HeartCrack = styled(FaHeartCrack)``;
-
 export {
   PlayerContainer,
   StyledPlayer,
@@ -107,11 +83,4 @@ export {
   Repeat,
   Play,
   Pause,
-  Volume,
-  VolumeXmark,
-  VolumeOff,
-  VolumeLow,
-  VolumeHigh,
-  Heart,
-  HeartCrack,
 };

@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { ChangeEvent } from "react";
 import { CustomProgressBar, ProgressBarInner, Slider, SliderContainer } from "./styles";
 
 
@@ -7,25 +7,17 @@ interface SliderProps {
   min: number;
   max: number;
   height?: number;
+  onChange?: (event: ChangeEvent<HTMLInputElement>) => void;
 }
 
-const CustomSlider = ({ value, min, max, height }: SliderProps) => {
-  const [sliderValue, setValue] = useState(value);
-
-  const handleSliderChange = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const newValue = parseInt(event.target.value);
-    setValue(newValue);
-  };
-
-  return (
-    <SliderContainer>
-        <CustomProgressBar $height={height}>
-            <ProgressBarInner $height={height} style={{ width: `${sliderValue}%` }} />
-        </CustomProgressBar>
-        <Slider value={sliderValue} onChange={handleSliderChange} min={min} max={max} $height={height} />
-    </SliderContainer>
-  );
-};
+const CustomSlider = ({ value, min, max, height, onChange }: SliderProps) => (
+  <SliderContainer>
+      <CustomProgressBar $height={height}>
+          <ProgressBarInner $height={height} style={{ width: `${value}%` }} />
+      </CustomProgressBar>
+      <Slider value={value} onChange={onChange} min={min} max={max} $height={height} />
+  </SliderContainer>
+);
 
 
 
