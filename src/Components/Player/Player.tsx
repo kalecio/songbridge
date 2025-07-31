@@ -1,4 +1,5 @@
 import ProgressBar from '../ProgressBar/ProgressBar';
+import Slider from '../Slider/Slider';
 import Song from '../Song/Song';
 
 import { PlayerContainer, StyledPlayer, Controls, Shuffle, Prev, Play, Next, Repeat, Volume } from './styles';
@@ -16,7 +17,9 @@ const Player = () => {
           <Next />
           <Repeat />
         </Controls>
-        <Volume>volume</Volume>
+        <Volume>
+          <Slider min={0} max={100} value={70} />
+        </Volume>
       </StyledPlayer>
     </PlayerContainer>
   );
