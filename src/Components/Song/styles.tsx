@@ -6,7 +6,6 @@ const SongContainer = styled.div`
   justify-content: flex-start;
   align-items: center;
   gap: 0.65rem;
-  padding-left: 3rem;
 `;
 
 const AlbumImagePlaceholder = styled(AlbumPlaceholder)`

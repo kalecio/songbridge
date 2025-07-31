@@ -14,6 +14,7 @@ const StyledPlayer = styled.div`
   display: flex;
   justify-content: center;
   align-items: center;
+  padding: 0 3rem;
 `;
 
 export { PlayerContainer, StyledPlayer };
