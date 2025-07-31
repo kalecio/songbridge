@@ -1,8 +1,9 @@
+import Controls from '../Controls/Controls';
 import ProgressBar from '../ProgressBar/ProgressBar';
 import Song from '../Song/Song';
 import Volume from '../Volume/Volume';
 
-import { PlayerContainer, StyledPlayer, Controls, Shuffle, Prev, Play, Next, Repeat } from './styles';
+import { PlayerContainer, StyledPlayer } from './styles';
 
 const Player = () => {
   return (
@@ -10,13 +11,7 @@ const Player = () => {
       <ProgressBar progress={70} max={100} />
       <StyledPlayer>
         <Song songName="Song Name" artistName="Artist Name" />
-        <Controls>
-          <Shuffle />
-          <Prev />
-          <Play />
-          <Next />
-          <Repeat />
-        </Controls>
+        <Controls />
         <Volume />
       </StyledPlayer>
     </PlayerContainer>
