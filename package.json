@@ -15,7 +15,7 @@
     "prepare": "husky"
   },
   "lint-staged": {
-    "src/*.{ts,tsx,json}": [
+    "src/**/*.{ts,tsx,json}": [
       "npm run format",
       "npm run lint:fix"
     ]

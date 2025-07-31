@@ -14,20 +14,20 @@ const Volume = () => {
 
   const renderVolumeIcon = (volume: number) => {
     if (volume >= 0 && volume < 33) {
-        return <VolumeOff onClick={() => setVolumeOff(!isVolumeOff)} />;
+      return <VolumeOff onClick={() => setVolumeOff(!isVolumeOff)} />;
     } else if (volume >= 33 && volume < 66) {
-        return <VolumeLow onClick={() => setVolumeOff(!isVolumeOff)} />;
+      return <VolumeLow onClick={() => setVolumeOff(!isVolumeOff)} />;
     } else if (volume >= 66) {
-        return <VolumeHigh onClick={() => setVolumeOff(!isVolumeOff)} />;
+      return <VolumeHigh onClick={() => setVolumeOff(!isVolumeOff)} />;
     }
-};
-  
+  };
+
   return (
-        <VolumeContainer>
-          <Heart $isFavorite={isFavorite} onClick={() => setFavorite(!isFavorite)} />
-          {isVolumeOff ? <VolumeXmark onClick={() => setVolumeOff(!isVolumeOff)} /> : renderVolumeIcon(volume)}
-          <Slider onChange={handleVolumeChange} min={0} max={100} value={volume} />
-        </VolumeContainer>
+    <VolumeContainer>
+      <Heart $isFavorite={isFavorite} onClick={() => setFavorite(!isFavorite)} />
+      {isVolumeOff ? <VolumeXmark onClick={() => setVolumeOff(!isVolumeOff)} /> : renderVolumeIcon(volume)}
+      <Slider onChange={handleVolumeChange} min={0} max={100} value={volume} />
+    </VolumeContainer>
   );
 };
 

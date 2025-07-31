@@ -7,7 +7,7 @@ import { PlayerContainer, StyledPlayer, Controls, Shuffle, Prev, Play, Next, Rep
 const Player = () => {
   return (
     <PlayerContainer>
-      <ProgressBar progress="70%" />
+      <ProgressBar progress={70} max={100} />
       <StyledPlayer>
         <Song songName="Song Name" artistName="Artist Name" />
         <Controls>

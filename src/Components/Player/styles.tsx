@@ -1,20 +1,13 @@
-import {
-  FaShuffle,
-  FaForward,
-  FaBackward,
-  FaRepeat,
-  FaPlay,
-  FaPause,
-} from 'react-icons/fa6';
+import { FaShuffle, FaForward, FaBackward, FaRepeat, FaPlay, FaPause } from 'react-icons/fa6';
 import { styled } from 'styled-components';
 
 const PlayerContainer = styled.div`
   background-color: #9b7ebd;
   display: flex;
   flex-direction: column;
-  justify-content: stretch;
-  align-items: stretch;
-  min-height: 100px;
+  justify-content: center;
+  align-items: center;
+  min-height: 120px;
   max-height: 10%;
 `;
 
@@ -73,14 +66,4 @@ const Pause = styled(FaPause)`
   color: #f49bab;
 `;
 
-export {
-  PlayerContainer,
-  StyledPlayer,
-  Controls,
-  Shuffle,
-  Next,
-  Prev,
-  Repeat,
-  Play,
-  Pause,
-};
+export { PlayerContainer, StyledPlayer, Controls, Shuffle, Next, Prev, Repeat, Play, Pause };

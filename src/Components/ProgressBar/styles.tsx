@@ -12,6 +12,31 @@ const CustomProgressBar = styled.div`
   border-radius: 0px;
   padding: 0px;
   height: 20px;
+  position: relative;
 `;
 
-export { CustomProgressBar, ProgressBarInner };
+const Slider = styled.input.attrs({ type: 'range' })<{ $height?: number }>`
+  -webkit-appearance: none;
+  width: 100%;
+  height: ${(props) => props.$height || '20px'};
+  background: none;
+  outline: none;
+  opacity: 1;
+  position: absolute;
+
+  &::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 0px;
+    height: 0px;
+    cursor: pointer;
+  }
+
+  &::-moz-range-thumb {
+    width: 0px;
+    height: 0px;
+    cursor: pointer;
+  }
+`;
+
+export { CustomProgressBar, ProgressBarInner, Slider };
