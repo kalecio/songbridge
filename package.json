@@ -51,6 +51,6 @@
     "vite-plugin-svgr": "^4.3.0"
   },
   "resolutions": {
-    "styled-components": "^5"
+    "styled-components": "^6"
   }
 }

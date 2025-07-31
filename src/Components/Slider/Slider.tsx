@@ -12,7 +12,7 @@ const CustomSlider = ({ value, min, max, height, onChange }: SliderProps) => {
   return (
     <SliderContainer>
       <CustomProgressBar $height={height}>
-        <ProgressBarInner $height={height} style={{ width: `${value}%` }} />
+        <ProgressBarInner $height={height} style={{ width: `${((value - min) / (max - min)) * 100}%` }} />
       </CustomProgressBar>
       <Slider value={value} onChange={(event) => onChange?.(event)} min={min} max={max} $height={height} />
     </SliderContainer>
