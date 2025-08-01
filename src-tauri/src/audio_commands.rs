@@ -44,7 +44,7 @@ pub fn toggle_mute(state: tauri::State<Arc<Mutex<AudioState>>>) {
 #[tauri::command]
 pub fn set_volume(state: tauri::State<Arc<Mutex<AudioState>>>, volume: f32) {
     if let Ok(mut audio) = state.lock() {
-        audio.sink.set_volume(volume);
+        audio.set_volume(volume);
     }
 }
 
