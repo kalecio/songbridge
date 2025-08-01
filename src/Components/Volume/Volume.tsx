@@ -10,6 +10,7 @@ const Volume = () => {
 
   const handleVolumeChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = parseInt(event.target.value);
+    invoke('set_volume', { volume: newValue / 100 });
     setVolume(newValue);
   };
 
