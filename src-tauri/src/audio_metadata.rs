@@ -6,11 +6,11 @@ pub struct AudioMetadata {
     artist: Option<String>,
     album: Option<String>,
     year: Option<String>,
-    duration_seconds: Option<f64>
+    duration_seconds: Option<String>
 }
 
 impl AudioMetadata {
-    pub fn new(title: Option<String>, artist: Option<String>, album: Option<String>, year: Option<String>, duration_seconds: Option<f64>) -> Self {
+    pub fn new(title: Option<String>, artist: Option<String>, album: Option<String>, year: Option<String>, duration_seconds: Option<String>) -> Self {
         AudioMetadata {
             title,
             artist,

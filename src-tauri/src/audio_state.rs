@@ -4,7 +4,9 @@ use rodio::{Decoder, OutputStream, OutputStreamBuilder, Sink};
 
 pub struct AudioState {
     pub sink: Sink,
-    _stream: OutputStream
+    _stream: OutputStream,
+    original_volume: f32,
+    is_muted: bool
 }
 
 
@@ -15,6 +17,8 @@ impl AudioState {
         AudioState {
             sink,
             _stream,
+            original_volume: 1.0,
+            is_muted: false,
         }
     }
 
@@ -33,5 +37,28 @@ impl AudioState {
 
     pub fn resume(&self) {
         self.sink.play();
+    }
+
+    pub fn mute(&mut self) {
+        if !self.is_muted {
+            self.original_volume = self.sink.volume();
+            self.sink.set_volume(0.0);
+            self.is_muted = true;
+        }
+    }
+
+    pub fn unmute(&mut self) {
+        if self.is_muted {
+            self.sink.set_volume(self.original_volume);
+            self.is_muted = false;
+        }
+    }
+
+    pub fn toggle_mute(&mut self) {
+        if self.is_muted {
+            self.unmute();
+        } else {
+            self.mute();
+        }
     }
 }
