@@ -1,4 +1,4 @@
-![Songbridge Logo](src-tauri\icons\Square150x150Logo.png "Songbridge Logo")
+![Songbridge Logo](src-tauri/icons/quare150x150Logo.png "Songbridge Logo")
 
 # Songbridge
 
