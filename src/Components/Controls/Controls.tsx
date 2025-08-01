@@ -8,7 +8,7 @@ const Player = () => {
   const [onShuffle, setOnShuffle] = useState(false);
 
   const playNewSong = async () => {
-    await invoke('play_new_song');
+    await invoke('play_new_song', { path: 'music-files/Polygondwanaland.mp3' });
     setIsPlaying(true);
   };
 

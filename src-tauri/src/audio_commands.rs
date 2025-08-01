@@ -1,4 +1,5 @@
 use std::fs::File;
+use std::path;
 use std::sync::{Arc, Mutex};
 use symphonia::core::formats::{FormatOptions, FormatReader};
 use symphonia::core::io::MediaSourceStream;
@@ -9,11 +10,10 @@ use crate::audio_state::AudioState;
 use crate::audio_metadata::AudioMetadata;
 
 #[tauri::command]
-pub fn play_new_song(state: tauri::State<Arc<Mutex<AudioState>>>) {
+pub fn play_new_song(state: tauri::State<Arc<Mutex<AudioState>>>, path: String) {
     println!("Playing audio...");
-    let path = "music-files/Polygondwanaland.mp3";
     if let Ok(audio) = state.lock() {
-        audio.play_new_song(path);
+        audio.play_new_song(&path);
     }
 }
 
