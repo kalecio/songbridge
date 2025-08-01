@@ -1,3 +1,5 @@
+![Songbridge Logo](src-tauri\icons\Square150x150Logo.png "Songbridge Logo")
+
 # Songbridge
 
 Songbridge is a open source cross-plataform music player and library manager for local files.
