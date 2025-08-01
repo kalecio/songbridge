@@ -10,7 +10,7 @@ Songbridge is a open source cross-plataform music player and library manager for
 ### Prerequisites
 
 Necessary requirements to develop the app:
-* [Node.js](https://nodejs.org/en/download) version 22.17.1
+* [Node.js](https://nodejs.org/en/download) version 20.17.0
 * [Tauri](https://v2.tauri.app/) version 11.5.2
 * [RustUp](https://rustup.rs/)
 
@@ -32,7 +32,7 @@ npm run tauri build
 
 Problems may happen while trying to run the commands above on linux, for that try using these enviroment variables `WEBKIT_DISABLE_DMABUF_RENDERER=1` and/or `WEBKIT_DISABLE_COMPOSITING_MODE=1` when executing the development mode and `NO_STRIP=true` when building the app.
 
-Exemples:
+Examples:
 ```sh
 WEBKIT_DISABLE_DMABUF_RENDERER=1 WEBKIT_DISABLE_COMPOSITING_MODE=1 npm run tauri dev
 ```
