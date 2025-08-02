@@ -1,18 +1,15 @@
-use std::fs::File;
-use std::path;
 use std::sync::{Arc, Mutex};
-use symphonia::core::formats::{FormatOptions, FormatReader};
-use symphonia::core::io::MediaSourceStream;
-use symphonia::core::meta::{MetadataOptions, StandardTagKey};
-use symphonia::core::probe::Hint;
+use std::time::Duration;
+use symphonia::core::meta::StandardTagKey;
 
 use crate::audio_state::AudioState;
 use crate::audio_metadata::AudioMetadata;
+use crate::audio_utils::{get_audio_probe, calculate_track_duration, format_duration};
 
 #[tauri::command]
 pub fn play_new_song(state: tauri::State<Arc<Mutex<AudioState>>>, path: String) {
     println!("Playing audio...");
-    if let Ok(audio) = state.lock() {
+    if let Ok(mut audio) = state.lock() {
         audio.play_new_song(&path);
     }
 }
@@ -49,27 +46,44 @@ pub fn set_volume(state: tauri::State<Arc<Mutex<AudioState>>>, volume: f32) {
 }
 
 #[tauri::command]
+pub fn get_current_track_duration(state: tauri::State<Arc<Mutex<AudioState>>>) -> Option<u64> {
+    if let Ok(audio) = state.lock() {
+        println!("Track duration: {:?}", audio.track_duration);
+        audio.track_duration
+    } else {
+        None
+    }
+}
+
+#[tauri::command]
+pub fn get_progress(state: tauri::State<Arc<Mutex<AudioState>>>) -> Option<u64> {
+    if let Ok(audio) = state.lock() {
+        audio.current_position().as_secs().checked_mul(1000)
+    } else {
+        None
+    }
+}
+
+#[tauri::command]
+pub fn seek(state: tauri::State<Arc<Mutex<AudioState>>>, percent: f32, file_path: String) {
+    if let Ok(mut audio) = state.lock() {
+        if let Some(duration) = audio.track_duration {
+            let target_secs = (duration as f64 * percent as f64) as u64;
+            audio.seek(Duration::from_secs(target_secs));
+        }
+    }
+}
+
+#[tauri::command]
 pub fn get_metadata(file_path: &str) -> AudioMetadata {
-    let file = File::open(file_path).expect("file open failed");
-    let mss = MediaSourceStream::new(Box::new(file), Default::default());
-    let hint = Hint::new();
-
-    let meta_opts: MetadataOptions = Default::default();
-    let fmt_opts: FormatOptions = Default::default();
-    let mut probed = symphonia::default::get_probe()
-        .format(&hint, mss, &fmt_opts, &meta_opts)
-        .expect("unsupported format");
-
-    let format = probed.format;
-    let total_duration = calculate_track_duration(format);
-
+    let mut probe = get_audio_probe(file_path);
+    let total_duration = calculate_track_duration(&probe);
+    let formatted_duration = format_duration(total_duration);
     let mut title = None;
     let mut artist = None;
     let mut album = None;
     let mut year = None;
-
-    // Access the metadata.
-    if let Some(mut meta) = probed.metadata.get() {
+    if let Some(mut meta) = probe.metadata.get() {
         if let Some(latest) = meta.skip_to_latest() {
             for tag in latest.tags().iter() {
                 // println!("{:?}", tag);
@@ -85,30 +99,7 @@ pub fn get_metadata(file_path: &str) -> AudioMetadata {
     }
     println!(
         "Title: {:?}, Artist: {:?}, Album: {:?}, Year: {:?}, Duration: {:?}",
-        title, artist, album, year, total_duration
+        title, artist, album, year, formatted_duration
     );
-
-    AudioMetadata::new(title, artist, album, year, total_duration)
-}
-
-fn calculate_track_duration(format: Box<dyn FormatReader>) -> Option<String> {
-    let duration_seconds = format
-        .default_track()
-        .and_then(|track| {
-            let n_frames = track.codec_params.n_frames?;
-            let sample_rate = track.codec_params.sample_rate?;
-            Some(n_frames as f64 / sample_rate as f64)
-        });
-
-    // format duration to 00:00
-    duration_seconds.map(|d| {
-        let hours = d as u64 / 3600;
-        let minutes = d as u64 / 60;
-        let seconds = d as u64 % 60;
-        if hours > 0 {
-            return format!("{:02}:{:02}:{:02}", hours, minutes % 60, seconds)
-        } else {
-            return format!("{:02}:{:02}", minutes, seconds)
-        }
-    })
+    AudioMetadata::new(title, artist, album, year, formatted_duration)
 }

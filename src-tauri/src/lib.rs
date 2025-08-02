@@ -5,6 +5,7 @@ use crate::audio_state::AudioState;
 mod audio_state;
 mod audio_metadata;
 mod audio_commands;
+mod audio_utils;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -16,9 +17,12 @@ pub fn run() {
             audio_commands::play_new_song,
             audio_commands::pause,
             audio_commands::resume,
-            audio_commands::get_metadata,
             audio_commands::toggle_mute,
-            audio_commands::set_volume
+            audio_commands::set_volume,
+            audio_commands::seek,
+            audio_commands::get_current_track_duration,
+            audio_commands::get_progress,
+            audio_commands::get_metadata
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
