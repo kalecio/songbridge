@@ -30,9 +30,8 @@ impl AudioState {
         }
     }
 
-    pub fn play_new_song(&mut self, file_path: &str) {
+    pub fn load_song(&mut self, file_path: &str) {
         self.sink.stop();
-
         let file = File::open(file_path).expect("file open failed");
         let byte_len = file.byte_len().expect("file byte length failed");
         let source = DecoderBuilder::new()
@@ -45,6 +44,10 @@ impl AudioState {
         self.track_duration = calculate_track_duration(&probe);
         self.file_path = file_path.to_string();
         self.sink.append(source);
+        self.sink.pause();
+    }
+
+    pub fn play(&self) {
         self.sink.play();
     }
 

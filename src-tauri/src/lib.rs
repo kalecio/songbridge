@@ -14,7 +14,8 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .manage(audio_state)
         .invoke_handler(tauri::generate_handler![
-            audio_commands::play_new_song,
+            audio_commands::load_song,
+            audio_commands::play_song,
             audio_commands::pause,
             audio_commands::resume,
             audio_commands::toggle_mute,
@@ -22,7 +23,8 @@ pub fn run() {
             audio_commands::seek,
             audio_commands::get_current_track_duration,
             audio_commands::get_progress,
-            audio_commands::get_metadata
+            audio_commands::get_metadata,
+            audio_commands::get_current_track_duration,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

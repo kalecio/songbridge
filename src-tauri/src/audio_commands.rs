@@ -7,10 +7,18 @@ use crate::audio_metadata::AudioMetadata;
 use crate::audio_utils::{get_audio_probe, calculate_track_duration, format_duration};
 
 #[tauri::command]
-pub fn play_new_song(state: tauri::State<Arc<Mutex<AudioState>>>, path: String) {
-    println!("Playing audio...");
+pub fn load_song(state: tauri::State<Arc<Mutex<AudioState>>>, path: String) {
+    println!("Loading song: {}", path);
     if let Ok(mut audio) = state.lock() {
-        audio.play_new_song(&path);
+        audio.load_song(&path);
+    }
+}
+
+#[tauri::command]
+pub fn play_song(state: tauri::State<Arc<Mutex<AudioState>>>) {
+    println!("Playing audio...");
+    if let Ok(audio) = state.lock() {
+        audio.play();
     }
 }
 
@@ -40,6 +48,7 @@ pub fn toggle_mute(state: tauri::State<Arc<Mutex<AudioState>>>) {
 
 #[tauri::command]
 pub fn set_volume(state: tauri::State<Arc<Mutex<AudioState>>>, volume: f32) {
+    println!("Setting volume to: {}", volume);
     if let Ok(mut audio) = state.lock() {
         audio.set_volume(volume);
     }
@@ -56,16 +65,17 @@ pub fn get_current_track_duration(state: tauri::State<Arc<Mutex<AudioState>>>) -
 }
 
 #[tauri::command]
-pub fn get_progress(state: tauri::State<Arc<Mutex<AudioState>>>) -> Option<u64> {
+pub fn get_progress(state: tauri::State<Arc<Mutex<AudioState>>>) -> u64 {
     if let Ok(audio) = state.lock() {
-        audio.current_position().as_secs().checked_mul(1000)
+        audio.current_position().as_secs()
     } else {
-        None
+        0
     }
 }
 
 #[tauri::command]
 pub fn seek(state: tauri::State<Arc<Mutex<AudioState>>>, percent: f32, file_path: String) {
+    println!("Seeking to {}% in file: {}", percent * 100.0, file_path);
     if let Ok(mut audio) = state.lock() {
         if let Some(duration) = audio.track_duration {
             let target_secs = (duration as f64 * percent as f64) as u64;
@@ -76,6 +86,7 @@ pub fn seek(state: tauri::State<Arc<Mutex<AudioState>>>, percent: f32, file_path
 
 #[tauri::command]
 pub fn get_metadata(file_path: &str) -> AudioMetadata {
+    println!("Getting metadata for file: {}", file_path);
     let mut probe = get_audio_probe(file_path);
     let total_duration = calculate_track_duration(&probe);
     let formatted_duration = format_duration(total_duration);
