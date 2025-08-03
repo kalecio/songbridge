@@ -8,9 +8,9 @@ const Volume = () => {
   const [isVolumeOff, setVolumeOff] = useState(false);
   const [isFavorite, setFavorite] = useState(false);
 
-  const handleVolumeChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+  const handleVolumeChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = parseInt(event.target.value);
-    invoke('set_volume', { volume: newValue / 100 });
+    await invoke('set_volume', { volume: newValue / 100 });
     setVolume(newValue);
   };
 
