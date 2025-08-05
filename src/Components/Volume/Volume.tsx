@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import Slider from '../Slider/Slider';
 import { Heart, VolumeContainer, VolumeHigh, VolumeLow, VolumeOff, VolumeXmark } from './styles';
+import { invoke } from '@tauri-apps/api/core';
 
 const Volume = () => {
   const [volume, setVolume] = useState(70);
@@ -9,6 +10,7 @@ const Volume = () => {
 
   const handleVolumeChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = parseInt(event.target.value);
+    invoke('set_volume', { volume: newValue / 100 });
     setVolume(newValue);
   };
 
@@ -22,7 +24,8 @@ const Volume = () => {
     }
   };
 
-  const handleToggleVolume = () => {
+  const handleToggleVolume = async () => {
+    await invoke('toggle_mute');
     setVolumeOff(!isVolumeOff);
   };
 
