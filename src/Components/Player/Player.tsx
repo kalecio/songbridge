@@ -7,15 +7,20 @@ import Volume from '../Volume/Volume';
 import { PlayerContainer, StyledPlayer } from './styles';
 import { useEffect, useState } from 'react';
 
+type AudioDuration = {
+  duration_seconds: number;
+  duration_formatted: string;
+};
+
 const Player = () => {
   const [progress, setProgress] = useState(0);
   const [duration, setDuration] = useState(100);
 
   useEffect(() => {
     invoke('load_song', { path: 'music-files/Polygondwanaland.mp3' });
-    invoke<number>('get_current_track_duration').then((dur) => {
+    invoke<AudioDuration>('get_current_track_duration').then((dur) => {
       console.log('Duration received:', dur);
-      if (typeof dur === 'number') setDuration(dur);
+      if (dur.duration_seconds) setDuration(dur.duration_seconds);
     });
 
     const interval = setInterval(async () => {

@@ -55,12 +55,12 @@ pub fn set_volume(state: tauri::State<Arc<Mutex<AudioState>>>, volume: f32) {
 }
 
 #[tauri::command]
-pub fn get_current_track_duration(state: tauri::State<Arc<Mutex<AudioState>>>) -> Option<u64> {
+pub fn get_current_track_duration(state: tauri::State<Arc<Mutex<AudioState>>>) -> AudioDuration {
     if let Ok(audio) = state.lock() {
         println!("Track duration: {:?}", audio.track_duration);
-        audio.track_duration
+        audio.track_duration.clone()
     } else {
-        None
+        AudioDuration::default()
     }
 }
 
@@ -77,10 +77,12 @@ pub fn get_progress(state: tauri::State<Arc<Mutex<AudioState>>>) -> u64 {
 pub fn seek(state: tauri::State<Arc<Mutex<AudioState>>>, percent: f32, file_path: String) {
     println!("Seeking to {}% in file: {}", percent * 100.0, file_path);
     if let Ok(mut audio) = state.lock() {
-        if let Some(duration) = audio.track_duration {
+        let track_duration = &audio.track_duration;
+        if let Some(duration) = track_duration.duration_seconds {
             let target_secs = (duration as f64 * percent as f64) as u64;
             audio.seek(Duration::from_secs(target_secs));
         }
+        
     }
 }
 

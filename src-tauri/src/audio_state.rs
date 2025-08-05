@@ -4,7 +4,8 @@ use std::io::BufReader;
 use rodio::{decoder::DecoderBuilder, OutputStream, OutputStreamBuilder, Sink};
 use symphonia::core::io::MediaSource;
 
-use crate::audio_utils::{get_audio_probe, calculate_track_duration};
+use crate::audio_utils::{get_audio_probe, calculate_track_duration, format_duration};
+use crate::audio_metadata::AudioDuration;
 
 pub struct AudioState {
     pub file_path: String,
@@ -12,7 +13,7 @@ pub struct AudioState {
     _stream: OutputStream,
     original_volume: f32,
     is_muted: bool,
-    pub track_duration: Option<u64>
+    pub track_duration: AudioDuration
 }
 
 
@@ -26,7 +27,7 @@ impl AudioState {
             _stream,
             original_volume: 1.0,
             is_muted: false,
-            track_duration: None
+            track_duration: AudioDuration::default()
         }
     }
 
@@ -41,7 +42,8 @@ impl AudioState {
             .build()
             .expect("decode failed");
         let probe = get_audio_probe(file_path);
-        self.track_duration = calculate_track_duration(&probe);
+        let track_duration = calculate_track_duration(&probe);
+        self.track_duration = AudioDuration::new(track_duration, format_duration(track_duration));
         self.file_path = file_path.to_string();
         self.sink.append(source);
         self.sink.pause();
