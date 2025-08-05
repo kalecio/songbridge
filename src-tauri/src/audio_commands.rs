@@ -90,6 +90,7 @@ pub fn get_metadata(file_path: &str) -> AudioMetadata {
     let mut probe = get_audio_probe(file_path);
     let total_duration = calculate_track_duration(&probe);
     let formatted_duration = format_duration(total_duration);
+    let duration = AudioDuration::new(total_duration, formatted_duration);
     let mut title = None;
     let mut artist = None;
     let mut album = None;
@@ -110,31 +111,8 @@ pub fn get_metadata(file_path: &str) -> AudioMetadata {
     }
     println!(
         "Title: {:?}, Artist: {:?}, Album: {:?}, Year: {:?}, Duration: {:?}",
-        title, artist, album, year, formatted_duration
+        title, artist, album, year, duration
     );
 
-    AudioMetadata::new(title, artist, album, year, total_duration)
-}
-
-fn calculate_track_duration(format: Box<dyn FormatReader>) -> AudioDuration {
-    let duration_seconds = format
-        .default_track()
-        .and_then(|track| {
-            let n_frames = track.codec_params.n_frames?;
-            let sample_rate = track.codec_params.sample_rate?;
-            Some(n_frames as f64 / sample_rate as f64)
-        });
-
-    // format duration to 00:00 or 00:00:00
-    let duration_formatted = duration_seconds.map(|d| {
-        let hours = d as u64 / 3600;
-        let minutes = d as u64 / 60;
-        let seconds = d as u64 % 60;
-        if hours > 0 {
-            return format!("{:02}:{:02}:{:02}", hours, minutes % 60, seconds);
-        } else {
-            return format!("{:02}:{:02}", minutes, seconds);
-        }
-    });
-    AudioDuration::new(duration_seconds.map(|d| d as u64), duration_formatted)
+    AudioMetadata::new(title, artist, album, year, duration)
 }
