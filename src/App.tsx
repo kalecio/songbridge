@@ -1,11 +1,12 @@
 import { styled } from 'styled-components';
 import './App.css';
 import Player from './Components/Player/Player';
+import Main from './Components/Main/Main';
 
 function App() {
   return (
     <Container>
-      <Main>app</Main>
+      <Main />
       <Player />
     </Container>
   );
@@ -16,10 +17,6 @@ const Container = styled.div`
   flex-direction: column;
   justify-content: stretch;
   align-items: stretch;
-`;
-
-const Main = styled.div`
-  background-color: #ffe1e0;
 `;
 
 export default App;

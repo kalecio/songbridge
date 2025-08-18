@@ -5,15 +5,19 @@
   font-display: swap;
 }
 
-body {
-  font-family: 'Inter', sans-serif;
-}
-
 * {
   margin: 0;
   padding: 0;
   box-sizing: border-box;
   height: 100%;
   width: 100%;
+  -webkit-user-select: none; /* Safari */
+  -moz-user-select: none;    /* Firefox */
+  -ms-user-select: none;     /* Internet Explorer/Edge */
+  user-select: none;         /* Standard */
+}
+
+body {
+  font-family: 'Inter', sans-serif;
 }
 
