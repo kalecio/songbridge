@@ -13,8 +13,11 @@
     "windows": [
       {
         "title": "songbridge",
-        "width": 800,
-        "height": 600
+        "width": 900,
+        "height": 700,
+        "minWidth": 900,
+        "minHeight": 700,
+        "resizable": true
       }
     ],
     "security": {
