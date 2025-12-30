@@ -13,6 +13,17 @@ const Player = () => {
   const { metadata, progress, isPlaying, setProgress } = context;
   const intervalRef = useRef<number | null>(null);
 
+  const handleSeek = async (progressRatio: number) => {
+    try {
+      // progressRatio is 0-1, invoke expects 0-1
+      await invoke('seek_to', { progress: progressRatio });
+      // Update context immediately to reflect the seek
+      setProgress?.(progressRatio * 100);
+    } catch (error) {
+      console.error('Error seeking:', error);
+    }
+  };
+
   useEffect(() => {
     // Clear any existing interval
     if (intervalRef.current !== null) {
@@ -45,7 +56,7 @@ const Player = () => {
 
   return (
     <PlayerContainer>
-      <ProgressBar progress={progress ?? 0} max={100} />
+      <ProgressBar progress={progress ?? 0} max={100} onSeek={handleSeek} />
       <StyledPlayer>
         <Song
           albumImage={metadata?.image}

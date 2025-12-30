@@ -1,7 +1,7 @@
 use std::fs::File;
 use std::io::BufReader;
 use std::time::{Duration, Instant};
-use rodio::{Decoder, Sink, OutputStreamBuilder};
+use rodio::{Decoder, Sink, OutputStreamBuilder, Source};
 
 pub struct AudioState {
     pub sink: Sink,
@@ -12,6 +12,8 @@ pub struct AudioState {
     pause_start_time: Option<Instant>,
     total_duration: Option<Duration>,
     is_paused: bool,
+    seek_offset: Duration, // Offset to account for seeking
+    current_path: Option<String>,
 }
 
 
@@ -32,6 +34,8 @@ impl AudioState {
             pause_start_time: None,
             total_duration: None,
             is_paused: false,
+            seek_offset: Duration::ZERO,
+            current_path: None,
         }
     }
 
@@ -49,6 +53,8 @@ impl AudioState {
         self.pause_start_time = None;
         self.is_paused = false;
         self.total_duration = duration_seconds.map(|s| Duration::from_secs(s));
+        self.seek_offset = Duration::ZERO;
+        self.current_path = Some(file_path.to_string());
     }
 
     pub fn pause(&mut self) {
@@ -83,14 +89,49 @@ impl AudioState {
                 start.elapsed() - self.total_pause_duration
             };
             
+            // Add the seek offset (time already "played" before current start_time)
+            let total_elapsed = elapsed + self.seek_offset;
+            
             if let Some(total) = self.total_duration {
                 if total.as_secs_f64() > 0.0 {
-                    let progress = elapsed.as_secs_f64() / total.as_secs_f64();
+                    let progress = total_elapsed.as_secs_f64() / total.as_secs_f64();
                     return progress.min(1.0).max(0.0);
                 }
             }
         }
         0.0
+    }
+
+    pub fn seek_to(&mut self, progress: f64) {
+        // progress is 0.0 to 1.0
+        if let Some(total) = self.total_duration {
+            let target_seconds = total.as_secs_f64() * progress.max(0.0).min(1.0);
+            let target_duration = Duration::from_secs_f64(target_seconds);
+            
+            if let Some(path) = &self.current_path {
+                let was_playing = !self.is_paused;
+                
+                // Stop current playback
+                self.sink.try_seek(target_duration);
+                
+                // TODO: fix issue where the try_seek does not goes backwards
+                
+                // Reset timing - start from the seek position
+                self.start_time = Some(Instant::now());
+                self.seek_offset = target_duration;
+                self.total_pause_duration = Duration::ZERO;
+                self.pause_start_time = None;
+                
+                // Resume playing if it was playing before
+                if was_playing {
+                    self.sink.play();
+                    self.is_paused = false;
+                } else {
+                    self.sink.pause();
+                    self.is_paused = true;
+                }
+            }
+        }
     }
 
     pub fn mute(&mut self) {

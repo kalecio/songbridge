@@ -43,6 +43,13 @@ pub fn get_progress(state: tauri::State<Arc<Mutex<AudioState>>>) -> f64 {
 }
 
 #[tauri::command]
+pub fn seek_to(state: tauri::State<Arc<Mutex<AudioState>>>, progress: f64) {
+    if let Ok(mut audio) = state.lock() {
+        audio.seek_to(progress);
+    }
+}
+
+#[tauri::command]
 pub fn toggle_mute(state: tauri::State<Arc<Mutex<AudioState>>>) {
     println!("Toggling mute...");
     if let Ok(mut audio) = state.lock() {
