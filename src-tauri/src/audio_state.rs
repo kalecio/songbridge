@@ -1,10 +1,9 @@
 use std::fs::File;
 use std::io::BufReader;
-use rodio::{Decoder, OutputStream, OutputStreamBuilder, Sink};
+use rodio::{Decoder, Sink, OutputStreamBuilder};
 
 pub struct AudioState {
     pub sink: Sink,
-    _stream: OutputStream,
     original_volume: f32,
     is_muted: bool
 }
@@ -12,11 +11,14 @@ pub struct AudioState {
 
 impl AudioState {
     pub fn new() -> Self {
-        let _stream = OutputStreamBuilder::open_default_stream().expect("open default audio stream");
-        let sink = Sink::connect_new(&_stream.mixer());
+        let stream = OutputStreamBuilder::open_default_stream().expect("open default audio stream");
+        let sink = Sink::connect_new(&stream.mixer());
+        // Leak the stream to keep it alive for the lifetime of the app
+        // The stream is not Send/Sync, so we can't store it in AudioState
+        // This is acceptable for a long-lived resource that lives for the entire app lifetime
+        Box::leak(Box::new(stream));
         AudioState {
             sink,
-            _stream,
             original_volume: 1.0,
             is_muted: false,
         }

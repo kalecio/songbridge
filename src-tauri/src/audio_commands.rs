@@ -1,5 +1,4 @@
 use std::fs::File;
-use std::path;
 use std::sync::{Arc, Mutex};
 use symphonia::core::formats::{FormatOptions, FormatReader};
 use symphonia::core::io::MediaSourceStream;

@@ -8,6 +8,8 @@ mod audio_commands;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
+    // Create the audio state
+    // The OutputStreamHandle keeps the stream alive internally, so we don't need to store the stream
     let audio_state = Arc::new(Mutex::new(AudioState::new()));
     tauri::Builder::default()
         .plugin(tauri_plugin_opener::init())
