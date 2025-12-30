@@ -1,5 +1,4 @@
 import { useState } from 'react';
-import { styled } from 'styled-components';
 import './App.css';
 import Player from './Components/Player/Player';
 import { AppContext } from './Context/AppContext';
@@ -24,23 +23,9 @@ function App() {
         setMetadata,
       }}
     >
-      <Container>
-        <Main>app</Main>
-        <Player />
-      </Container>
+      <Player />
     </AppContext.Provider>
   );
 }
-
-const Container = styled.div`
-  display: flex;
-  flex-direction: column;
-  justify-content: stretch;
-  align-items: stretch;
-`;
-
-const Main = styled.div`
-  background-color: #ffe1e0;
-`;
 
 export default App;

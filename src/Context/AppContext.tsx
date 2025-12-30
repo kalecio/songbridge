@@ -6,10 +6,10 @@ interface AppContext {
   isPlaying?: boolean;
   progress?: number;
   metadata?: MetadataType;
-  setCurrentPath?: (path?: string) => void;
-  setIsPlaying?: (playing: boolean) => void;
-  setProgress?: (progress: number) => void;
-  setMetadata?: (metadata?: MetadataType) => void;
+  setCurrentPath?: (_path?: string) => void;
+  setIsPlaying?: (_playing: boolean) => void;
+  setProgress?: (_progress: number) => void;
+  setMetadata?: (_metadata?: MetadataType) => void;
 }
 
 export const AppContext = createContext<AppContext>({

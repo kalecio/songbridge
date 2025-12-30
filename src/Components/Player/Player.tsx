@@ -7,6 +7,8 @@ import { invoke } from '@tauri-apps/api/core';
 
 import { PlayerContainer, StyledPlayer } from './styles';
 import { AppContext } from '../../Context/AppContext';
+import { styled } from 'styled-components';
+import { AlbumImage, AlbumImagePlaceholder } from '../Song/styles';
 
 const Player = () => {
   const context = useContext(AppContext);
@@ -55,20 +57,54 @@ const Player = () => {
   }, [isPlaying, setProgress]);
 
   return (
-    <PlayerContainer>
-      <ProgressBar progress={progress ?? 0} max={100} onSeek={handleSeek} />
-      <StyledPlayer>
-        <Song
-          albumImage={metadata?.image}
-          albumName={metadata?.album}
-          songName={metadata?.title ?? 'no name'}
-          artistName={metadata?.artist ?? 'no name'}
-        />
-        <Controls />
-        <Volume />
-      </StyledPlayer>
-    </PlayerContainer>
+    <Container>
+      <Main>
+        {metadata?.image ? (
+          <PlayerAlbumArt src={metadata?.image} alt={metadata?.album} />
+        ) : (
+          <PlayerAlbumArtPlaceholder />
+        )}
+      </Main>
+      <PlayerContainer>
+        <ProgressBar progress={progress ?? 0} max={100} onSeek={handleSeek} />
+        <StyledPlayer>
+          <Song
+            albumImage={metadata?.image}
+            albumName={metadata?.album}
+            songName={metadata?.title ?? 'no name'}
+            artistName={metadata?.artist ?? 'no name'}
+          />
+          <Controls />
+          <Volume />
+        </StyledPlayer>
+      </PlayerContainer>
+    </Container>
   );
 };
+
+const Container = styled.div`
+  display: flex;
+  flex-direction: column;
+  justify-content: stretch;
+  align-items: stretch;
+`;
+
+const Main = styled.div`
+  background-color: #ffe1e0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+`;
+
+const PlayerAlbumArt = styled(AlbumImage)`
+  width: 25rem;
+  height: 25rem;
+`;
+
+const PlayerAlbumArtPlaceholder = styled(AlbumImagePlaceholder)`
+  width: 25rem;
+  height: 25rem;
+`;
 
 export default Player;

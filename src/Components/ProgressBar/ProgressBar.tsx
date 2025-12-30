@@ -4,7 +4,7 @@ import { ProgressBarInner, CustomProgressBar, Slider } from './styles';
 interface ProgressBarProps {
   progress: number;
   max: number;
-  onSeek?: (progress: number) => void;
+  onSeek?: (_progress: number) => void;
 }
 
 const ProgressBar = ({ progress, max, onSeek }: ProgressBarProps) => {
