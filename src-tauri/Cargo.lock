@@ -3535,6 +3535,7 @@ dependencies = [
 name = "songbridge"
 version = "0.1.0"
 dependencies = [
+ "base64 0.22.1",
  "rodio",
  "serde",
  "serde_json",

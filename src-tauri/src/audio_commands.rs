@@ -1,5 +1,6 @@
 use std::fs::File;
 use std::sync::{Arc, Mutex};
+use base64::Engine;
 use symphonia::core::formats::{FormatOptions, FormatReader};
 use symphonia::core::io::MediaSourceStream;
 use symphonia::core::meta::{MetadataOptions, StandardTagKey};
@@ -47,50 +48,103 @@ pub fn set_volume(state: tauri::State<Arc<Mutex<AudioState>>>, volume: f32) {
     }
 }
 
+/// Extracts metadata from an audio file, including album art.
+/// Returns an error string if extraction fails.
 #[tauri::command]
-pub fn get_metadata(file_path: &str) -> AudioMetadata {
-    let file = File::open(file_path).expect("file open failed");
+pub fn get_metadata(path: &str) -> Result<AudioMetadata, String> {
+    let file = File::open(path)
+        .map_err(|e| format!("Failed to open file '{}': {}", path, e))?;
+    
     let mss = MediaSourceStream::new(Box::new(file), Default::default());
     let hint = Hint::new();
 
     let meta_opts: MetadataOptions = Default::default();
     let fmt_opts: FormatOptions = Default::default();
+    
     let mut probed = symphonia::default::get_probe()
         .format(&hint, mss, &fmt_opts, &meta_opts)
-        .expect("unsupported format");
+        .map_err(|e| format!("Unsupported format or failed to probe file: {}", e))?;
 
     let format = probed.format;
-    let total_duration = calculate_track_duration(format);
+    let duration = calculate_track_duration(&*format)?;
 
+    let (title, artist, album, year) = extract_text_metadata(&mut probed.metadata);
+    let image = extract_album_art(&mut probed.metadata);
+
+    Ok(AudioMetadata::new(title, artist, album, year, duration, image))
+}
+
+/// Extracts text metadata (title, artist, album, year) from the metadata revision.
+fn extract_text_metadata(
+    metadata: &mut symphonia::core::probe::ProbedMetadata,
+) -> (Option<String>, Option<String>, Option<String>, Option<String>) {
     let mut title = None;
     let mut artist = None;
     let mut album = None;
     let mut year = None;
 
-    // Access the metadata.
-    if let Some(mut meta) = probed.metadata.get() {
-        if let Some(latest) = meta.skip_to_latest() {
-            for tag in latest.tags().iter() {
-                // println!("{:?}", tag);
+    // Access metadata - get the latest revision
+    if let Some(mut meta) = metadata.get() {
+        if let Some(revision) = meta.skip_to_latest() {
+            for tag in revision.tags() {
                 match tag.std_key {
-                    Some(StandardTagKey::TrackTitle) => title = Some(tag.value.to_string()),
-                    Some(StandardTagKey::Artist) => artist = Some(tag.value.to_string()),
-                    Some(StandardTagKey::Album) => album = Some(tag.value.to_string()),
-                    Some(StandardTagKey::Date) => year = Some(tag.value.to_string()),
+                    Some(StandardTagKey::TrackTitle) if title.is_none() => {
+                        title = Some(tag.value.to_string());
+                    }
+                    Some(StandardTagKey::Artist) if artist.is_none() => {
+                        artist = Some(tag.value.to_string());
+                    }
+                    Some(StandardTagKey::Album) if album.is_none() => {
+                        album = Some(tag.value.to_string());
+                    }
+                    Some(StandardTagKey::Date) if year.is_none() => {
+                        year = Some(tag.value.to_string());
+                    }
                     _ => {}
                 }
             }
         }
     }
-    println!(
-        "Title: {:?}, Artist: {:?}, Album: {:?}, Year: {:?}, Duration: {:?}",
-        title, artist, album, year, total_duration
-    );
 
-    AudioMetadata::new(title, artist, album, year, total_duration)
+    (title, artist, album, year)
 }
 
-fn calculate_track_duration(format: Box<dyn FormatReader>) -> AudioDuration {
+/// Extracts album art from the metadata and returns it as a base64-encoded string.
+fn extract_album_art(metadata: &mut symphonia::core::probe::ProbedMetadata) -> Option<String> {
+    // Access metadata - get visuals from latest revision
+    if let Some(mut meta) = metadata.get() {
+        if let Some(revision) = meta.skip_to_latest() {
+            // Get the first visual (typically album art/cover image)
+            if let Some(visual) = revision.visuals().first() {
+                let base64_image = base64::engine::general_purpose::STANDARD.encode(&visual.data);
+                let mime_type = determine_mime_type(&visual.data);
+                return Some(format!("data:{};base64,{}", mime_type, base64_image));
+            }
+        }
+    }
+
+    None
+}
+
+/// Determines the MIME type by inferring it from the image data's magic bytes.
+fn determine_mime_type(data: &[u8]) -> String {
+    // Infer MIME type from magic bytes
+    if data.len() >= 4 {
+        match &data[0..4] {
+            [0xFF, 0xD8, 0xFF, _] => "image/jpeg",
+            [0x89, 0x50, 0x4E, 0x47] => "image/png",
+            [0x47, 0x49, 0x46, 0x38] => "image/gif",
+            [0x52, 0x49, 0x46, 0x46] if data.len() >= 12 && &data[8..12] == b"WEBP" => "image/webp",
+            _ => "image/jpeg", // Default fallback
+        }
+    } else {
+        "image/jpeg"
+    }
+    .to_string()
+}
+
+/// Calculates the track duration from the format reader.
+fn calculate_track_duration(format: &dyn FormatReader) -> Result<AudioDuration, String> {
     let duration_seconds = format
         .default_track()
         .and_then(|track| {
@@ -99,16 +153,22 @@ fn calculate_track_duration(format: Box<dyn FormatReader>) -> AudioDuration {
             Some(n_frames as f64 / sample_rate as f64)
         });
 
-    // format duration to 00:00 or 00:00:00
     let duration_formatted = duration_seconds.map(|d| {
-        let hours = d as u64 / 3600;
-        let minutes = d as u64 / 60;
-        let seconds = d as u64 % 60;
+        let total_seconds = d as u64;
+        let hours = total_seconds / 3600;
+        let minutes = (total_seconds % 3600) / 60;
+        let seconds = total_seconds % 60;
+
         if hours > 0 {
-            return format!("{:02}:{:02}:{:02}", hours, minutes % 60, seconds);
+            format!("{:02}:{:02}:{:02}", hours, minutes, seconds)
         } else {
-            return format!("{:02}:{:02}", minutes, seconds);
+            format!("{:02}:{:02}", minutes, seconds)
         }
     });
-    AudioDuration::new(duration_seconds.map(|d| d as u64), duration_formatted)
+
+    Ok(AudioDuration::new(
+        duration_seconds.map(|d| d as u64),
+        duration_formatted,
+    ))
 }
+

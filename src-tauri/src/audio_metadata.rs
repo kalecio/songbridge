@@ -22,17 +22,27 @@ pub struct AudioMetadata {
     artist: Option<String>,
     album: Option<String>,
     year: Option<String>,
-    duration: AudioDuration
+    duration: AudioDuration,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    image: Option<String>, // Base64 encoded image data
 }
 
 impl AudioMetadata {
-    pub fn new(title: Option<String>, artist: Option<String>, album: Option<String>, year: Option<String>, duration: AudioDuration) -> Self {
+    pub fn new(
+        title: Option<String>,
+        artist: Option<String>,
+        album: Option<String>,
+        year: Option<String>,
+        duration: AudioDuration,
+        image: Option<String>,
+    ) -> Self {
         AudioMetadata {
             title,
             artist,
             album,
             year,
-            duration
+            duration,
+            image,
         }
     }
 }
