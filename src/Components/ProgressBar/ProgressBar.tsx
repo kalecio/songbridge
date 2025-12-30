@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { ProgressBarInner, CustomProgressBar, Slider } from './styles';
 
 interface ProgressBarProps {
@@ -8,6 +8,11 @@ interface ProgressBarProps {
 
 const ProgressBar = ({ progress, max }: ProgressBarProps) => {
   const [progressValue, setProgressValue] = useState(progress);
+
+  // Update internal state when progress prop changes
+  useEffect(() => {
+    setProgressValue(progress);
+  }, [progress]);
 
   const handleProgressChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = parseInt(event.target.value);

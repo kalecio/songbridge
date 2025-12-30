@@ -10,17 +10,17 @@ use crate::audio_state::AudioState;
 use crate::audio_metadata::{AudioDuration, AudioMetadata};
 
 #[tauri::command]
-pub fn play_new_song(state: tauri::State<Arc<Mutex<AudioState>>>, path: String) {
+pub fn play_new_song(state: tauri::State<Arc<Mutex<AudioState>>>, path: String, duration_seconds: Option<u64>) {
     println!("Playing audio...");
-    if let Ok(audio) = state.lock() {
-        audio.play_new_song(&path);
+    if let Ok(mut audio) = state.lock() {
+        audio.play_new_song(&path, duration_seconds);
     }
 }
 
 #[tauri::command]
 pub fn resume(state: tauri::State<Arc<Mutex<AudioState>>>) {
     println!("Resuming audio...");
-    if let Ok(audio) = state.lock() {
+    if let Ok(mut audio) = state.lock() {
         audio.resume();
     }
 }
@@ -28,8 +28,17 @@ pub fn resume(state: tauri::State<Arc<Mutex<AudioState>>>) {
 #[tauri::command]
 pub fn pause(state: tauri::State<Arc<Mutex<AudioState>>>) {
     println!("Pausing audio...");
-    if let Ok(audio) = state.lock() {
+    if let Ok(mut audio) = state.lock() {
         audio.pause();
+    }
+}
+
+#[tauri::command]
+pub fn get_progress(state: tauri::State<Arc<Mutex<AudioState>>>) -> f64 {
+    if let Ok(audio) = state.lock() {
+        audio.get_progress()
+    } else {
+        0.0
     }
 }
 

@@ -20,7 +20,8 @@ pub fn run() {
             audio_commands::resume,
             audio_commands::get_metadata,
             audio_commands::toggle_mute,
-            audio_commands::set_volume
+            audio_commands::set_volume,
+            audio_commands::get_progress
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
