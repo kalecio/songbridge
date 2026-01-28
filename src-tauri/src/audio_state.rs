@@ -1,12 +1,19 @@
 use std::fs::File;
+use std::time::Duration;
 use std::io::BufReader;
-use rodio::{Decoder, OutputStream, OutputStreamBuilder, Sink};
+use rodio::{decoder::DecoderBuilder, OutputStream, OutputStreamBuilder, Sink};
+use symphonia::core::io::MediaSource;
+
+use crate::audio_utils::{get_audio_probe, calculate_track_duration, format_duration};
+use crate::audio_metadata::AudioDuration;
 
 pub struct AudioState {
+    pub path: String,
     pub sink: Sink,
     _stream: OutputStream,
     original_volume: f32,
-    is_muted: bool
+    is_muted: bool,
+    pub track_duration: AudioDuration
 }
 
 
@@ -15,19 +22,34 @@ impl AudioState {
         let _stream = OutputStreamBuilder::open_default_stream().expect("open default audio stream");
         let sink = Sink::connect_new(&_stream.mixer());
         AudioState {
+            path: String::new(),
             sink,
             _stream,
             original_volume: 1.0,
             is_muted: false,
+            track_duration: AudioDuration::default()
         }
     }
 
-    pub fn play_new_song(&self, file_path: &str) {
+    pub fn load_song(&mut self, path: &str) {
         self.sink.stop();
-        let file = File::open(file_path).expect("file open failed");
-        let source = Decoder::new(BufReader::new(file)).expect("decode failed");
-
+        let file = File::open(path).expect("file open failed");
+        let byte_len = file.byte_len().expect("file byte length failed");
+        let source = DecoderBuilder::new()
+            .with_data(BufReader::new(file))
+            .with_byte_len(byte_len)
+            .with_seekable(true)
+            .build()
+            .expect("decode failed");
+        let probe = get_audio_probe(path);
+        let track_duration = calculate_track_duration(&probe);
+        self.track_duration = AudioDuration::new(track_duration, format_duration(track_duration));
+        self.path = path.to_string();
         self.sink.append(source);
+        self.sink.pause();
+    }
+
+    pub fn play(&self) {
         self.sink.play();
     }
 
@@ -65,5 +87,17 @@ impl AudioState {
     pub fn set_volume(&mut self, volume: f32) {
         self.sink.set_volume(volume);
         self.original_volume = volume;
+    }
+
+    pub fn current_position(&self) -> Duration {
+        self.sink.get_pos()
+    }
+
+    pub fn seek(&mut self, position: Duration) {
+        println!("Seeking to position: {:?}", position);
+        if let Err(err) = self.sink.try_seek(position) {
+            // Aqui você pode ignorar, ou sinalizar erro para o frontend.
+            eprintln!("Erro ao tentar fazer seek: {:?}", err);
+        }
     }
 }

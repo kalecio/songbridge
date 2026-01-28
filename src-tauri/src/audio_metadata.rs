@@ -1,8 +1,8 @@
 use serde::Serialize;
 
-#[derive(Debug, Serialize)]
+#[derive(Debug, Serialize, Clone)]
 pub struct AudioDuration {
-    duration_seconds: Option<u64>,
+    pub duration_seconds: Option<u64>,
     duration_formatted: Option<String>
 }
 
@@ -16,23 +16,35 @@ impl AudioDuration {
     
 }
 
+impl Default for AudioDuration {
+    fn default() -> Self {
+        AudioDuration {
+            duration_seconds: None,
+            duration_formatted: None
+        }
+    }
+    
+}
+
 #[derive(Serialize)]
 pub struct AudioMetadata {
     title: Option<String>,
     artist: Option<String>,
     album: Option<String>,
     year: Option<String>,
-    duration: AudioDuration
+    duration: AudioDuration,
+    image: Option<String>, // Base64 encoded image data
 }
 
 impl AudioMetadata {
-    pub fn new(title: Option<String>, artist: Option<String>, album: Option<String>, year: Option<String>, duration: AudioDuration) -> Self {
+    pub fn new(title: Option<String>, artist: Option<String>, album: Option<String>, year: Option<String>, duration: AudioDuration, image: Option<String>) -> Self {
         AudioMetadata {
             title,
             artist,
             album,
             year,
-            duration
+            duration,
+            image
         }
     }
 }
