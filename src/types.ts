@@ -1,5 +1,5 @@
 export interface DurationType {
-  duration_seconds?: string | number;
+  duration_seconds?: number;
   duration_formatted?: string;
 }
 export interface MetadataType {

@@ -7,7 +7,7 @@ interface ProgressBarProps {
   onSeek?: (_progress: number) => void;
 }
 
-const ProgressBar = ({ progress, max, onSeek }: ProgressBarProps) => {
+const ProgressBar = ({ progress = 0, max, onSeek }: ProgressBarProps) => {
   const [progressValue, setProgressValue] = useState(progress);
   const isDraggingRef = useRef(false);
 

@@ -12,15 +12,12 @@ import { AlbumImage, AlbumImagePlaceholder } from '../Song/styles';
 
 const Player = () => {
   const context = useContext(AppContext);
-  const { metadata, progress, isPlaying, setProgress } = context;
+  const { metadata, progress, isPlaying, setProgress, currentPath: path } = context;
   const intervalRef = useRef<number | null>(null);
 
   const handleSeek = async (progressRatio: number) => {
     try {
-      // progressRatio is 0-1, invoke expects 0-1
-      await invoke('seek_to', { progress: progressRatio });
-      // Update context immediately to reflect the seek
-      setProgress?.(progressRatio * 100);
+      await invoke('seek', { percent: progressRatio, path });
     } catch (error) {
       console.error('Error seeking:', error);
     }
@@ -38,9 +35,8 @@ const Player = () => {
       intervalRef.current = window.setInterval(async () => {
         try {
           const currentProgress = await invoke<number>('get_progress');
-          // Convert progress (0-1) to percentage (0-100)
-          setProgress?.(currentProgress * 100);
-          console.log('teste', currentProgress * 100);
+          const durationSeconds = metadata?.duration?.duration_seconds ?? 0;
+          setProgress?.((currentProgress / durationSeconds) * 100);
         } catch (error) {
           console.error('Error getting progress:', error);
         }
@@ -66,7 +62,7 @@ const Player = () => {
         )}
       </Main>
       <PlayerContainer>
-        <ProgressBar progress={progress ?? 0} max={100} onSeek={handleSeek} />
+        <ProgressBar progress={progress} max={100} onSeek={handleSeek} />
         <StyledPlayer>
           <Song
             albumImage={metadata?.image}

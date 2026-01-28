@@ -1,137 +1,64 @@
 use std::fs::File;
+use std::time::Duration;
 use std::io::BufReader;
-use std::time::{Duration, Instant};
-use rodio::{Decoder, Sink, OutputStreamBuilder, Source};
+use rodio::{decoder::DecoderBuilder, OutputStream, OutputStreamBuilder, Sink};
+use symphonia::core::io::MediaSource;
+
+use crate::audio_utils::{get_audio_probe, calculate_track_duration, format_duration};
+use crate::audio_metadata::AudioDuration;
 
 pub struct AudioState {
+    pub path: String,
     pub sink: Sink,
+    _stream: OutputStream,
     original_volume: f32,
     is_muted: bool,
-    start_time: Option<Instant>,
-    total_pause_duration: Duration,
-    pause_start_time: Option<Instant>,
-    total_duration: Option<Duration>,
-    is_paused: bool,
-    seek_offset: Duration, // Offset to account for seeking
-    current_path: Option<String>,
+    pub track_duration: AudioDuration
 }
 
 
 impl AudioState {
     pub fn new() -> Self {
-        let stream = OutputStreamBuilder::open_default_stream().expect("open default audio stream");
-        let sink = Sink::connect_new(&stream.mixer());
-        // Leak the stream to keep it alive for the lifetime of the app
-        // The stream is not Send/Sync, so we can't store it in AudioState
-        // This is acceptable for a long-lived resource that lives for the entire app lifetime
-        Box::leak(Box::new(stream));
+        let _stream = OutputStreamBuilder::open_default_stream().expect("open default audio stream");
+        let sink = Sink::connect_new(&_stream.mixer());
         AudioState {
+            path: String::new(),
             sink,
+            _stream,
             original_volume: 1.0,
             is_muted: false,
-            start_time: None,
-            total_pause_duration: Duration::ZERO,
-            pause_start_time: None,
-            total_duration: None,
-            is_paused: false,
-            seek_offset: Duration::ZERO,
-            current_path: None,
+            track_duration: AudioDuration::default()
         }
     }
 
-    pub fn play_new_song(&mut self, file_path: &str, duration_seconds: Option<u64>) {
+    pub fn load_song(&mut self, path: &str) {
         self.sink.stop();
-        let file = File::open(file_path).expect("file open failed");
-        let source = Decoder::new(BufReader::new(file)).expect("decode failed");
-
+        let file = File::open(path).expect("file open failed");
+        let byte_len = file.byte_len().expect("file byte length failed");
+        let source = DecoderBuilder::new()
+            .with_data(BufReader::new(file))
+            .with_byte_len(byte_len)
+            .with_seekable(true)
+            .build()
+            .expect("decode failed");
+        let probe = get_audio_probe(path);
+        let track_duration = calculate_track_duration(&probe);
+        self.track_duration = AudioDuration::new(track_duration, format_duration(track_duration));
+        self.path = path.to_string();
         self.sink.append(source);
-        self.sink.play();
-        
-        // Reset tracking
-        self.start_time = Some(Instant::now());
-        self.total_pause_duration = Duration::ZERO;
-        self.pause_start_time = None;
-        self.is_paused = false;
-        self.total_duration = duration_seconds.map(|s| Duration::from_secs(s));
-        self.seek_offset = Duration::ZERO;
-        self.current_path = Some(file_path.to_string());
-    }
-
-    pub fn pause(&mut self) {
         self.sink.pause();
-        if !self.is_paused {
-            self.pause_start_time = Some(Instant::now());
-            self.is_paused = true;
-        }
     }
 
-    pub fn resume(&mut self) {
+    pub fn play(&self) {
         self.sink.play();
-        if self.is_paused {
-            if let Some(pause_start) = self.pause_start_time {
-                self.total_pause_duration += pause_start.elapsed();
-                self.pause_start_time = None;
-            }
-            self.is_paused = false;
-        }
     }
 
-    pub fn get_progress(&self) -> f64 {
-        if let Some(start) = self.start_time {
-            let elapsed = if self.is_paused {
-                // If paused, use the time when pause started
-                if let Some(pause_start) = self.pause_start_time {
-                    pause_start.duration_since(start) - self.total_pause_duration
-                } else {
-                    start.elapsed() - self.total_pause_duration
-                }
-            } else {
-                start.elapsed() - self.total_pause_duration
-            };
-            
-            // Add the seek offset (time already "played" before current start_time)
-            let total_elapsed = elapsed + self.seek_offset;
-            
-            if let Some(total) = self.total_duration {
-                if total.as_secs_f64() > 0.0 {
-                    let progress = total_elapsed.as_secs_f64() / total.as_secs_f64();
-                    return progress.min(1.0).max(0.0);
-                }
-            }
-        }
-        0.0
+    pub fn pause(&self) {
+        self.sink.pause();
     }
 
-    pub fn seek_to(&mut self, progress: f64) {
-        // progress is 0.0 to 1.0
-        if let Some(total) = self.total_duration {
-            let target_seconds = total.as_secs_f64() * progress.max(0.0).min(1.0);
-            let target_duration = Duration::from_secs_f64(target_seconds);
-            
-            if let Some(path) = &self.current_path {
-                let was_playing = !self.is_paused;
-                
-                // Stop current playback
-                self.sink.try_seek(target_duration);
-                
-                // TODO: fix issue where the try_seek does not goes backwards
-                
-                // Reset timing - start from the seek position
-                self.start_time = Some(Instant::now());
-                self.seek_offset = target_duration;
-                self.total_pause_duration = Duration::ZERO;
-                self.pause_start_time = None;
-                
-                // Resume playing if it was playing before
-                if was_playing {
-                    self.sink.play();
-                    self.is_paused = false;
-                } else {
-                    self.sink.pause();
-                    self.is_paused = true;
-                }
-            }
-        }
+    pub fn resume(&self) {
+        self.sink.play();
     }
 
     pub fn mute(&mut self) {
@@ -160,5 +87,17 @@ impl AudioState {
     pub fn set_volume(&mut self, volume: f32) {
         self.sink.set_volume(volume);
         self.original_volume = volume;
+    }
+
+    pub fn current_position(&self) -> Duration {
+        self.sink.get_pos()
+    }
+
+    pub fn seek(&mut self, position: Duration) {
+        println!("Seeking to position: {:?}", position);
+        if let Err(err) = self.sink.try_seek(position) {
+            // Aqui você pode ignorar, ou sinalizar erro para o frontend.
+            eprintln!("Erro ao tentar fazer seek: {:?}", err);
+        }
     }
 }

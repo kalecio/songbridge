@@ -4,7 +4,7 @@ import { MetadataType } from '../types';
 interface AppContext {
   currentPath?: string;
   isPlaying?: boolean;
-  progress?: number;
+  progress: number;
   metadata?: MetadataType;
   setCurrentPath?: (_path?: string) => void;
   setIsPlaying?: (_playing: boolean) => void;
@@ -14,4 +14,5 @@ interface AppContext {
 
 export const AppContext = createContext<AppContext>({
   isPlaying: false,
+  progress: 0,
 });

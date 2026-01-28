@@ -17,15 +17,8 @@ const Player = () => {
       // Get metadata for the song first to get duration
       const metadata = await invoke<MetadataType>('get_metadata', { path });
 
-      // Extract duration in seconds
-      const durationSeconds = metadata.duration?.duration_seconds
-        ? typeof metadata.duration.duration_seconds === 'string'
-          ? parseInt(metadata.duration.duration_seconds)
-          : metadata.duration.duration_seconds
-        : undefined;
-
-      // Play the song with duration
-      await invoke('play_new_song', { path, durationSeconds: durationSeconds });
+      await invoke('load_song', { path });
+      await invoke('play_song');
 
       // Update context
       setCurrentPath?.(path);
