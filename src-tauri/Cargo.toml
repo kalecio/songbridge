@@ -25,4 +25,5 @@ serde_json = "1"
 rodio = "0.21"
 symphonia = { version = "0.5", features = ["all-formats"] }
 base64 = "0.22"
+tauri-plugin-dialog = "2"
 

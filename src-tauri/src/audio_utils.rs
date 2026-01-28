@@ -1,5 +1,10 @@
 use std::fs::File;
-use symphonia::core::{formats::FormatOptions, io::MediaSourceStream, meta::MetadataOptions, probe::{Hint, ProbeResult}};
+use symphonia::core::{
+    formats::FormatOptions,
+    io::MediaSourceStream,
+    meta::MetadataOptions,
+    probe::{Hint, ProbeResult},
+};
 
 pub fn get_audio_probe(path: &str) -> ProbeResult {
     let file = File::open(path).expect("file open failed");
@@ -16,13 +21,11 @@ pub fn get_audio_probe(path: &str) -> ProbeResult {
 
 pub fn calculate_track_duration(probe: &ProbeResult) -> Option<u64> {
     let format = &probe.format;
-    let duration_seconds = format
-        .default_track()
-        .and_then(|track| {
-            let n_frames = track.codec_params.n_frames?;
-            let sample_rate = track.codec_params.sample_rate?;
-            Some((n_frames as f64 / sample_rate as f64) as u64)
-        });
+    let duration_seconds = format.default_track().and_then(|track| {
+        let n_frames = track.codec_params.n_frames?;
+        let sample_rate = track.codec_params.sample_rate?;
+        Some((n_frames as f64 / sample_rate as f64) as u64)
+    });
     duration_seconds
 }
 
@@ -33,9 +36,9 @@ pub fn format_duration(duration_seconds: Option<u64>) -> Option<String> {
         let minutes = d / 60;
         let seconds = d % 60;
         if hours > 0 {
-            return format!("{:02}:{:02}:{:02}", hours, minutes % 60, seconds)
+            return format!("{:02}:{:02}:{:02}", hours, minutes % 60, seconds);
         } else {
-            return format!("{:02}:{:02}", minutes, seconds)
+            return format!("{:02}:{:02}", minutes, seconds);
         }
     })
 }

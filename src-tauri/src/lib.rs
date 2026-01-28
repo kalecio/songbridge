@@ -2,15 +2,16 @@ use std::sync::{Arc, Mutex};
 
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 use crate::audio_state::AudioState;
-mod audio_state;
-mod audio_metadata;
 mod audio_commands;
+mod audio_metadata;
+mod audio_state;
 mod audio_utils;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let audio_state = Arc::new(Mutex::new(AudioState::new()));
     tauri::Builder::default()
+        .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
         .manage(audio_state)
         .invoke_handler(tauri::generate_handler![

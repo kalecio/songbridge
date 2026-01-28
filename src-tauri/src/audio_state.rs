@@ -1,11 +1,11 @@
-use std::fs::File;
-use std::time::Duration;
-use std::io::BufReader;
 use rodio::{decoder::DecoderBuilder, OutputStream, OutputStreamBuilder, Sink};
+use std::fs::File;
+use std::io::BufReader;
+use std::time::Duration;
 use symphonia::core::io::MediaSource;
 
-use crate::audio_utils::{get_audio_probe, calculate_track_duration, format_duration};
 use crate::audio_metadata::AudioDuration;
+use crate::audio_utils::{calculate_track_duration, format_duration, get_audio_probe};
 
 pub struct AudioState {
     pub path: String,
@@ -13,13 +13,13 @@ pub struct AudioState {
     _stream: OutputStream,
     original_volume: f32,
     is_muted: bool,
-    pub track_duration: AudioDuration
+    pub track_duration: AudioDuration,
 }
-
 
 impl AudioState {
     pub fn new() -> Self {
-        let _stream = OutputStreamBuilder::open_default_stream().expect("open default audio stream");
+        let _stream =
+            OutputStreamBuilder::open_default_stream().expect("open default audio stream");
         let sink = Sink::connect_new(&_stream.mixer());
         AudioState {
             path: String::new(),
@@ -27,7 +27,7 @@ impl AudioState {
             _stream,
             original_volume: 1.0,
             is_muted: false,
-            track_duration: AudioDuration::default()
+            track_duration: AudioDuration::default(),
         }
     }
 

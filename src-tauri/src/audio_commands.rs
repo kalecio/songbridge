@@ -1,11 +1,11 @@
+use base64::Engine;
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
-use base64::Engine;
 use symphonia::core::meta::StandardTagKey;
 
+use crate::audio_metadata::{AudioDuration, AudioMetadata};
 use crate::audio_state::AudioState;
-use crate::audio_metadata::{AudioMetadata, AudioDuration};
-use crate::audio_utils::{get_audio_probe, calculate_track_duration, format_duration};
+use crate::audio_utils::{calculate_track_duration, format_duration, get_audio_probe};
 
 #[tauri::command]
 pub fn load_song(state: tauri::State<Arc<Mutex<AudioState>>>, path: String) {
