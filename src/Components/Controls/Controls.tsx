@@ -31,6 +31,16 @@ const Player = () => {
     loadSong();
   }, [path]);
 
+  useEffect(() => {
+    if (!path) {
+      return;
+    }
+    const loadSong = async () => {
+      await playNewSong();
+    };
+    loadSong();
+  }, [path]);
+
   const playNewSong = async () => {
     try {
       // Get metadata for the song first to get duration
