@@ -5,7 +5,7 @@ import { AppContext } from './Context/AppContext';
 import { MetadataType } from './types';
 
 function App() {
-  const [currentPath, setCurrentPath] = useState<string | undefined>('music-files/Polygondwanaland.mp3');
+  const [currentPath, setCurrentPath] = useState<string | undefined>(undefined);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [progress, setProgress] = useState<number>(0);
   const [metadata, setMetadata] = useState<MetadataType | undefined>(undefined);

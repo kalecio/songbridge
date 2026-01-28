@@ -1,4 +1,4 @@
-import { useContext, useState } from 'react';
+import { useContext, useEffect, useState } from 'react';
 import { Controls, Shuffle, Prev, Play, Next, Repeat, Pause } from './styles';
 import { invoke } from '@tauri-apps/api/core';
 import { AppContext } from '../../Context/AppContext';
@@ -11,6 +11,16 @@ const Player = () => {
 
   const context = useContext(AppContext);
   const { isPlaying, setIsPlaying, setCurrentPath, setMetadata, currentPath: path } = context;
+
+  useEffect(() => {
+    if (!path) {
+      return;
+    }
+    const loadSong = async () => {
+      await playNewSong();
+    };
+    loadSong();
+  }, [path]);
 
   const playNewSong = async () => {
     try {

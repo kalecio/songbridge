@@ -17,6 +17,11 @@ const AlbumImagePlaceholder = styled(AlbumPlaceholder)`
   object-fit: cover;
 `;
 
+const AlbumImagePlaceholderContainer = styled.div`
+  width: 25rem;
+  height: 25rem;
+`;
+
 const AlbumImage = styled.img`
   width: 60px;
   height: 60px;
@@ -46,4 +51,12 @@ const ArtistName = styled.span`
   align-items: center;
 `;
 
-export { SongContainer, AlbumImage, AlbumImagePlaceholder, MusicInfo, MusicName, ArtistName };
+export {
+  SongContainer,
+  AlbumImage,
+  AlbumImagePlaceholder,
+  MusicInfo,
+  MusicName,
+  ArtistName,
+  AlbumImagePlaceholderContainer,
+};
