@@ -30,7 +30,6 @@ const AlbumImage = styled.img`
 
 const MusicInfo = styled.div`
   padding: 15px 0px;
-  width: 30%;
   display: flex;
   flex-direction: column;
   color: #f5f2f2;
