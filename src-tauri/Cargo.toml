@@ -26,4 +26,5 @@ rodio = "0.21"
 symphonia = { version = "0.5", features = ["all-formats"] }
 base64 = "0.22"
 tauri-plugin-dialog = "2"
+crossbeam-channel = "0.5"
 

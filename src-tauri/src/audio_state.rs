@@ -1,16 +1,12 @@
-use rodio::{decoder::DecoderBuilder, OutputStream, OutputStreamBuilder, Sink};
-use std::fs::File;
-use std::io::BufReader;
-use std::time::Duration;
-use symphonia::core::io::MediaSource;
-
+use std::{time::Duration, sync::mpsc};
+use crossbeam_channel::Sender;
+use crate::audio_utils::{get_audio_probe, calculate_track_duration, format_duration};
+use crate::audio_backend::{spawn_audio_thread, AudioCommand};
 use crate::audio_metadata::AudioDuration;
-use crate::audio_utils::{calculate_track_duration, format_duration, get_audio_probe};
 
 pub struct AudioState {
     pub path: String,
-    pub sink: Sink,
-    _stream: OutputStream,
+    audio_tx: Sender<AudioCommand>,
     original_volume: f32,
     is_muted: bool,
     pub track_duration: AudioDuration,
@@ -18,13 +14,10 @@ pub struct AudioState {
 
 impl AudioState {
     pub fn new() -> Self {
-        let _stream =
-            OutputStreamBuilder::open_default_stream().expect("open default audio stream");
-        let sink = Sink::connect_new(&_stream.mixer());
+        let audio_tx = spawn_audio_thread();
         AudioState {
             path: String::new(),
-            sink,
-            _stream,
+            audio_tx,
             original_volume: 1.0,
             is_muted: false,
             track_duration: AudioDuration::default(),
@@ -32,47 +25,39 @@ impl AudioState {
     }
 
     pub fn load_song(&mut self, path: &str) {
-        self.sink.stop();
-        let file = File::open(path).expect("file open failed");
-        let byte_len = file.byte_len().expect("file byte length failed");
-        let source = DecoderBuilder::new()
-            .with_data(BufReader::new(file))
-            .with_byte_len(byte_len)
-            .with_seekable(true)
-            .build()
-            .expect("decode failed");
+        // Update metadata on the main thread and instruct the audio thread to load the file.
         let probe = get_audio_probe(path);
         let track_duration = calculate_track_duration(&probe);
         self.track_duration = AudioDuration::new(track_duration, format_duration(track_duration));
         self.path = path.to_string();
-        self.sink.append(source);
-        self.sink.pause();
+        let _ = self.audio_tx.send(AudioCommand::Load(path.to_string()));
     }
 
     pub fn play(&self) {
-        self.sink.play();
+        let _ = self.audio_tx.send(AudioCommand::Play);
     }
 
     pub fn pause(&self) {
-        self.sink.pause();
+        let _ = self.audio_tx.send(AudioCommand::Pause);
     }
 
     pub fn resume(&self) {
-        self.sink.play();
+        let _ = self.audio_tx.send(AudioCommand::Resume);
     }
 
     pub fn mute(&mut self) {
         if !self.is_muted {
-            self.original_volume = self.sink.volume();
-            self.sink.set_volume(0.0);
+            // We keep the last set volume in `original_volume` and instruct the
+            // audio thread to set volume to 0.
             self.is_muted = true;
+            let _ = self.audio_tx.send(AudioCommand::SetVolume(0.0));
         }
     }
 
     pub fn unmute(&mut self) {
         if self.is_muted {
-            self.sink.set_volume(self.original_volume);
             self.is_muted = false;
+            let _ = self.audio_tx.send(AudioCommand::SetVolume(self.original_volume));
         }
     }
 
@@ -85,19 +70,17 @@ impl AudioState {
     }
 
     pub fn set_volume(&mut self, volume: f32) {
-        self.sink.set_volume(volume);
         self.original_volume = volume;
+        let _ = self.audio_tx.send(AudioCommand::SetVolume(volume));
     }
 
     pub fn current_position(&self) -> Duration {
-        self.sink.get_pos()
+        let (tx, rx) = mpsc::channel();
+        let _ = self.audio_tx.send(AudioCommand::GetPosition(tx));
+        rx.recv().unwrap_or_else(|_| Duration::from_secs(0))
     }
 
     pub fn seek(&mut self, position: Duration) {
-        println!("Seeking to position: {:?}", position);
-        if let Err(err) = self.sink.try_seek(position) {
-            // Aqui você pode ignorar, ou sinalizar erro para o frontend.
-            eprintln!("Erro ao tentar fazer seek: {:?}", err);
-        }
+        let _ = self.audio_tx.send(AudioCommand::Seek(position));
     }
 }

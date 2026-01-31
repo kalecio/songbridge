@@ -6,6 +6,7 @@ mod audio_commands;
 mod audio_metadata;
 mod audio_state;
 mod audio_utils;
+mod audio_backend;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -25,7 +26,6 @@ pub fn run() {
             audio_commands::get_current_track_duration,
             audio_commands::get_progress,
             audio_commands::get_metadata,
-            audio_commands::get_current_track_duration,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
