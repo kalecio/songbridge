@@ -8,7 +8,10 @@ const PlusButtonContainer = styled.div`
 `;
 
 const SidebarContainer = styled.div`
+<<<<<<< HEAD
   overflow-y: auto;
+=======
+>>>>>>> a93b473 (feat: add sidebar and music queue)
   background-color: #9b7ebd88;
   width: 30%;
   display: flex;
@@ -54,7 +57,11 @@ const Menu = styled.div`
   width: 100%;
 `;
 
+<<<<<<< HEAD
 const MenuItem = styled.div<{ $active?: boolean }>`
+=======
+const MenuItem = styled.div`
+>>>>>>> a93b473 (feat: add sidebar and music queue)
   color: #fff;
   cursor: pointer;
   height: fit-content;
@@ -64,6 +71,7 @@ const MenuItem = styled.div<{ $active?: boolean }>`
   align-items: center;
   justify-content: flex-start;
   gap: 1rem;
+<<<<<<< HEAD
   border-radius: 1rem;
   padding: 0.5rem;
 
@@ -71,6 +79,11 @@ const MenuItem = styled.div<{ $active?: boolean }>`
 
   &:hover {
     color: ${(props) => (props.$active ? '#7f55b1' : '#f49bab')};
+=======
+
+  &:hover {
+    color: #f49bab;
+>>>>>>> a93b473 (feat: add sidebar and music queue)
   }
 `;
 

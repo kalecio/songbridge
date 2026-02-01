@@ -1,5 +1,10 @@
 import { MetadataType } from '../../types';
+<<<<<<< HEAD
 import { PlayerAlbumArt, AlbumImagePlaceholderContainer, PlayerAlbumArtPlaceholder } from './styles';
+=======
+import { PlayerAlbumArt, PlayerAlbumArtPlaceholder } from '../Player/styles';
+import { AlbumImagePlaceholderContainer } from '../Song/styles';
+>>>>>>> a93b473 (feat: add sidebar and music queue)
 
 const AlbumImage = ({
   metadata,
