@@ -8,5 +8,6 @@ export interface MetadataType {
   title?: string;
   year?: string;
   image?: string;
+  path?: string;
   duration?: DurationType;
 }

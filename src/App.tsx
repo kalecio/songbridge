@@ -6,9 +6,11 @@ import { MetadataType } from './types';
 
 function App() {
   const [currentPath, setCurrentPath] = useState<string | undefined>(undefined);
+  const [playlist, setPlaylist] = useState<string[]>([]);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
   const [progress, setProgress] = useState<number>(0);
   const [metadata, setMetadata] = useState<MetadataType | undefined>(undefined);
+  const [showQueue, setShowQueue] = useState<boolean>(false);
 
   return (
     <AppContext.Provider
@@ -17,10 +19,14 @@ function App() {
         isPlaying,
         progress,
         metadata,
+        playlist,
         setCurrentPath,
+        setPlaylist,
         setIsPlaying,
         setProgress,
         setMetadata,
+        showQueue,
+        setShowQueue,
       }}
     >
       <Player />

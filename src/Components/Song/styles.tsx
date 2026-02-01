@@ -17,9 +17,10 @@ const AlbumImagePlaceholder = styled(AlbumPlaceholder)`
   object-fit: cover;
 `;
 
-const AlbumImagePlaceholderContainer = styled.div`
-  width: 25rem;
-  height: 25rem;
+const AlbumImagePlaceholderContainer = styled.div<{ $width?: string; $height?: string }>`
+  width: ${(props) => props.$width || '25rem'};
+  height: ${(props) => props.$height || '25rem'};
+  cursor: pointer;
 `;
 
 const AlbumImage = styled.img`

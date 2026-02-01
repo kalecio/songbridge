@@ -6,14 +6,23 @@ import Volume from '../Volume/Volume';
 import { invoke } from '@tauri-apps/api/core';
 import { open } from '@tauri-apps/plugin-dialog';
 
-import { PlayerContainer, StyledPlayer } from './styles';
+import { Container, ContentContainer, Main, PlayerContainer, StyledPlayer } from './styles';
 import { AppContext } from '../../Context/AppContext';
-import { styled } from 'styled-components';
-import { AlbumImage, AlbumImagePlaceholder, AlbumImagePlaceholderContainer } from '../Song/styles';
+import Sidebar from '../Sidebar/Sidebar';
+import AlbumImage from '../AlbumImage/AlbumImage';
 
 const Player = () => {
   const context = useContext(AppContext);
-  const { metadata, progress, isPlaying, setProgress, setCurrentPath, currentPath: path } = context;
+  const {
+    metadata,
+    progress,
+    isPlaying,
+    setProgress,
+    setCurrentPath,
+    currentPath: path,
+    playlist,
+    setPlaylist,
+  } = context;
   const intervalRef = useRef<number | null>(null);
 
   const handleSeek = async (progressRatio: number) => {
@@ -27,10 +36,14 @@ const Player = () => {
   const handleOpenFile = async () => {
     const file =
       (await open({
-        multiple: false,
+        multiple: true,
         directory: false,
+        filters: [{ name: 'Audio', extensions: ['mp3', 'wav', 'flac', 'aac', 'ogg'] }],
       })) ?? '';
-    setCurrentPath?.(file);
+
+    console.log('Selected file:', file);
+    setCurrentPath?.(file[0]);
+    setPlaylist?.([...playlist, ...file]);
   };
 
   useEffect(() => {
@@ -64,15 +77,12 @@ const Player = () => {
 
   return (
     <Container>
-      <Main>
-        {metadata?.image ? (
-          <PlayerAlbumArt src={metadata?.image} alt={metadata?.album} onClick={handleOpenFile} />
-        ) : (
-          <AlbumImagePlaceholderContainer onClick={handleOpenFile}>
-            <PlayerAlbumArtPlaceholder />
-          </AlbumImagePlaceholderContainer>
-        )}
-      </Main>
+      <ContentContainer>
+        <Sidebar />
+        <Main>
+          <AlbumImage metadata={metadata} onClick={handleOpenFile} />
+        </Main>
+      </ContentContainer>
       <PlayerContainer>
         <ProgressBar progress={progress} max={100} onSeek={handleSeek} />
         <StyledPlayer>
@@ -89,30 +99,5 @@ const Player = () => {
     </Container>
   );
 };
-
-const Container = styled.div`
-  display: flex;
-  flex-direction: column;
-  justify-content: stretch;
-  align-items: stretch;
-`;
-
-const Main = styled.div`
-  background-color: #ffe1e0;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-`;
-
-const PlayerAlbumArt = styled(AlbumImage)`
-  width: 25rem;
-  height: 25rem;
-`;
-
-const PlayerAlbumArtPlaceholder = styled(AlbumImagePlaceholder)`
-  width: 25rem;
-  height: 25rem;
-`;
 
 export default Player;
