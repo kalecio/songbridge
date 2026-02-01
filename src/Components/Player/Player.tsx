@@ -10,6 +10,7 @@ import { Container, ContentContainer, Main, PlayerContainer, StyledPlayer } from
 import { AppContext } from '../../Context/AppContext';
 import Sidebar from '../Sidebar/Sidebar';
 import AlbumImage from '../AlbumImage/AlbumImage';
+import { Route, Routes } from 'react-router';
 
 const Player = () => {
   const context = useContext(AppContext);
@@ -34,16 +35,19 @@ const Player = () => {
   };
 
   const handleOpenFile = async () => {
-    const file =
-      (await open({
-        multiple: true,
-        directory: false,
-        filters: [{ name: 'Audio', extensions: ['mp3', 'wav', 'flac', 'aac', 'ogg'] }],
-      })) ?? '';
+    const files = await open({
+      multiple: true,
+      directory: false,
+      filters: [{ name: 'Audio', extensions: ['mp3', 'wav', 'flac', 'aac', 'ogg'] }],
+    });
 
-    console.log('Selected file:', file);
-    setCurrentPath?.(file[0]);
-    setPlaylist?.([...playlist, ...file]);
+    if (!files) {
+      return;
+    }
+
+    setCurrentPath?.(files[0]);
+    const filteredFiles = files.filter((file) => !playlist.includes(file));
+    setPlaylist?.([...playlist, ...filteredFiles]);
   };
 
   useEffect(() => {
@@ -80,7 +84,17 @@ const Player = () => {
       <ContentContainer>
         <Sidebar />
         <Main>
-          <AlbumImage metadata={metadata} onClick={handleOpenFile} />
+          <Routes>
+            <Route path="/" element={<AlbumImage metadata={metadata} onClick={handleOpenFile} />} />
+            <Route path="/artists" element={<div>Artists View</div>} />
+            <Route path="/artists/:id" element={<div>Artist Detail View</div>} />
+            <Route path="/albums" element={<div>Albums View</div>} />
+            <Route path="/albums/:id" element={<div>Album Detail View</div>} />
+            <Route path="/songs" element={<div>Songs View</div>} />
+            <Route path="/settings" element={<div>Settings View</div>} />
+            <Route path="/playlist/:id" element={<div>Playlist View</div>} />
+            <Route path="/playlist" element={<div>Create Playlist View</div>} />
+          </Routes>
         </Main>
       </ContentContainer>
       <PlayerContainer>

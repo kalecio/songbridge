@@ -1,10 +1,5 @@
 import { MetadataType } from '../../types';
-<<<<<<< HEAD
 import { PlayerAlbumArt, AlbumImagePlaceholderContainer, PlayerAlbumArtPlaceholder } from './styles';
-=======
-import { PlayerAlbumArt, PlayerAlbumArtPlaceholder } from '../Player/styles';
-import { AlbumImagePlaceholderContainer } from '../Song/styles';
->>>>>>> a93b473 (feat: add sidebar and music queue)
 
 const AlbumImage = ({
   metadata,
@@ -22,7 +17,12 @@ const AlbumImage = ({
       {metadata?.image ? (
         <PlayerAlbumArt $height={height} $width={width} src={metadata?.image} alt={metadata?.album} onClick={onClick} />
       ) : (
-        <AlbumImagePlaceholderContainer onClick={onClick} $height={height} $width={width}>
+        <AlbumImagePlaceholderContainer
+          data-testid="album-placeholder-container"
+          onClick={onClick}
+          $height={height}
+          $width={width}
+        >
           <PlayerAlbumArtPlaceholder $height={height} $width={width} />
         </AlbumImagePlaceholderContainer>
       )}
