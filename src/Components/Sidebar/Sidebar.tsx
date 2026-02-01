@@ -4,11 +4,13 @@ import { SidebarContainer, Menu, MenuItem, Title, PlusButtonContainer, PlusIcon,
 import { invoke } from '@tauri-apps/api/core';
 import { MetadataType } from '../../types';
 import AlbumImage from '../AlbumImage/AlbumImage';
+import { useNavigate } from 'react-router';
 
 const Sidebar = () => {
   const [songs, setSongs] = useState<MetadataType[]>([]);
   const context = useContext(AppContext);
   const { showQueue, setShowQueue, setCurrentPath, playlist } = context;
+  const navigate = useNavigate();
 
   useEffect(() => {
     const getSongs = async () => {
@@ -29,12 +31,12 @@ const Sidebar = () => {
         <>
           <Header>Menu</Header>
           <Menu>
-            <MenuItem>Home</MenuItem>
-            <MenuItem>Artists</MenuItem>
-            <MenuItem>Albums</MenuItem>
-            <MenuItem>Songs</MenuItem>
+            <MenuItem onClick={() => navigate('/')}>Home</MenuItem>
+            <MenuItem onClick={() => navigate('/artists')}>Artists</MenuItem>
+            <MenuItem onClick={() => navigate('/albums')}>Albums</MenuItem>
+            <MenuItem onClick={() => navigate('/songs')}>Songs</MenuItem>
           </Menu>
-          <Header onClick={() => console.log('clicked')}>Playlists</Header>
+          <Header onClick={() => navigate('/playlist')}>Playlists</Header>
           <Menu>{songs.length > 0 && <MenuItem onClick={() => setShowQueue?.(true)}>Playing now</MenuItem>}</Menu>
         </>
       )}

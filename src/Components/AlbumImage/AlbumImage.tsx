@@ -1,6 +1,5 @@
 import { MetadataType } from '../../types';
-import { PlayerAlbumArt, PlayerAlbumArtPlaceholder } from '../Player/styles';
-import { AlbumImagePlaceholderContainer } from '../Song/styles';
+import { PlayerAlbumArt, AlbumImagePlaceholderContainer, PlayerAlbumArtPlaceholder } from './styles';
 
 const AlbumImage = ({
   metadata,
