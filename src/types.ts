@@ -11,3 +11,9 @@ export interface MetadataType {
   path?: string;
   duration?: DurationType;
 }
+
+export interface PlaylistType {
+  id: string;
+  name: string;
+  songs: MetadataType[];
+}

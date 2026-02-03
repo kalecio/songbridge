@@ -9,21 +9,22 @@ import { useNavigate } from 'react-router';
 const Sidebar = () => {
   const [songs, setSongs] = useState<MetadataType[]>([]);
   const context = useContext(AppContext);
-  const { showQueue, setShowQueue, setCurrentPath, playlist } = context;
+  const { showQueue, setShowQueue, setCurrentPath, currentPlaylist, playlists } = context;
   const navigate = useNavigate();
 
   useEffect(() => {
     const getSongs = async () => {
       const songsMetadatas = await Promise.all(
-        playlist.map(async (path) => {
+        currentPlaylist.map(async (path) => {
           const metadata = await invoke<MetadataType>('get_metadata', { path });
           return { ...metadata, path };
         }),
       );
+      console.log('Songs metadata in sidebar:', songsMetadatas);
       setSongs(songsMetadatas);
     };
     getSongs();
-  }, [playlist]);
+  }, [currentPlaylist]);
 
   return (
     <SidebarContainer>
@@ -37,7 +38,15 @@ const Sidebar = () => {
             <MenuItem onClick={() => navigate('/songs')}>Songs</MenuItem>
           </Menu>
           <Header onClick={() => navigate('/playlist')}>Playlists</Header>
-          <Menu>{songs.length > 0 && <MenuItem onClick={() => setShowQueue?.(true)}>Playing now</MenuItem>}</Menu>
+          <Menu>
+            {songs.length > 0 && <MenuItem onClick={() => setShowQueue?.(true)}>Playing now</MenuItem>}
+            {playlists &&
+              playlists.map((playlist) => (
+                <MenuItem key={playlist.id} onClick={() => navigate(`/playlist/${playlist.id}`)}>
+                  {playlist.name}
+                </MenuItem>
+              ))}
+          </Menu>
         </>
       )}
       {/* abstrair para componente queue */}
