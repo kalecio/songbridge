@@ -22,14 +22,20 @@ const Player = () => {
     metadata,
     playlists,
     progress,
+<<<<<<< HEAD
     onRepeat,
     onShuffle,
+=======
+>>>>>>> 696e7d1 (refactor: move Player to Pages and create pages)
     setCurrentPath,
     setCurrentPlaylist,
     setProgress,
   } = context;
   const intervalRef = useRef<number | null>(null);
+<<<<<<< HEAD
   const endedRef = useRef(false);
+=======
+>>>>>>> 696e7d1 (refactor: move Player to Pages and create pages)
 
   const handleSeek = async (progressRatio: number) => {
     try {
@@ -68,6 +74,7 @@ const Player = () => {
         try {
           const currentProgress = await invoke<number>('get_progress');
           const durationSeconds = metadata?.duration?.duration_seconds ?? 0;
+<<<<<<< HEAD
 
           // Update progress percentage only when we have a valid duration
           if (durationSeconds > 0) {
@@ -112,6 +119,9 @@ const Player = () => {
               }
             }
           }
+=======
+          setProgress?.((currentProgress / durationSeconds) * 100);
+>>>>>>> 696e7d1 (refactor: move Player to Pages and create pages)
         } catch (error) {
           console.error('Error getting progress:', error);
         }
@@ -125,12 +135,16 @@ const Player = () => {
         intervalRef.current = null;
       }
     };
+<<<<<<< HEAD
   }, [isPlaying, setProgress, currentPlaylist, path, setCurrentPath, metadata, onRepeat, onShuffle]);
 
   // Reset the ended flag when the current path changes so the next track can be advanced again.
   useEffect(() => {
     endedRef.current = false;
   }, [path]);
+=======
+  }, [isPlaying, setProgress]);
+>>>>>>> 696e7d1 (refactor: move Player to Pages and create pages)
 
   return (
     <Container>
