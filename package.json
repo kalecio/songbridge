@@ -18,6 +18,11 @@
     "src/**/*.{ts,tsx,json}": [
       "npm run format",
       "npm run lint:fix"
+    ],
+    "src-tauri/src/**/*.rs": [
+      "cargo fmt --manifest-path src-tauri/Cargo.toml",
+      "cargo check --manifest-path src-tauri/Cargo.toml",
+      "cargo test --manifest-path src-tauri/Cargo.toml"
     ]
   },
   "dependencies": {
