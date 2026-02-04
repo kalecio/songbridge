@@ -9,7 +9,7 @@ import { useNavigate } from 'react-router';
 const Sidebar = () => {
   const [songs, setSongs] = useState<MetadataType[]>([]);
   const context = useContext(AppContext);
-  const { showQueue, setShowQueue, setCurrentPath, currentPlaylist, playlists } = context;
+  const { showQueue, setShowQueue, setCurrentPath, currentPlaylist, playlists, currentPath } = context;
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -56,7 +56,11 @@ const Sidebar = () => {
           <Menu>
             {songs.map((song) => {
               return (
-                <MenuItem key={`${song.title}-${song.artist}`} onClick={() => setCurrentPath?.(song.path)}>
+                <MenuItem
+                  $active={song.path === currentPath}
+                  key={`${song.title}-${song.artist}`}
+                  onClick={() => setCurrentPath?.(song.path)}
+                >
                   <AlbumImage metadata={song} height="2.5rem" width="2.5rem" /> {song.title}
                 </MenuItem>
               );

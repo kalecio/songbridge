@@ -8,6 +8,7 @@ const PlusButtonContainer = styled.div`
 `;
 
 const SidebarContainer = styled.div`
+  overflow-y: auto;
   background-color: #9b7ebd88;
   width: 30%;
   display: flex;
@@ -53,7 +54,7 @@ const Menu = styled.div`
   width: 100%;
 `;
 
-const MenuItem = styled.div`
+const MenuItem = styled.div<{ $active?: boolean }>`
   color: #fff;
   cursor: pointer;
   height: fit-content;
@@ -63,9 +64,13 @@ const MenuItem = styled.div`
   align-items: center;
   justify-content: flex-start;
   gap: 1rem;
+  border-radius: 1rem;
+  padding: 0.5rem;
+
+  background-color: ${(props) => (props.$active ? '#f49bab' : 'unset')};
 
   &:hover {
-    color: #f49bab;
+    color: ${(props) => (props.$active ? '#7f55b1' : '#f49bab')};
   }
 `;
 
