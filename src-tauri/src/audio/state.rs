@@ -1,16 +1,8 @@
-<<<<<<< HEAD
 use super::utils::{calculate_track_duration, format_duration, get_audio_probe};
 use crate::audio::backend::{spawn_audio_thread, AudioCommand};
 use crate::metadata::metadata::AudioDuration;
 use crossbeam_channel::Sender;
 use std::{sync::mpsc, time::Duration};
-=======
-use std::{time::Duration, sync::mpsc};
-use crossbeam_channel::Sender;
-use super::utils::{get_audio_probe, calculate_track_duration, format_duration};
-use crate::audio::backend::{spawn_audio_thread, AudioCommand};
-use crate::metadata::metadata::AudioDuration;
->>>>>>> fcb0617 (refactor: separated metadata concerns from audio)
 
 pub struct AudioState {
     pub path: String,
@@ -32,13 +24,13 @@ impl AudioState {
         }
     }
 
-    pub fn load_song(&mut self, path: &str) {
-        // Update metadata on the main thread and instruct the audio thread to load the file.
-        let probe = get_audio_probe(path);
+    pub fn load_song(&mut self, path: &str) -> Result<(), String> {
+        let probe = get_audio_probe(path)?;
         let track_duration = calculate_track_duration(&probe);
         self.track_duration = AudioDuration::new(track_duration, format_duration(track_duration));
         self.path = path.to_string();
         let _ = self.audio_tx.send(AudioCommand::Load(path.to_string()));
+        Ok(())
     }
 
     pub fn play(&self) {
@@ -65,13 +57,9 @@ impl AudioState {
     pub fn unmute(&mut self) {
         if self.is_muted {
             self.is_muted = false;
-<<<<<<< HEAD
             let _ = self
                 .audio_tx
                 .send(AudioCommand::SetVolume(self.original_volume));
-=======
-            let _ = self.audio_tx.send(AudioCommand::SetVolume(self.original_volume));
->>>>>>> fcb0617 (refactor: separated metadata concerns from audio)
         }
     }
 
@@ -98,7 +86,6 @@ impl AudioState {
         let _ = self.audio_tx.send(AudioCommand::Seek(position));
     }
 }
-<<<<<<< HEAD
 
 #[cfg(test)]
 mod tests {
@@ -226,5 +213,3 @@ mod tests {
         responder.join().unwrap();
     }
 }
-=======
->>>>>>> fcb0617 (refactor: separated metadata concerns from audio)
