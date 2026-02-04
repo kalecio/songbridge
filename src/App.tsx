@@ -67,6 +67,8 @@ function App() {
     { id: '3', name: 'Rock Classics', songs: [] },
   ]);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
+  const [onRepeat, setOnRepeat] = useState<boolean>(false);
+  const [onShuffle, setOnShuffle] = useState<boolean>(false);
   const [progress, setProgress] = useState<number>(0);
   const [metadata, setMetadata] = useState<MetadataType | undefined>(undefined);
   const [showQueue, setShowQueue] = useState<boolean>(false);
@@ -80,11 +82,15 @@ function App() {
         metadata,
         playlists,
         currentPlaylist,
+        onRepeat,
+        onShuffle,
         showQueue,
         setCurrentPath,
         setCurrentPlaylist,
         setPlaylists,
         setIsPlaying,
+        setOnRepeat,
+        setOnShuffle,
         setProgress,
         setMetadata,
         setShowQueue,

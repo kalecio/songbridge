@@ -22,11 +22,14 @@ const Player = () => {
     metadata,
     playlists,
     progress,
+    onRepeat,
+    onShuffle,
     setCurrentPath,
     setCurrentPlaylist,
     setProgress,
   } = context;
   const intervalRef = useRef<number | null>(null);
+  const endedRef = useRef(false);
 
   const handleSeek = async (progressRatio: number) => {
     try {
@@ -65,7 +68,50 @@ const Player = () => {
         try {
           const currentProgress = await invoke<number>('get_progress');
           const durationSeconds = metadata?.duration?.duration_seconds ?? 0;
-          setProgress?.((currentProgress / durationSeconds) * 100);
+
+          // Update progress percentage only when we have a valid duration
+          if (durationSeconds > 0) {
+            setProgress?.((currentProgress / durationSeconds) * 100);
+
+            // If the track reached its end, handle repeat or advance to the next track once
+            if (currentProgress >= durationSeconds && !endedRef.current) {
+              endedRef.current = true;
+              console.log('test', onRepeat);
+
+              // If repeat is enabled, seek back to the start and ensure playback resumes
+              if (onRepeat) {
+                try {
+                  if (path) {
+                    await handleSeek(0);
+                    await invoke('resume');
+                    // Reset ended flag so repeat can trigger again at next end
+                    endedRef.current = false;
+                  }
+                } catch (err) {
+                  console.error('Error while repeating track:', err);
+                }
+
+                // If shuffle is enabled, pick a random next track
+              } else if (onShuffle) {
+                try {
+                  if (currentPlaylist && currentPlaylist.length > 0) {
+                    const randomIndex = Math.floor(Math.random() * currentPlaylist.length);
+                    const randomPath = currentPlaylist[randomIndex];
+                    setCurrentPath?.(randomPath);
+                  }
+                } catch (err) {
+                  console.error('Error while shuffling track:', err);
+                }
+
+                // Otherwise advance to the next track in the playlist
+              } else if (currentPlaylist && currentPlaylist.length > 0) {
+                const currentIndex = currentPlaylist.indexOf(path ?? '');
+                const nextIndex = (currentIndex + 1) % currentPlaylist.length;
+                const nextPath = currentPlaylist[nextIndex];
+                setCurrentPath?.(nextPath);
+              }
+            }
+          }
         } catch (error) {
           console.error('Error getting progress:', error);
         }
@@ -79,7 +125,12 @@ const Player = () => {
         intervalRef.current = null;
       }
     };
-  }, [isPlaying, setProgress]);
+  }, [isPlaying, setProgress, currentPlaylist, path, setCurrentPath, metadata, onRepeat, onShuffle]);
+
+  // Reset the ended flag when the current path changes so the next track can be advanced again.
+  useEffect(() => {
+    endedRef.current = false;
+  }, [path]);
 
   return (
     <Container>
