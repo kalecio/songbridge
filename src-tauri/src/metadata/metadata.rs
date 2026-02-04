@@ -56,3 +56,43 @@ impl AudioMetadata {
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use serde_json::json;
+
+    #[test]
+    fn audio_duration_new_and_default() {
+        let ad = AudioDuration::new(Some(120), Some("02:00".to_string()));
+        assert_eq!(ad.duration_seconds, Some(120));
+        assert_eq!(ad.duration_formatted.as_deref(), Some("02:00"));
+
+        let def = AudioDuration::default();
+        assert!(def.duration_seconds.is_none());
+        assert!(def.duration_formatted.is_none());
+    }
+
+    #[test]
+    fn audio_metadata_new_and_serialize() {
+        let dur = AudioDuration::new(Some(100), Some("01:40".to_string()));
+        let meta = AudioMetadata::new(
+            Some("Title".into()),
+            Some("Artist".into()),
+            Some("Album".into()),
+            Some("2020".into()),
+            dur,
+            Some("path.mp3".into()),
+            Some("imgdata".into()),
+        );
+
+        let s = serde_json::to_value(&meta).expect("serialize");
+        assert_eq!(s["title"], json!("Title"));
+        assert_eq!(s["artist"], json!("Artist"));
+        assert_eq!(s["album"], json!("Album"));
+        assert_eq!(s["year"], json!("2020"));
+        assert_eq!(s["duration"]["duration_seconds"], json!(100));
+        assert_eq!(s["path"], json!("path.mp3"));
+        assert_eq!(s["image"], json!("imgdata"));
+    }
+}

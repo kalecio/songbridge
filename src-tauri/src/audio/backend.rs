@@ -1,8 +1,8 @@
 use std::fs::File;
 use std::io::BufReader;
 use std::sync::mpsc::Sender as StdSender;
-use std::time::Duration;
 use std::thread;
+use std::time::Duration;
 
 use crossbeam_channel::Sender;
 use rodio::{decoder::DecoderBuilder, OutputStreamBuilder, Sink};
@@ -26,7 +26,8 @@ pub fn spawn_audio_thread() -> Sender<AudioCommand> {
     thread::spawn(move || {
         // Keep the stream alive on this thread so any non-`Send` platform
         // resources remain local to the audio thread.
-        let _stream = OutputStreamBuilder::open_default_stream().expect("open default audio stream");
+        let _stream =
+            OutputStreamBuilder::open_default_stream().expect("open default audio stream");
         let sink = Sink::connect_new(&_stream.mixer());
 
         while let Ok(cmd) = rx.recv() {
@@ -64,7 +65,6 @@ pub fn spawn_audio_thread() -> Sender<AudioCommand> {
 
     tx
 }
-
 
 #[cfg(test)]
 mod tests {

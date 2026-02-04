@@ -1,8 +1,8 @@
-use std::{time::Duration, sync::mpsc};
-use crossbeam_channel::Sender;
-use super::utils::{get_audio_probe, calculate_track_duration, format_duration};
+use super::utils::{calculate_track_duration, format_duration, get_audio_probe};
 use crate::audio::backend::{spawn_audio_thread, AudioCommand};
 use crate::metadata::metadata::AudioDuration;
+use crossbeam_channel::Sender;
+use std::{sync::mpsc, time::Duration};
 
 pub struct AudioState {
     pub path: String,
@@ -57,7 +57,9 @@ impl AudioState {
     pub fn unmute(&mut self) {
         if self.is_muted {
             self.is_muted = false;
-            let _ = self.audio_tx.send(AudioCommand::SetVolume(self.original_volume));
+            let _ = self
+                .audio_tx
+                .send(AudioCommand::SetVolume(self.original_volume));
         }
     }
 
@@ -85,130 +87,129 @@ impl AudioState {
     }
 }
 
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crossbeam_channel::unbounded;
+    use std::thread;
+    use std::time::Duration as StdDuration;
 
-    #[cfg(test)]
-    mod tests {
-        use super::*;
-        use crossbeam_channel::unbounded;
-        use std::time::Duration as StdDuration;
-        use std::thread;
+    #[test]
+    fn sends_play_pause_resume_commands() {
+        let (tx, rx) = unbounded::<AudioCommand>();
+        let state = AudioState {
+            path: String::new(),
+            audio_tx: tx,
+            original_volume: 1.0,
+            is_muted: false,
+            track_duration: crate::metadata::metadata::AudioDuration::default(),
+        };
 
-        #[test]
-        fn sends_play_pause_resume_commands() {
-            let (tx, rx) = unbounded::<AudioCommand>();
-            let state = AudioState {
-                path: String::new(),
-                audio_tx: tx,
-                original_volume: 1.0,
-                is_muted: false,
-                track_duration: crate::metadata::metadata::AudioDuration::default(),
-            };
-
-            state.play();
-            match rx.recv_timeout(StdDuration::from_millis(100)).unwrap() {
-                AudioCommand::Play => {}
-                other => panic!("expected Play, got {:?}", other),
-            }
-
-            state.pause();
-            match rx.recv_timeout(StdDuration::from_millis(100)).unwrap() {
-                AudioCommand::Pause => {}
-                other => panic!("expected Pause, got {:?}", other),
-            }
-
-            state.resume();
-            match rx.recv_timeout(StdDuration::from_millis(100)).unwrap() {
-                AudioCommand::Resume => {}
-                other => panic!("expected Resume, got {:?}", other),
-            }
+        state.play();
+        match rx.recv_timeout(StdDuration::from_millis(100)).unwrap() {
+            AudioCommand::Play => {}
+            other => panic!("expected Play, got {:?}", other),
         }
 
-        #[test]
-        fn volume_and_mute_behaviour() {
-            let (tx, rx) = unbounded::<AudioCommand>();
-            let mut state = AudioState {
-                path: String::new(),
-                audio_tx: tx,
-                original_volume: 1.0,
-                is_muted: false,
-                track_duration: crate::metadata::metadata::AudioDuration::default(),
-            };
-
-            state.set_volume(0.6);
-            assert!((state.original_volume - 0.6).abs() < 1e-6);
-            match rx.recv_timeout(StdDuration::from_millis(100)).unwrap() {
-                AudioCommand::SetVolume(v) => assert!((v - 0.6).abs() < 1e-6),
-                other => panic!("expected SetVolume, got {:?}", other),
-            }
-
-            state.mute();
-            assert!(state.is_muted);
-            match rx.recv_timeout(StdDuration::from_millis(100)).unwrap() {
-                AudioCommand::SetVolume(v) => assert!((v - 0.0).abs() < 1e-6),
-                other => panic!("expected SetVolume(0.0), got {:?}", other),
-            }
-
-            state.unmute();
-            assert!(!state.is_muted);
-            match rx.recv_timeout(StdDuration::from_millis(100)).unwrap() {
-                AudioCommand::SetVolume(v) => assert!((v - 0.6).abs() < 1e-6),
-                other => panic!("expected SetVolume(original), got {:?}", other),
-            }
+        state.pause();
+        match rx.recv_timeout(StdDuration::from_millis(100)).unwrap() {
+            AudioCommand::Pause => {}
+            other => panic!("expected Pause, got {:?}", other),
         }
 
-        #[test]
-        fn toggle_mute_toggles_state_and_sends_commands() {
-            let (tx, rx) = unbounded::<AudioCommand>();
-            let mut state = AudioState {
-                path: String::new(),
-                audio_tx: tx,
-                original_volume: 0.8,
-                is_muted: false,
-                track_duration: crate::metadata::metadata::AudioDuration::default(),
-            };
-
-            state.toggle_mute();
-            assert!(state.is_muted);
-            match rx.recv_timeout(StdDuration::from_millis(100)).unwrap() {
-                AudioCommand::SetVolume(v) => assert!((v - 0.0).abs() < 1e-6),
-                other => panic!("expected SetVolume(0.0), got {:?}", other),
-            }
-
-            state.toggle_mute();
-            assert!(!state.is_muted);
-            match rx.recv_timeout(StdDuration::from_millis(100)).unwrap() {
-                AudioCommand::SetVolume(v) => assert!((v - 0.8).abs() < 1e-6),
-                other => panic!("expected SetVolume(original), got {:?}", other),
-            }
-        }
-
-        #[test]
-        fn current_position_requests_and_receives_position() {
-            let (tx, rx) = unbounded::<AudioCommand>();
-            let state = AudioState {
-                path: String::new(),
-                audio_tx: tx.clone(),
-                original_volume: 1.0,
-                is_muted: false,
-                track_duration: crate::metadata::metadata::AudioDuration::default(),
-            };
-
-            // Spawn a small helper thread that will respond to GetPosition requests
-            let responder = thread::spawn(move || {
-                if let Ok(cmd) = rx.recv() {
-                    match cmd {
-                        AudioCommand::GetPosition(resp) => {
-                            let _ = resp.send(StdDuration::from_secs(7));
-                        }
-                        other => panic!("expected GetPosition, got {:?}", other),
-                    }
-                } else {
-                    panic!("did not receive audio command");
-                }
-            });
-
-            let pos = state.current_position();
-            assert_eq!(pos, StdDuration::from_secs(7));
-            responder.join().unwrap();
+        state.resume();
+        match rx.recv_timeout(StdDuration::from_millis(100)).unwrap() {
+            AudioCommand::Resume => {}
+            other => panic!("expected Resume, got {:?}", other),
         }
     }
+
+    #[test]
+    fn volume_and_mute_behaviour() {
+        let (tx, rx) = unbounded::<AudioCommand>();
+        let mut state = AudioState {
+            path: String::new(),
+            audio_tx: tx,
+            original_volume: 1.0,
+            is_muted: false,
+            track_duration: crate::metadata::metadata::AudioDuration::default(),
+        };
+
+        state.set_volume(0.6);
+        assert!((state.original_volume - 0.6).abs() < 1e-6);
+        match rx.recv_timeout(StdDuration::from_millis(100)).unwrap() {
+            AudioCommand::SetVolume(v) => assert!((v - 0.6).abs() < 1e-6),
+            other => panic!("expected SetVolume, got {:?}", other),
+        }
+
+        state.mute();
+        assert!(state.is_muted);
+        match rx.recv_timeout(StdDuration::from_millis(100)).unwrap() {
+            AudioCommand::SetVolume(v) => assert!((v - 0.0).abs() < 1e-6),
+            other => panic!("expected SetVolume(0.0), got {:?}", other),
+        }
+
+        state.unmute();
+        assert!(!state.is_muted);
+        match rx.recv_timeout(StdDuration::from_millis(100)).unwrap() {
+            AudioCommand::SetVolume(v) => assert!((v - 0.6).abs() < 1e-6),
+            other => panic!("expected SetVolume(original), got {:?}", other),
+        }
+    }
+
+    #[test]
+    fn toggle_mute_toggles_state_and_sends_commands() {
+        let (tx, rx) = unbounded::<AudioCommand>();
+        let mut state = AudioState {
+            path: String::new(),
+            audio_tx: tx,
+            original_volume: 0.8,
+            is_muted: false,
+            track_duration: crate::metadata::metadata::AudioDuration::default(),
+        };
+
+        state.toggle_mute();
+        assert!(state.is_muted);
+        match rx.recv_timeout(StdDuration::from_millis(100)).unwrap() {
+            AudioCommand::SetVolume(v) => assert!((v - 0.0).abs() < 1e-6),
+            other => panic!("expected SetVolume(0.0), got {:?}", other),
+        }
+
+        state.toggle_mute();
+        assert!(!state.is_muted);
+        match rx.recv_timeout(StdDuration::from_millis(100)).unwrap() {
+            AudioCommand::SetVolume(v) => assert!((v - 0.8).abs() < 1e-6),
+            other => panic!("expected SetVolume(original), got {:?}", other),
+        }
+    }
+
+    #[test]
+    fn current_position_requests_and_receives_position() {
+        let (tx, rx) = unbounded::<AudioCommand>();
+        let state = AudioState {
+            path: String::new(),
+            audio_tx: tx.clone(),
+            original_volume: 1.0,
+            is_muted: false,
+            track_duration: crate::metadata::metadata::AudioDuration::default(),
+        };
+
+        // Spawn a small helper thread that will respond to GetPosition requests
+        let responder = thread::spawn(move || {
+            if let Ok(cmd) = rx.recv() {
+                match cmd {
+                    AudioCommand::GetPosition(resp) => {
+                        let _ = resp.send(StdDuration::from_secs(7));
+                    }
+                    other => panic!("expected GetPosition, got {:?}", other),
+                }
+            } else {
+                panic!("did not receive audio command");
+            }
+        });
+
+        let pos = state.current_position();
+        assert_eq!(pos, StdDuration::from_secs(7));
+        responder.join().unwrap();
+    }
+}

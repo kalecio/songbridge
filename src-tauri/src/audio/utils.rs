@@ -43,7 +43,6 @@ pub fn format_duration(duration_seconds: Option<u64>) -> Option<String> {
     })
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;

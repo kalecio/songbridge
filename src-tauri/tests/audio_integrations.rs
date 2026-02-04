@@ -1,7 +1,7 @@
 use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
-use songbridge_lib::{get_audio_probe, calculate_track_duration, AudioState};
+use songbridge_lib::{calculate_track_duration, get_audio_probe, AudioState};
 
 #[test]
 fn probe_and_calculate_track_duration_from_sample_file() {
@@ -15,7 +15,6 @@ fn probe_and_calculate_track_duration_from_sample_file() {
     let secs = duration.unwrap();
     assert!(secs > 0, "expected duration in seconds > 0");
 }
-
 
 #[test]
 fn commands_integration_tests() {

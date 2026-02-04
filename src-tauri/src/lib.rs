@@ -8,10 +8,13 @@ mod music_library;
 // Re-export a minimal API for integration tests and external callers.
 pub use audio::utils::{calculate_track_duration, get_audio_probe};
 // Re-export selected audio API for integration tests.
-pub use audio::state::AudioState;
 pub use audio::commands::{
-    load_song, play_song, resume, pause, toggle_mute, set_volume, get_progress, seek,
+    get_progress, load_song, pause, play_song, resume, seek, set_volume, toggle_mute,
 };
+pub use audio::state::AudioState;
+// Re-export metadata utils for integration tests
+pub use metadata::utils::apply_tags_from_revision;
+pub use metadata::utils::{determine_mime_type, extract_album_art_probed};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {

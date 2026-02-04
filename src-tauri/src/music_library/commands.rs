@@ -30,7 +30,7 @@ pub fn get_all_songs() -> Vec<AudioMetadata> {
             AudioDuration::new(Some(180), Some(String::from("3:00"))),
             Some(String::from("/path/to/song3.mp3")),
             None,
-        )
+        ),
     ]
 }
 
