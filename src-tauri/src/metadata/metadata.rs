@@ -24,18 +24,15 @@ impl Default for AudioDuration {
     }
 }
 
-#[derive(Serialize)]
+#[derive(Serialize, Clone)]
 pub struct AudioMetadata {
-    title: Option<String>,
-    artist: Option<String>,
-    album: Option<String>,
-    year: Option<String>,
-    duration: AudioDuration,
-<<<<<<< HEAD
-    path: Option<String>,
-=======
->>>>>>> fcb0617 (refactor: separated metadata concerns from audio)
-    image: Option<String>, // Base64 encoded image data
+    pub title: Option<String>,
+    pub artist: Option<String>,
+    pub album: Option<String>,
+    pub year: Option<String>,
+    pub duration: AudioDuration,
+    pub path: Option<String>,
+    pub image: Option<String>,
 }
 
 impl AudioMetadata {
@@ -45,10 +42,7 @@ impl AudioMetadata {
         album: Option<String>,
         year: Option<String>,
         duration: AudioDuration,
-<<<<<<< HEAD
         path: Option<String>,
-=======
->>>>>>> fcb0617 (refactor: separated metadata concerns from audio)
         image: Option<String>,
     ) -> Self {
         AudioMetadata {
@@ -57,15 +51,11 @@ impl AudioMetadata {
             album,
             year,
             duration,
-<<<<<<< HEAD
             path,
-=======
->>>>>>> fcb0617 (refactor: separated metadata concerns from audio)
             image,
         }
     }
 }
-<<<<<<< HEAD
 
 #[cfg(test)]
 mod tests {
@@ -106,5 +96,3 @@ mod tests {
         assert_eq!(s["image"], json!("imgdata"));
     }
 }
-=======
->>>>>>> fcb0617 (refactor: separated metadata concerns from audio)

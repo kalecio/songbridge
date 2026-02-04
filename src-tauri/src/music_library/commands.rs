@@ -30,7 +30,11 @@ pub fn get_all_songs() -> Vec<AudioMetadata> {
             AudioDuration::new(Some(180), Some(String::from("3:00"))),
             Some(String::from("/path/to/song3.mp3")),
             None,
+<<<<<<< HEAD
         ),
+=======
+        )
+>>>>>>> b5b13c0 (feat: add mocked implementation to music library)
     ]
 }
 
@@ -98,4 +102,8 @@ pub fn get_albuns_by_artist(artist: String) -> Vec<String> {
         "Artist Z" => vec![String::from("Album C")],
         _ => vec![],
     }
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> b5b13c0 (feat: add mocked implementation to music library)

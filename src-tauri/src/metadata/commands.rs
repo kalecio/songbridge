@@ -1,28 +1,14 @@
 use crate::metadata::metadata::{AudioDuration, AudioMetadata};
 
-<<<<<<< HEAD
 use crate::audio::utils::{calculate_track_duration, format_duration, get_audio_probe};
 use crate::metadata::utils::{
     apply_tags_from_revision, extract_album_art, extract_album_art_probed,
 };
-=======
-use crate::audio::utils::{  
-    calculate_track_duration,  
-    format_duration,  
-    get_audio_probe,  
-};
-use crate::metadata::utils::{
-    extract_album_art,  
-    apply_tags_from_revision,  
-    extract_album_art_probed
-};
-
->>>>>>> fcb0617 (refactor: separated metadata concerns from audio)
 
 #[tauri::command]
-pub fn get_metadata(path: &str) -> AudioMetadata {
+pub fn get_metadata(path: &str) -> Result<AudioMetadata, String> {
     println!("Getting metadata for file: {}", path);
-    let mut probe = get_audio_probe(path);
+    let mut probe = get_audio_probe(path)?;
     let total_duration = calculate_track_duration(&probe);
     let formatted_duration = format_duration(total_duration);
     let duration = AudioDuration::new(total_duration, formatted_duration);
@@ -59,8 +45,7 @@ pub fn get_metadata(path: &str) -> AudioMetadata {
         "Title: {:?}, Artist: {:?}, Album: {:?}, Year: {:?}, Duration: {:?}",
         title, artist, album, year, duration
     );
-<<<<<<< HEAD
-    AudioMetadata::new(
+    Ok(AudioMetadata::new(
         title,
         artist,
         album,
@@ -68,10 +53,5 @@ pub fn get_metadata(path: &str) -> AudioMetadata {
         duration,
         Some(path.to_string()),
         image,
-    )
+    ))
 }
-=======
-    AudioMetadata::new(title, artist, album, year, duration, image)
-}
-
->>>>>>> fcb0617 (refactor: separated metadata concerns from audio)
