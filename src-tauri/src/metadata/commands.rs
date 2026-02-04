@@ -52,6 +52,6 @@ pub fn get_metadata(path: &str) -> AudioMetadata {
         "Title: {:?}, Artist: {:?}, Album: {:?}, Year: {:?}, Duration: {:?}",
         title, artist, album, year, duration
     );
-    AudioMetadata::new(title, artist, album, year, duration, image)
+    AudioMetadata::new(title, artist, album, year, duration, Some(path.to_string()), image)
 }
 

@@ -5,6 +5,7 @@ use crate::audio::state::AudioState;
 
 mod audio;
 mod metadata;
+mod music_library;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -23,6 +24,11 @@ pub fn run() {
             audio::commands::seek,
             audio::commands::get_progress,
             metadata::commands::get_metadata,
+            music_library::commands::get_all_songs,
+            music_library::commands::get_all_albums,
+            music_library::commands::get_all_artists,
+            music_library::commands::get_songs_by_albuns,
+            music_library::commands::get_albuns_by_artist,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

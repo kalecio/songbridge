@@ -31,6 +31,7 @@ pub struct AudioMetadata {
     album: Option<String>,
     year: Option<String>,
     duration: AudioDuration,
+    path: Option<String>,
     image: Option<String>, // Base64 encoded image data
 }
 
@@ -41,6 +42,7 @@ impl AudioMetadata {
         album: Option<String>,
         year: Option<String>,
         duration: AudioDuration,
+        path: Option<String>,
         image: Option<String>,
     ) -> Self {
         AudioMetadata {
@@ -49,6 +51,7 @@ impl AudioMetadata {
             album,
             year,
             duration,
+            path,
             image,
         }
     }
