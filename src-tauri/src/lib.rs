@@ -1,12 +1,10 @@
 use std::sync::{Arc, Mutex};
 
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-use crate::audio_state::AudioState;
-mod audio_commands;
-mod audio_metadata;
-mod audio_state;
-mod audio_utils;
-mod audio_backend;
+use crate::audio::state::AudioState;
+
+mod audio;
+mod metadata;
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -16,16 +14,15 @@ pub fn run() {
         .plugin(tauri_plugin_opener::init())
         .manage(audio_state)
         .invoke_handler(tauri::generate_handler![
-            audio_commands::load_song,
-            audio_commands::play_song,
-            audio_commands::pause,
-            audio_commands::resume,
-            audio_commands::toggle_mute,
-            audio_commands::set_volume,
-            audio_commands::seek,
-            audio_commands::get_current_track_duration,
-            audio_commands::get_progress,
-            audio_commands::get_metadata,
+            audio::commands::load_song,
+            audio::commands::play_song,
+            audio::commands::pause,
+            audio::commands::resume,
+            audio::commands::toggle_mute,
+            audio::commands::set_volume,
+            audio::commands::seek,
+            audio::commands::get_progress,
+            metadata::commands::get_metadata,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

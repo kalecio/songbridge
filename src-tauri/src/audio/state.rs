@@ -1,8 +1,8 @@
 use std::{time::Duration, sync::mpsc};
 use crossbeam_channel::Sender;
-use crate::audio_utils::{get_audio_probe, calculate_track_duration, format_duration};
-use crate::audio_backend::{spawn_audio_thread, AudioCommand};
-use crate::audio_metadata::AudioDuration;
+use super::utils::{get_audio_probe, calculate_track_duration, format_duration};
+use crate::audio::backend::{spawn_audio_thread, AudioCommand};
+use crate::metadata::metadata::AudioDuration;
 
 pub struct AudioState {
     pub path: String,
