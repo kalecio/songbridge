@@ -1,9 +1,23 @@
 use crate::metadata::metadata::{AudioDuration, AudioMetadata};
 
+<<<<<<< HEAD
 use crate::audio::utils::{calculate_track_duration, format_duration, get_audio_probe};
 use crate::metadata::utils::{
     apply_tags_from_revision, extract_album_art, extract_album_art_probed,
 };
+=======
+use crate::audio::utils::{  
+    calculate_track_duration,  
+    format_duration,  
+    get_audio_probe,  
+};
+use crate::metadata::utils::{
+    extract_album_art,  
+    apply_tags_from_revision,  
+    extract_album_art_probed
+};
+
+>>>>>>> fcb0617 (refactor: separated metadata concerns from audio)
 
 #[tauri::command]
 pub fn get_metadata(path: &str) -> AudioMetadata {
@@ -45,6 +59,7 @@ pub fn get_metadata(path: &str) -> AudioMetadata {
         "Title: {:?}, Artist: {:?}, Album: {:?}, Year: {:?}, Duration: {:?}",
         title, artist, album, year, duration
     );
+<<<<<<< HEAD
     AudioMetadata::new(
         title,
         artist,
@@ -55,3 +70,8 @@ pub fn get_metadata(path: &str) -> AudioMetadata {
         image,
     )
 }
+=======
+    AudioMetadata::new(title, artist, album, year, duration, image)
+}
+
+>>>>>>> fcb0617 (refactor: separated metadata concerns from audio)

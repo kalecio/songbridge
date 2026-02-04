@@ -31,7 +31,10 @@ pub struct AudioMetadata {
     album: Option<String>,
     year: Option<String>,
     duration: AudioDuration,
+<<<<<<< HEAD
     path: Option<String>,
+=======
+>>>>>>> fcb0617 (refactor: separated metadata concerns from audio)
     image: Option<String>, // Base64 encoded image data
 }
 
@@ -42,7 +45,10 @@ impl AudioMetadata {
         album: Option<String>,
         year: Option<String>,
         duration: AudioDuration,
+<<<<<<< HEAD
         path: Option<String>,
+=======
+>>>>>>> fcb0617 (refactor: separated metadata concerns from audio)
         image: Option<String>,
     ) -> Self {
         AudioMetadata {
@@ -51,11 +57,15 @@ impl AudioMetadata {
             album,
             year,
             duration,
+<<<<<<< HEAD
             path,
+=======
+>>>>>>> fcb0617 (refactor: separated metadata concerns from audio)
             image,
         }
     }
 }
+<<<<<<< HEAD
 
 #[cfg(test)]
 mod tests {
@@ -96,3 +106,5 @@ mod tests {
         assert_eq!(s["image"], json!("imgdata"));
     }
 }
+=======
+>>>>>>> fcb0617 (refactor: separated metadata concerns from audio)
