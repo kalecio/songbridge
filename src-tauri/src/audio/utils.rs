@@ -42,3 +42,26 @@ pub fn format_duration(duration_seconds: Option<u64>) -> Option<String> {
         }
     })
 }
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn format_duration_none() {
+        assert_eq!(format_duration(None), None);
+    }
+
+    #[test]
+    fn format_duration_mm_ss() {
+        assert_eq!(format_duration(Some(65)), Some("01:05".to_string()));
+    }
+
+    #[test]
+    fn format_duration_hh_mm_ss() {
+        assert_eq!(format_duration(Some(3665)), Some("01:01:05".to_string()));
+    }
+
+    // Note: heavier I/O tests moved to integration tests under `tests/`.
+}

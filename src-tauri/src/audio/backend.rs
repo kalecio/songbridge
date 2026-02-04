@@ -8,6 +8,7 @@ use crossbeam_channel::Sender;
 use rodio::{decoder::DecoderBuilder, OutputStreamBuilder, Sink};
 
 /// Commands that can be sent to the audio backend thread.
+#[derive(Debug)]
 pub enum AudioCommand {
     Load(String),
     Play,
@@ -62,4 +63,62 @@ pub fn spawn_audio_thread() -> Sender<AudioCommand> {
     });
 
     tx
+}
+
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::sync::mpsc::channel;
+    use std::time::Duration;
+
+    #[test]
+    fn audio_command_variants_and_debug() {
+        // Load variant
+        let load = AudioCommand::Load("file.mp3".to_string());
+        if let AudioCommand::Load(p) = load {
+            assert_eq!(p, "file.mp3");
+        } else {
+            panic!("expected Load variant");
+        }
+
+        // Play/Pause/Resume
+        match AudioCommand::Play {
+            AudioCommand::Play => {}
+            _ => panic!("expected Play"),
+        }
+
+        match AudioCommand::Pause {
+            AudioCommand::Pause => {}
+            _ => panic!("expected Pause"),
+        }
+
+        match AudioCommand::Resume {
+            AudioCommand::Resume => {}
+            _ => panic!("expected Resume"),
+        }
+
+        // SetVolume
+        match AudioCommand::SetVolume(0.5) {
+            AudioCommand::SetVolume(v) => assert!((v - 0.5).abs() < f32::EPSILON),
+            _ => panic!("expected SetVolume"),
+        }
+
+        // Seek
+        match AudioCommand::Seek(Duration::from_secs(3)) {
+            AudioCommand::Seek(d) => assert_eq!(d, Duration::from_secs(3)),
+            _ => panic!("expected Seek"),
+        }
+
+        // GetPosition contains a StdSender -- just ensure we can construct it
+        let (tx, _rx) = channel::<Duration>();
+        match AudioCommand::GetPosition(tx) {
+            AudioCommand::GetPosition(_) => {}
+            _ => panic!("expected GetPosition"),
+        }
+
+        // Debug formatting shouldn't panic
+        let s = format!("{:?}", AudioCommand::Pause);
+        assert!(s.contains("Pause"));
+    }
 }

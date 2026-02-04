@@ -1,11 +1,17 @@
 use std::sync::{Arc, Mutex};
 
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
-use crate::audio::state::AudioState;
-
 mod audio;
 mod metadata;
 mod music_library;
+
+// Re-export a minimal API for integration tests and external callers.
+pub use audio::utils::{calculate_track_duration, get_audio_probe};
+// Re-export selected audio API for integration tests.
+pub use audio::state::AudioState;
+pub use audio::commands::{
+    load_song, play_song, resume, pause, toggle_mute, set_volume, get_progress, seek,
+};
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
