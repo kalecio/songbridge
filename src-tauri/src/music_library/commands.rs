@@ -1,109 +1,161 @@
-use crate::metadata::metadata::{AudioDuration, AudioMetadata};
+use crate::metadata::commands::get_metadata;
+use crate::metadata::metadata::AudioMetadata;
+use crate::music_library::state::LibraryState;
+use std::sync::{Arc, Mutex};
+use tauri::State;
+use walkdir::WalkDir;
 
-#[tauri::command]
-pub fn get_all_songs() -> Vec<AudioMetadata> {
-    // Placeholder implementation
-    vec![
-        AudioMetadata::new(
-            Some(String::from("Song 1")),
-            Some(String::from("Artist X")),
-            Some(String::from("Album A")),
-            Some(String::from("2020")),
-            AudioDuration::new(Some(240), Some(String::from("4:00"))),
-            Some(String::from("/path/to/song1.mp3")),
-            None,
-        ),
-        AudioMetadata::new(
-            Some(String::from("Song 2")),
-            Some(String::from("Artist Y")),
-            Some(String::from("Album A")),
-            Some(String::from("2020")),
-            AudioDuration::new(Some(240), Some(String::from("4:00"))),
-            Some(String::from("/path/to/song2.mp3")),
-            None,
-        ),
-        AudioMetadata::new(
-            Some(String::from("Song 3")),
-            Some(String::from("Artist Z")),
-            Some(String::from("Album B")),
-            Some(String::from("2021")),
-            AudioDuration::new(Some(180), Some(String::from("3:00"))),
-            Some(String::from("/path/to/song3.mp3")),
-            None,
-<<<<<<< HEAD
-        ),
-=======
-        )
->>>>>>> b5b13c0 (feat: add mocked implementation to music library)
-    ]
+const AUDIO_EXTENSIONS: &[&str] = &[
+    "mp3", "flac", "ogg", "wav", "aiff", "aif", "m4a", "aac", "opus",
+];
+
+fn default_music_dir() -> Option<std::path::PathBuf> {
+    dirs::audio_dir()
+}
+
+pub(crate) fn build_scan_dirs(
+    custom: Vec<String>,
+    default_dir: Option<std::path::PathBuf>,
+) -> Vec<std::path::PathBuf> {
+    let mut dirs: Vec<std::path::PathBuf> =
+        custom.into_iter().map(std::path::PathBuf::from).collect();
+    if let Some(default) = default_dir {
+        if !dirs.contains(&default) {
+            dirs.push(default);
+        }
+    }
+    dirs
 }
 
 #[tauri::command]
-pub fn get_all_albums() -> Vec<String> {
-    // Placeholder implementation
-    vec![
-        String::from("Album A"),
-        String::from("Album B"),
-        String::from("Album C"),
-    ]
+pub fn scan_music_library(
+    paths: Vec<String>,
+    library: State<Arc<Mutex<LibraryState>>>,
+) -> Result<Vec<AudioMetadata>, String> {
+    let dirs = build_scan_dirs(paths, default_music_dir());
+
+    let songs: Vec<AudioMetadata> = dirs
+        .iter()
+        .flat_map(|dir| {
+            WalkDir::new(dir)
+                .follow_links(true)
+                .into_iter()
+                .filter_map(|e| e.ok())
+                .filter(|e| e.file_type().is_file())
+                .filter(|e| {
+                    e.path()
+                        .extension()
+                        .and_then(|ext| ext.to_str())
+                        .map(|ext| AUDIO_EXTENSIONS.contains(&ext.to_lowercase().as_str()))
+                        .unwrap_or(false)
+                })
+                .filter_map(|e| e.path().to_str().and_then(|p| get_metadata(p).ok()))
+                .collect::<Vec<_>>()
+        })
+        .collect();
+
+    let mut locked = library.lock().map_err(|e| e.to_string())?;
+    locked.songs = songs.clone();
+
+    Ok(songs)
 }
 
 #[tauri::command]
-pub fn get_all_artists() -> Vec<String> {
-    // Placeholder implementation
-    vec![
-        String::from("Artist X"),
-        String::from("Artist Y"),
-        String::from("Artist Z"),
-    ]
+pub fn get_all_songs(library: State<Arc<Mutex<LibraryState>>>) -> Vec<AudioMetadata> {
+    library.lock().map(|l| l.songs.clone()).unwrap_or_default()
 }
 
 #[tauri::command]
-pub fn get_songs_by_albuns(artist: String) -> Vec<AudioMetadata> {
-    // Placeholder implementation
-    match artist.as_str() {
-        "Artist X" => vec![AudioMetadata::new(
-            Some(String::from("Song 1")),
-            Some(String::from("Artist X")),
-            Some(String::from("Album A")),
-            Some(String::from("2020")),
-            AudioDuration::new(Some(240), Some(String::from("4:00"))),
-            Some(String::from("/path/to/song1.mp3")),
+pub fn get_songs_by_album(
+    album: String,
+    library: State<Arc<Mutex<LibraryState>>>,
+) -> Vec<AudioMetadata> {
+    library
+        .lock()
+        .map(|l| {
+            l.songs
+                .iter()
+                .filter(|s| s.album.as_deref() == Some(album.as_str()))
+                .cloned()
+                .collect()
+        })
+        .unwrap_or_default()
+}
+
+#[tauri::command]
+pub fn get_songs_by_artist(
+    artist: String,
+    library: State<Arc<Mutex<LibraryState>>>,
+) -> Vec<AudioMetadata> {
+    library
+        .lock()
+        .map(|l| {
+            l.songs
+                .iter()
+                .filter(|s| s.artist.as_deref() == Some(artist.as_str()))
+                .cloned()
+                .collect()
+        })
+        .unwrap_or_default()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::path::PathBuf;
+
+    #[test]
+    fn empty_custom_paths_with_default_returns_only_default() {
+        let dirs = build_scan_dirs(vec![], Some(PathBuf::from("/default")));
+        assert_eq!(dirs, vec![PathBuf::from("/default")]);
+    }
+
+    #[test]
+    fn custom_paths_and_default_are_both_included() {
+        let dirs = build_scan_dirs(
+            vec!["/custom/music".to_string()],
+            Some(PathBuf::from("/default")),
+        );
+        assert_eq!(dirs.len(), 2);
+        assert!(dirs.contains(&PathBuf::from("/custom/music")));
+        assert!(dirs.contains(&PathBuf::from("/default")));
+    }
+
+    #[test]
+    fn default_is_not_duplicated_when_already_in_custom_paths() {
+        let dirs = build_scan_dirs(
+            vec!["/default".to_string()],
+            Some(PathBuf::from("/default")),
+        );
+        assert_eq!(dirs.len(), 1);
+        assert_eq!(dirs[0], PathBuf::from("/default"));
+    }
+
+    #[test]
+    fn no_default_available_with_empty_custom_paths_gives_empty_list() {
+        let dirs = build_scan_dirs(vec![], None);
+        assert!(dirs.is_empty());
+    }
+
+    #[test]
+    fn no_default_available_still_returns_custom_paths() {
+        let dirs = build_scan_dirs(vec!["/custom/a".to_string(), "/custom/b".to_string()], None);
+        assert_eq!(dirs.len(), 2);
+    }
+
+    #[test]
+    fn multiple_custom_paths_preserve_order() {
+        let dirs = build_scan_dirs(
+            vec!["/c".to_string(), "/a".to_string(), "/b".to_string()],
             None,
-        )],
-        "Artist Y" => vec![AudioMetadata::new(
-            Some(String::from("Song 2")),
-            Some(String::from("Artist Y")),
-            Some(String::from("Album B")),
-            Some(String::from("2021")),
-            AudioDuration::new(Some(180), Some(String::from("3:00"))),
-            Some(String::from("/path/to/song2.mp3")),
-            None,
-        )],
-        "Artist Z" => vec![AudioMetadata::new(
-            Some(String::from("Song 3")),
-            Some(String::from("Artist Z")),
-            Some(String::from("Album C")),
-            Some(String::from("2022")),
-            AudioDuration::new(Some(300), Some(String::from("5:00"))),
-            Some(String::from("/path/to/song3.mp3")),
-            None,
-        )],
-        _ => vec![],
+        );
+        assert_eq!(
+            dirs,
+            vec![
+                PathBuf::from("/c"),
+                PathBuf::from("/a"),
+                PathBuf::from("/b")
+            ]
+        );
     }
 }
-
-#[tauri::command]
-pub fn get_albuns_by_artist(artist: String) -> Vec<String> {
-    // Placeholder implementation
-    match artist.as_str() {
-        "Artist X" => vec![String::from("Album A")],
-        "Artist Y" => vec![String::from("Album B")],
-        "Artist Z" => vec![String::from("Album C")],
-        _ => vec![],
-    }
-<<<<<<< HEAD
-}
-=======
-}
->>>>>>> b5b13c0 (feat: add mocked implementation to music library)

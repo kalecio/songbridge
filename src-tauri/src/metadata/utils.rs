@@ -14,13 +14,9 @@ pub fn apply_tags_from_revision(
             Some(StandardTagKey::TrackTitle) if title.is_none() => {
                 *title = Some(tag.value.to_string())
             }
-<<<<<<< HEAD
             Some(StandardTagKey::Artist) if artist.is_none() => {
                 *artist = Some(tag.value.to_string())
             }
-=======
-            Some(StandardTagKey::Artist) if artist.is_none() => *artist = Some(tag.value.to_string()),
->>>>>>> fcb0617 (refactor: separated metadata concerns from audio)
             Some(StandardTagKey::Album) if album.is_none() => *album = Some(tag.value.to_string()),
             Some(StandardTagKey::Date) if year.is_none() => *year = Some(tag.value.to_string()),
             _ => {}
@@ -29,13 +25,9 @@ pub fn apply_tags_from_revision(
 }
 
 /// Extracts album art from the metadata and returns it as a base64-encoded string.
-<<<<<<< HEAD
 pub fn extract_album_art(
     format: &mut dyn symphonia::core::formats::FormatReader,
 ) -> Option<String> {
-=======
-pub fn extract_album_art(format: &mut dyn symphonia::core::formats::FormatReader) -> Option<String> {
->>>>>>> fcb0617 (refactor: separated metadata concerns from audio)
     // Access metadata - get visuals from latest revision
     let mut meta = format.metadata();
     let revision_opt = if let Some(cur) = meta.current() {
@@ -85,8 +77,4 @@ pub fn determine_mime_type(data: &[u8]) -> String {
         "image/jpeg"
     }
     .to_string()
-<<<<<<< HEAD
 }
-=======
-}
->>>>>>> fcb0617 (refactor: separated metadata concerns from audio)
