@@ -31,16 +31,6 @@ const Player = () => {
     loadSong();
   }, [path]);
 
-  useEffect(() => {
-    if (!path) {
-      return;
-    }
-    const loadSong = async () => {
-      await playNewSong();
-    };
-    loadSong();
-  }, [path]);
-
   const playNewSong = async () => {
     try {
       // Get metadata for the song first to get duration
@@ -105,18 +95,15 @@ const Player = () => {
 
   return (
     <Controls>
-      <Shuffle $onShuffle={onShuffle} onClick={() => setOnShuffle?.(!onShuffle)} />
-      <Prev onClick={handlePreviousSong} />
-      {isPlaying ? <Pause onClick={pause} /> : <Play onClick={isSongLoaded ? resume : playNewSong} />}
-      <Next onClick={handleNextSong} />
-      <Repeat
-        $onRepeat={onRepeat}
-        onClick={() => {
-          console.log('repeat clicked 1', onRepeat);
-          setOnRepeat?.(!onRepeat);
-          console.log('repeat clicked 2', onRepeat);
-        }}
-      />
+      <Shuffle aria-label="shuffle" $onShuffle={onShuffle} onClick={() => setOnShuffle?.(!onShuffle)} />
+      <Prev aria-label="previous" onClick={handlePreviousSong} />
+      {isPlaying ? (
+        <Pause aria-label="pause" onClick={pause} />
+      ) : (
+        <Play aria-label="play" onClick={isSongLoaded ? resume : playNewSong} />
+      )}
+      <Next aria-label="next" onClick={handleNextSong} />
+      <Repeat aria-label="repeat" $onRepeat={onRepeat} onClick={() => setOnRepeat?.(!onRepeat)} />
     </Controls>
   );
 };

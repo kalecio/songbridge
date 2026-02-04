@@ -1,4 +1,6 @@
 import { useContext, useEffect, useRef } from 'react';
+import { useNavigate, Route, Routes } from 'react-router';
+import { FaGear } from 'react-icons/fa6';
 import Controls from '../../Components/Controls/Controls';
 import ProgressBar from '../../Components/ProgressBar/ProgressBar';
 import Song from '../../Components/Song/Song';
@@ -6,14 +8,20 @@ import Volume from '../../Components/Volume/Volume';
 import { invoke } from '@tauri-apps/api/core';
 import { open } from '@tauri-apps/plugin-dialog';
 
-import { Container, ContentContainer, Main, PlayerContainer, StyledPlayer } from './styles';
+import { Container, ContentContainer, HomeCenter, Main, PlayerContainer, SettingsButton, StyledPlayer } from './styles';
 import { AppContext } from '../../Context/AppContext';
 import Sidebar from '../../Components/Sidebar/Sidebar';
 import AlbumImage from '../../Components/AlbumImage/AlbumImage';
-import { Route, Routes } from 'react-router';
-import Playlist from '../../Components/Playlist/Playlist';
+import PlaylistRoute from '../../Components/Playlist/PlaylistRoute';
+import Songs from '../Songs/List';
+import Albums from '../Albuns/List';
+import AlbumDetail from '../Albuns/Detail';
+import Artists from '../Artists/List';
+import ArtistDetail from '../Artists/Detail';
+import Settings from '../Settings/Settings';
 
 const Player = () => {
+  const navigate = useNavigate();
   const context = useContext(AppContext);
   const {
     currentPath: path,
@@ -22,20 +30,14 @@ const Player = () => {
     metadata,
     playlists,
     progress,
-<<<<<<< HEAD
     onRepeat,
     onShuffle,
-=======
->>>>>>> 696e7d1 (refactor: move Player to Pages and create pages)
     setCurrentPath,
     setCurrentPlaylist,
     setProgress,
   } = context;
   const intervalRef = useRef<number | null>(null);
-<<<<<<< HEAD
   const endedRef = useRef(false);
-=======
->>>>>>> 696e7d1 (refactor: move Player to Pages and create pages)
 
   const handleSeek = async (progressRatio: number) => {
     try {
@@ -74,7 +76,6 @@ const Player = () => {
         try {
           const currentProgress = await invoke<number>('get_progress');
           const durationSeconds = metadata?.duration?.duration_seconds ?? 0;
-<<<<<<< HEAD
 
           // Update progress percentage only when we have a valid duration
           if (durationSeconds > 0) {
@@ -83,7 +84,6 @@ const Player = () => {
             // If the track reached its end, handle repeat or advance to the next track once
             if (currentProgress >= durationSeconds && !endedRef.current) {
               endedRef.current = true;
-              console.log('test', onRepeat);
 
               // If repeat is enabled, seek back to the start and ensure playback resumes
               if (onRepeat) {
@@ -119,9 +119,6 @@ const Player = () => {
               }
             }
           }
-=======
-          setProgress?.((currentProgress / durationSeconds) * 100);
->>>>>>> 696e7d1 (refactor: move Player to Pages and create pages)
         } catch (error) {
           console.error('Error getting progress:', error);
         }
@@ -135,31 +132,37 @@ const Player = () => {
         intervalRef.current = null;
       }
     };
-<<<<<<< HEAD
-  }, [isPlaying, setProgress, currentPlaylist, path, setCurrentPath, metadata, onRepeat, onShuffle]);
+  }, [isPlaying, setProgress, currentPlaylist, path, setCurrentPath, metadata, onRepeat, onShuffle, handleSeek]);
 
   // Reset the ended flag when the current path changes so the next track can be advanced again.
   useEffect(() => {
     endedRef.current = false;
   }, [path]);
-=======
-  }, [isPlaying, setProgress]);
->>>>>>> 696e7d1 (refactor: move Player to Pages and create pages)
 
   return (
     <Container>
       <ContentContainer>
         <Sidebar />
+        <SettingsButton aria-label="Settings" onClick={() => navigate('/settings')}>
+          <FaGear />
+        </SettingsButton>
         <Main>
           <Routes>
-            <Route path="/" element={<AlbumImage metadata={metadata} onClick={handleOpenFile} />} />
-            <Route path="/artists" element={<div>Artists View</div>} />
-            <Route path="/artists/:id" element={<div>Artist Detail View</div>} />
-            <Route path="/albums" element={<div>Albums View</div>} />
-            <Route path="/albums/:id" element={<div>Album Detail View</div>} />
-            <Route path="/songs" element={<div>Songs View</div>} />
-            <Route path="/settings" element={<div>Settings View</div>} />
-            <Route path="/playlist/:id" element={<Playlist playlists={playlists} />} />
+            <Route
+              path="/"
+              element={
+                <HomeCenter>
+                  <AlbumImage metadata={metadata} onClick={handleOpenFile} />
+                </HomeCenter>
+              }
+            />
+            <Route path="/artists" element={<Artists />} />
+            <Route path="/artists/:id" element={<ArtistDetail />} />
+            <Route path="/albums" element={<Albums />} />
+            <Route path="/albums/:id" element={<AlbumDetail />} />
+            <Route path="/songs" element={<Songs />} />
+            <Route path="/settings" element={<Settings />} />
+            <Route path="/playlist/:id" element={<PlaylistRoute playlists={playlists} />} />
             <Route path="/playlist" element={<div>Create Playlist View</div>} />
           </Routes>
         </Main>
