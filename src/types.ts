@@ -8,5 +8,12 @@ export interface MetadataType {
   title?: string;
   year?: string;
   image?: string;
+  path?: string;
   duration?: DurationType;
+}
+
+export interface PlaylistType {
+  id: string;
+  name: string;
+  songs: MetadataType[];
 }

@@ -1,18 +1,31 @@
 import { createContext } from 'react';
-import { MetadataType } from '../types';
+import { MetadataType, PlaylistType } from '../types';
 
 interface AppContext {
   currentPath?: string;
-  isPlaying?: boolean;
-  progress: number;
+  currentPlaylist: string[];
+  isPlaying: boolean;
   metadata?: MetadataType;
+  onRepeat: boolean;
+  onShuffle: boolean;
+  playlists?: PlaylistType[];
+  progress: number;
+  showQueue?: boolean;
   setCurrentPath?: (_path?: string) => void;
+  setCurrentPlaylist?: (_playlist: string[]) => void;
+  setPlaylists?: (_playlists: PlaylistType[]) => void;
   setIsPlaying?: (_playing: boolean) => void;
   setProgress?: (_progress: number) => void;
   setMetadata?: (_metadata?: MetadataType) => void;
+  setOnRepeat?: (_onRepeat: boolean) => void;
+  setOnShuffle?: (_onShuffle: boolean) => void;
+  setShowQueue?: (_showQueue: boolean) => void;
 }
 
 export const AppContext = createContext<AppContext>({
+  onRepeat: false,
+  onShuffle: false,
   isPlaying: false,
   progress: 0,
+  currentPlaylist: [],
 });

@@ -17,6 +17,12 @@ const AlbumImagePlaceholder = styled(AlbumPlaceholder)`
   object-fit: cover;
 `;
 
+const AlbumImagePlaceholderContainer = styled.div<{ $width?: string; $height?: string }>`
+  width: ${(props) => props.$width || '25rem'};
+  height: ${(props) => props.$height || '25rem'};
+  cursor: pointer;
+`;
+
 const AlbumImage = styled.img`
   width: 60px;
   height: 60px;
@@ -25,7 +31,6 @@ const AlbumImage = styled.img`
 
 const MusicInfo = styled.div`
   padding: 15px 0px;
-  width: 30%;
   display: flex;
   flex-direction: column;
   color: #f5f2f2;
@@ -46,4 +51,12 @@ const ArtistName = styled.span`
   align-items: center;
 `;
 
-export { SongContainer, AlbumImage, AlbumImagePlaceholder, MusicInfo, MusicName, ArtistName };
+export {
+  SongContainer,
+  AlbumImage,
+  AlbumImagePlaceholder,
+  MusicInfo,
+  MusicName,
+  ArtistName,
+  AlbumImagePlaceholderContainer,
+};
