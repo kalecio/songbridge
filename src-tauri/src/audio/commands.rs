@@ -4,11 +4,12 @@ use std::time::Duration;
 use crate::audio::state::AudioState;
 
 #[tauri::command]
-pub fn load_song(state: tauri::State<Arc<Mutex<AudioState>>>, path: String) {
+pub fn load_song(state: tauri::State<Arc<Mutex<AudioState>>>, path: String) -> Result<(), String> {
     println!("Loading song: {}", path);
     if let Ok(mut audio) = state.lock() {
-        audio.load_song(&path);
+        audio.load_song(&path)?;
     }
+    Ok(())
 }
 
 #[tauri::command]

@@ -32,7 +32,7 @@ fn determine_mime_type_webp() {
 #[test]
 fn extract_album_art_probed_from_sample_file() {
     let path = "music-files/Polygondwanaland.mp3";
-    let probe = get_audio_probe(path);
+    let probe = get_audio_probe(path).expect("should open sample file");
     let mut pm = probe.metadata;
     let _ = extract_album_art_probed(&mut pm);
 }
@@ -40,7 +40,7 @@ fn extract_album_art_probed_from_sample_file() {
 #[test]
 fn apply_tags_does_not_overwrite_existing_values() {
     let path = "music-files/Polygondwanaland.mp3";
-    let mut probe = get_audio_probe(path);
+    let mut probe = get_audio_probe(path).expect("should open sample file");
 
     // Get latest revision if any
     if let Some(mut meta) = probe.metadata.get() {
@@ -66,7 +66,7 @@ fn apply_tags_does_not_overwrite_existing_values() {
 #[test]
 fn apply_tags_handles_none_inputs_without_panicking() {
     let path = "music-files/Polygondwanaland.mp3";
-    let mut probe = get_audio_probe(path);
+    let mut probe = get_audio_probe(path).expect("should open sample file");
 
     if let Some(mut meta) = probe.metadata.get() {
         if let Some(revision) = meta.skip_to_latest() {
