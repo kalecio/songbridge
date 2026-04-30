@@ -2,13 +2,31 @@
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import svgr from 'vite-plugin-svgr';
+import { fileURLToPath } from 'url';
 
 // @ts-expect-error process is a nodejs global
 const host = process.env.TAURI_DEV_HOST;
 
 // https://vitejs.dev/config/
 export default defineConfig(async () => ({
-  plugins: [react(), svgr({ include: '**/*.svg' })],
+  plugins: [
+    react(),
+    // In test mode, intercept SVG imports before vite-plugin-svgr
+    // so components render a testable mock instead of requiring the SVGR transform.
+    ...(process.env.VITEST
+      ? [
+          {
+            name: 'svg-test-mock',
+            enforce: 'pre' as const,
+            load(id: string) {
+              if (id.endsWith('.svg')) {
+                return 'import React from "react"; export default () => React.createElement("svg", { "data-testid": "svg-mock" });';
+              }
+            },
+          },
+        ]
+      : [svgr({ include: '**/*.svg' })]),
+  ],
 
   // Vite options tailored for Tauri development and only applied in `tauri dev` or `tauri build`
   //
