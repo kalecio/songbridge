@@ -5,16 +5,19 @@ use crate::audio::state::AudioState;
 
 #[tauri::command]
 pub fn load_song(state: tauri::State<Arc<Mutex<AudioState>>>, path: String) -> Result<(), String> {
-    println!("Loading song: {}", path);
+    log::info!("Loading song: {}", path);
     if let Ok(mut audio) = state.lock() {
-        audio.load_song(&path)?;
+        audio.load_song(&path).map_err(|e| {
+            log::error!("Failed to load song '{}': {}", path, e);
+            e
+        })?;
     }
     Ok(())
 }
 
 #[tauri::command]
 pub fn play_song(state: tauri::State<Arc<Mutex<AudioState>>>) {
-    println!("Playing audio...");
+    log::info!("Playing audio");
     if let Ok(audio) = state.lock() {
         audio.play();
     }
@@ -22,7 +25,7 @@ pub fn play_song(state: tauri::State<Arc<Mutex<AudioState>>>) {
 
 #[tauri::command]
 pub fn resume(state: tauri::State<Arc<Mutex<AudioState>>>) {
-    println!("Resuming audio...");
+    log::info!("Resuming audio");
     if let Ok(audio) = state.lock() {
         audio.resume();
     }
@@ -30,7 +33,7 @@ pub fn resume(state: tauri::State<Arc<Mutex<AudioState>>>) {
 
 #[tauri::command]
 pub fn pause(state: tauri::State<Arc<Mutex<AudioState>>>) {
-    println!("Pausing audio...");
+    log::info!("Pausing audio");
     if let Ok(audio) = state.lock() {
         audio.pause();
     }
@@ -38,7 +41,7 @@ pub fn pause(state: tauri::State<Arc<Mutex<AudioState>>>) {
 
 #[tauri::command]
 pub fn toggle_mute(state: tauri::State<Arc<Mutex<AudioState>>>) {
-    println!("Toggling mute...");
+    log::info!("Toggling mute");
     if let Ok(mut audio) = state.lock() {
         audio.toggle_mute();
     }
@@ -46,7 +49,7 @@ pub fn toggle_mute(state: tauri::State<Arc<Mutex<AudioState>>>) {
 
 #[tauri::command]
 pub fn set_volume(state: tauri::State<Arc<Mutex<AudioState>>>, volume: f32) {
-    println!("Setting volume to: {}", volume);
+    log::info!("Setting volume to {:.2}", volume);
     if let Ok(mut audio) = state.lock() {
         audio.set_volume(volume);
     }
@@ -63,7 +66,7 @@ pub fn get_progress(state: tauri::State<Arc<Mutex<AudioState>>>) -> u64 {
 
 #[tauri::command]
 pub fn seek(state: tauri::State<Arc<Mutex<AudioState>>>, percent: f32, path: String) {
-    println!("Seeking to {}% in file: {}", percent * 100.0, path);
+    log::info!("Seeking to {:.1}% in '{}'", percent * 100.0, path);
     if let Ok(mut audio) = state.lock() {
         let track_duration = &audio.track_duration;
         if let Some(duration) = track_duration.duration_seconds {

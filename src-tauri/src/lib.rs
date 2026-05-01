@@ -1,6 +1,7 @@
 use music_library::state::LibraryState;
 use std::sync::{Arc, Mutex};
 use tauri::Manager;
+use tauri_plugin_log::{Target, TargetKind};
 
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 mod audio;
@@ -24,6 +25,19 @@ pub fn run() {
     let audio_state = Arc::new(Mutex::new(AudioState::new()));
     let library_state = Arc::new(Mutex::new(LibraryState::new()));
     tauri::Builder::default()
+        .plugin(
+            tauri_plugin_log::Builder::new()
+                .targets([
+                    Target::new(TargetKind::LogDir {
+                        file_name: Some("songbridge".into()),
+                    }),
+                    Target::new(TargetKind::Stdout),
+                ])
+                .max_file_size(5_000_000) // 5 MB per file
+                .rotation_strategy(tauri_plugin_log::RotationStrategy::KeepAll)
+                .level(log::LevelFilter::Info)
+                .build(),
+        )
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
         .manage(audio_state)
@@ -32,6 +46,7 @@ pub fn run() {
             let data_dir = app.path().app_data_dir()?;
             std::fs::create_dir_all(&data_dir)?;
             let db_path = data_dir.join("songbridge.db");
+            log::info!("Opening database at {}", db_path.display());
             let db_state = db::state::DbState::new(&db_path)
                 .map_err(|e| format!("Failed to open database: {e}"))?;
             app.manage(db_state);

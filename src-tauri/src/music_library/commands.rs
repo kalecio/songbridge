@@ -34,13 +34,25 @@ pub fn scan_music_library(
 ) -> Result<Vec<AudioMetadata>, String> {
     let dirs = build_scan_dirs(paths, default_music_dir());
 
+    log::info!(
+        "Scanning {} director{}",
+        dirs.len(),
+        if dirs.len() == 1 { "y" } else { "ies" }
+    );
+
     let songs: Vec<AudioMetadata> = dirs
         .iter()
         .flat_map(|dir| {
             WalkDir::new(dir)
                 .follow_links(true)
                 .into_iter()
-                .filter_map(|e| e.ok())
+                .filter_map(|e| match e {
+                    Ok(entry) => Some(entry),
+                    Err(err) => {
+                        log::warn!("Directory walk error: {}", err);
+                        None
+                    }
+                })
                 .filter(|e| e.file_type().is_file())
                 .filter(|e| {
                     e.path()
@@ -49,12 +61,25 @@ pub fn scan_music_library(
                         .map(|ext| AUDIO_EXTENSIONS.contains(&ext.to_lowercase().as_str()))
                         .unwrap_or(false)
                 })
-                .filter_map(|e| e.path().to_str().and_then(|p| get_metadata(p).ok()))
+                .filter_map(|e| {
+                    e.path().to_str().and_then(|p| match get_metadata(p) {
+                        Ok(meta) => Some(meta),
+                        Err(err) => {
+                            log::warn!("Failed to read metadata for '{}': {}", p, err);
+                            None
+                        }
+                    })
+                })
                 .collect::<Vec<_>>()
         })
         .collect();
 
-    let mut locked = library.lock().map_err(|e| e.to_string())?;
+    log::info!("Scan complete: {} tracks found", songs.len());
+
+    let mut locked = library.lock().map_err(|e| {
+        log::error!("Failed to acquire library lock: {}", e);
+        e.to_string()
+    })?;
     locked.songs = songs.clone();
 
     Ok(songs)
