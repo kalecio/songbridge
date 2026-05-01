@@ -43,6 +43,15 @@ describe('Sidebar', () => {
       const { queryByText } = renderWithContext(<Sidebar />, { currentPlaylist: [] });
       expect(queryByText('Playing now')).not.toBeInTheDocument();
     });
+
+    it('renders an img thumbnail for a playlist when the first song is in the library with an image', () => {
+      const playlists = [{ id: '1', name: 'Chill', songs: [{ path: '/a.mp3', title: 'Track A' }] }];
+      const library = [{ path: '/a.mp3', title: 'Track A', image: 'data:image/jpeg;base64,abc' }];
+      const { getAllByRole, queryByTestId } = renderWithContext(<Sidebar />, { playlists, library });
+      expect(queryByTestId('album-placeholder-container')).not.toBeInTheDocument();
+      const imgs = getAllByRole('img') as HTMLImageElement[];
+      expect(imgs.some((img) => img.src.includes('data:image/jpeg;base64,abc'))).toBe(true);
+    });
   });
 
   describe('queue view', () => {

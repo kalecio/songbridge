@@ -28,9 +28,14 @@ impl DbState {
             );
 
             CREATE TABLE IF NOT EXISTS playlist_songs (
-                playlist_id TEXT NOT NULL REFERENCES playlists(id) ON DELETE CASCADE,
-                song_path   TEXT NOT NULL,
-                position    INTEGER NOT NULL
+                playlist_id        TEXT NOT NULL REFERENCES playlists(id) ON DELETE CASCADE,
+                song_path          TEXT NOT NULL,
+                position           INTEGER NOT NULL,
+                title              TEXT,
+                artist             TEXT,
+                image              TEXT,
+                duration_seconds   REAL,
+                duration_formatted TEXT
             );
 
             CREATE TABLE IF NOT EXISTS preferences (
@@ -43,6 +48,13 @@ impl DbState {
             );
             ",
         )?;
+        // Migrate existing DBs that predate these columns
+        let _ = conn.execute_batch("ALTER TABLE playlist_songs ADD COLUMN title TEXT;");
+        let _ = conn.execute_batch("ALTER TABLE playlist_songs ADD COLUMN artist TEXT;");
+        let _ = conn.execute_batch("ALTER TABLE playlist_songs ADD COLUMN image TEXT;");
+        let _ = conn.execute_batch("ALTER TABLE playlist_songs ADD COLUMN duration_seconds REAL;");
+        let _ =
+            conn.execute_batch("ALTER TABLE playlist_songs ADD COLUMN duration_formatted TEXT;");
         Ok(Self {
             conn: Mutex::new(conn),
         })

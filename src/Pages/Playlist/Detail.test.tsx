@@ -1,0 +1,141 @@
+import { fireEvent , render } from '@testing-library/react';
+import { MemoryRouter, Route, Routes } from 'react-router';
+import { AppContext } from '../../Context/AppContext';
+import { PlaylistType } from '../../types';
+import Detail from './Detail';
+
+type AppContextValue = React.ComponentProps<typeof AppContext.Provider>['value'];
+
+const defaultContext: AppContextValue = {
+  onRepeat: false,
+  onShuffle: false,
+  isPlaying: false,
+  isScanning: false,
+  library: [],
+  libraryPaths: [],
+  progress: 0,
+  currentPlaylist: [],
+};
+
+const renderDetail = (playlists: PlaylistType[], contextOverrides: Partial<AppContextValue> = {}, playlistId = '1') => {
+  return render(
+    <MemoryRouter initialEntries={[`/playlist/${playlistId}`]}>
+      <AppContext.Provider value={{ ...defaultContext, ...contextOverrides }}>
+        <Routes>
+          <Route path="/playlist/:id" element={<Detail playlists={playlists} />} />
+        </Routes>
+      </AppContext.Provider>
+    </MemoryRouter>,
+  );
+};
+
+describe('Detail', () => {
+  it('renders the playlist name', () => {
+    const playlists: PlaylistType[] = [{ id: '1', name: 'My Favorites', songs: [] }];
+    const { getByText } = renderDetail(playlists);
+    expect(getByText('My Favorites')).toBeInTheDocument();
+  });
+
+  it('renders song titles from stored data when there is no library match', () => {
+    const playlists: PlaylistType[] = [
+      {
+        id: '1',
+        name: 'Test',
+        songs: [{ path: '/a.mp3', title: 'Stored Title', artist: 'Stored Artist' }],
+      },
+    ];
+    const { getByText } = renderDetail(playlists);
+    expect(getByText('Stored Title')).toBeInTheDocument();
+    expect(getByText('Stored Artist')).toBeInTheDocument();
+  });
+
+  it('merges library data when a song is found in the library', () => {
+    const playlists: PlaylistType[] = [
+      {
+        id: '1',
+        name: 'Test',
+        songs: [{ path: '/a.mp3', title: 'Song A' }],
+      },
+    ];
+    const library = [{ path: '/a.mp3', title: 'Song A', image: 'data:image/jpeg;base64,abc' }];
+    const { getAllByRole, queryAllByTestId } = renderDetail(playlists, { library });
+    expect(getAllByRole('img').length).toBeGreaterThan(0);
+    expect(queryAllByTestId('album-placeholder-container').length).toBeLessThan(
+      queryAllByTestId('album-placeholder-container').length + 1,
+    );
+    const imgs = getAllByRole('img') as HTMLImageElement[];
+    expect(imgs.some((img) => img.src.includes('data:image/jpeg;base64,abc'))).toBe(true);
+  });
+
+  it('persisted title takes precedence over library title', () => {
+    const playlists: PlaylistType[] = [
+      {
+        id: '1',
+        name: 'Test',
+        songs: [{ path: '/a.mp3', title: 'Stored', artist: 'Artist' }],
+      },
+    ];
+    const library = [{ path: '/a.mp3', title: 'Library', artist: 'Artist' }];
+    const { getByText, queryByText } = renderDetail(playlists, { library });
+    expect(getByText('Stored')).toBeInTheDocument();
+    expect(queryByText('Library')).not.toBeInTheDocument();
+  });
+
+  it('renders stored title and artist when song is not in library', () => {
+    const playlists: PlaylistType[] = [
+      {
+        id: '1',
+        name: 'Test',
+        songs: [{ path: '/b.mp3', title: 'No Match Title', artist: 'No Match Artist' }],
+      },
+    ];
+    const library = [{ path: '/other.mp3', title: 'Other', artist: 'Other Artist' }];
+    const { getByText } = renderDetail(playlists, { library });
+    expect(getByText('No Match Title')).toBeInTheDocument();
+    expect(getByText('No Match Artist')).toBeInTheDocument();
+  });
+
+  it('clicking a song calls setCurrentPath with the song path and setCurrentPlaylist with all paths', () => {
+    const setCurrentPath = vi.fn();
+    const setCurrentPlaylist = vi.fn();
+    const playlists: PlaylistType[] = [
+      {
+        id: '1',
+        name: 'Test',
+        songs: [
+          { path: '/a.mp3', title: 'Song A' },
+          { path: '/b.mp3', title: 'Song B' },
+        ],
+      },
+    ];
+    const { getByText } = renderDetail(playlists, { setCurrentPath, setCurrentPlaylist });
+    fireEvent.click(getByText('Song B'));
+    expect(setCurrentPlaylist).toHaveBeenCalledWith(['/a.mp3', '/b.mp3']);
+    expect(setCurrentPath).toHaveBeenCalledWith('/b.mp3');
+  });
+
+  it('clicking Play Now plays from the first song', () => {
+    const setCurrentPath = vi.fn();
+    const setCurrentPlaylist = vi.fn();
+    const playlists: PlaylistType[] = [
+      {
+        id: '1',
+        name: 'Test',
+        songs: [
+          { path: '/a.mp3', title: 'First Song' },
+          { path: '/b.mp3', title: 'Second Song' },
+        ],
+      },
+    ];
+    const { getByText } = renderDetail(playlists, { setCurrentPath, setCurrentPlaylist });
+    fireEvent.click(getByText('Play Now'));
+    expect(setCurrentPath).toHaveBeenCalledWith('/a.mp3');
+    expect(setCurrentPlaylist).toHaveBeenCalledWith(['/a.mp3', '/b.mp3']);
+  });
+
+  it('renders empty string as name when playlist id is not found', () => {
+    const playlists: PlaylistType[] = [{ id: '99', name: 'Other Playlist', songs: [] }];
+    const { queryByText } = renderDetail(playlists, {}, '1');
+    expect(queryByText('Other Playlist')).not.toBeInTheDocument();
+  });
+});
