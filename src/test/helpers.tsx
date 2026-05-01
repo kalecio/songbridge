@@ -8,6 +8,8 @@ const defaultContext: AppContextValue = {
   onRepeat: false,
   onShuffle: false,
   isPlaying: false,
+  isScanning: false,
+  library: [],
   progress: 0,
   currentPlaylist: [],
 };

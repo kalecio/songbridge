@@ -30,8 +30,9 @@ const Main = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
   overflow-y: auto;
+  flex: 1;
 `;
 
 const ContentContainer = styled.div`
@@ -40,6 +41,31 @@ const ContentContainer = styled.div`
   align-items: stretch;
   justify-content: flex-start;
   max-height: calc(100vh - 120px);
+  position: relative;
+`;
+
+const SettingsButton = styled.button`
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  z-index: 10;
+  background: none;
+  border: none;
+  border-radius: 50%;
+  width: 2.25rem;
+  height: 2.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  color: #7f55b1;
+  transition:
+    background 0.15s,
+    color 0.15s;
+
+  &:hover {
+    color: #3a1f5a;
+  }
 `;
 
 const PlayerAlbumArt = styled(AlbumImage)<{ $height?: string; $width?: string }>`
@@ -53,4 +79,23 @@ const PlayerAlbumArtPlaceholder = styled(AlbumImagePlaceholder)<{ $height?: stri
   height: ${(props) => props.$height || '25rem'};
 `;
 
-export { PlayerContainer, StyledPlayer, Container, Main, ContentContainer, PlayerAlbumArt, PlayerAlbumArtPlaceholder };
+const HomeCenter = styled.div`
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+`;
+
+export {
+  PlayerContainer,
+  StyledPlayer,
+  Container,
+  Main,
+  ContentContainer,
+  PlayerAlbumArt,
+  PlayerAlbumArtPlaceholder,
+  HomeCenter,
+  SettingsButton,
+};
