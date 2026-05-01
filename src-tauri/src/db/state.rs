@@ -37,6 +37,10 @@ impl DbState {
                 key   TEXT PRIMARY KEY,
                 value TEXT NOT NULL
             );
+
+            CREATE TABLE IF NOT EXISTS library_paths (
+                path TEXT PRIMARY KEY
+            );
             ",
         )?;
         Ok(Self {
@@ -54,7 +58,12 @@ mod tests {
         let db = DbState::in_memory().unwrap();
         let conn = db.conn.lock().unwrap();
 
-        for table in &["playlists", "playlist_songs", "preferences"] {
+        for table in &[
+            "playlists",
+            "playlist_songs",
+            "preferences",
+            "library_paths",
+        ] {
             let count: i64 = conn
                 .query_row(
                     "SELECT COUNT(*) FROM sqlite_master WHERE type='table' AND name=?1",

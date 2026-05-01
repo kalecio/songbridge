@@ -10,6 +10,7 @@ const defaultContext: AppContextValue = {
   isPlaying: false,
   isScanning: false,
   library: [],
+  libraryPaths: [],
   progress: 0,
   currentPlaylist: [],
 };

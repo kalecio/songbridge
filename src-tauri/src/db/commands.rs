@@ -143,6 +143,34 @@ pub(crate) fn save_preferences(
     Ok(())
 }
 
+pub(crate) fn get_library_paths(conn: &Connection) -> Result<Vec<String>, String> {
+    let mut stmt = conn
+        .prepare("SELECT path FROM library_paths ORDER BY path")
+        .map_err(|e| e.to_string())?;
+
+    let paths: Vec<String> = stmt
+        .query_map([], |row| row.get(0))
+        .map_err(|e| e.to_string())?
+        .collect::<Result<_, _>>()
+        .map_err(|e| e.to_string())?;
+    Ok(paths)
+}
+
+pub(crate) fn add_library_path(conn: &Connection, path: &str) -> Result<(), String> {
+    conn.execute(
+        "INSERT OR IGNORE INTO library_paths (path) VALUES (?1)",
+        params![path],
+    )
+    .map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+pub(crate) fn remove_library_path(conn: &Connection, path: &str) -> Result<(), String> {
+    conn.execute("DELETE FROM library_paths WHERE path = ?1", params![path])
+        .map_err(|e| e.to_string())?;
+    Ok(())
+}
+
 // ── Tauri commands (thin wrappers) ────────────────────────────────────────────
 
 #[tauri::command]
@@ -190,6 +218,24 @@ pub fn db_save_preferences(
         on_repeat,
         on_shuffle,
     )
+}
+
+#[tauri::command]
+pub fn db_get_library_paths(state: State<DbState>) -> Result<Vec<String>, String> {
+    let conn = state.conn.lock().map_err(|e| e.to_string())?;
+    get_library_paths(&conn)
+}
+
+#[tauri::command]
+pub fn db_add_library_path(state: State<DbState>, path: String) -> Result<(), String> {
+    let conn = state.conn.lock().map_err(|e| e.to_string())?;
+    add_library_path(&conn, &path)
+}
+
+#[tauri::command]
+pub fn db_remove_library_path(state: State<DbState>, path: String) -> Result<(), String> {
+    let conn = state.conn.lock().map_err(|e| e.to_string())?;
+    remove_library_path(&conn, &path)
 }
 
 // ── tests ─────────────────────────────────────────────────────────────────────
@@ -377,5 +423,57 @@ mod tests {
 
         let prefs = get_preferences(&conn).unwrap();
         assert!(prefs.current_playlist.is_empty());
+    }
+
+    // ── library paths ─────────────────────────────────────────────────────────
+
+    #[test]
+    fn get_library_paths_returns_empty_on_fresh_db() {
+        let db = setup();
+        let conn = db.conn.lock().unwrap();
+        assert!(get_library_paths(&conn).unwrap().is_empty());
+    }
+
+    #[test]
+    fn add_and_get_library_paths_roundtrip() {
+        let db = setup();
+        let conn = db.conn.lock().unwrap();
+
+        add_library_path(&conn, "/music/rock").unwrap();
+        add_library_path(&conn, "/music/jazz").unwrap();
+
+        let paths = get_library_paths(&conn).unwrap();
+        assert_eq!(paths.len(), 2);
+        assert!(paths.contains(&"/music/jazz".to_string()));
+        assert!(paths.contains(&"/music/rock".to_string()));
+    }
+
+    #[test]
+    fn add_duplicate_path_is_a_noop() {
+        let db = setup();
+        let conn = db.conn.lock().unwrap();
+
+        add_library_path(&conn, "/music/rock").unwrap();
+        add_library_path(&conn, "/music/rock").unwrap();
+
+        assert_eq!(get_library_paths(&conn).unwrap().len(), 1);
+    }
+
+    #[test]
+    fn remove_library_path_deletes_it() {
+        let db = setup();
+        let conn = db.conn.lock().unwrap();
+
+        add_library_path(&conn, "/music/rock").unwrap();
+        remove_library_path(&conn, "/music/rock").unwrap();
+
+        assert!(get_library_paths(&conn).unwrap().is_empty());
+    }
+
+    #[test]
+    fn remove_nonexistent_library_path_is_a_noop() {
+        let db = setup();
+        let conn = db.conn.lock().unwrap();
+        assert!(remove_library_path(&conn, "/does/not/exist").is_ok());
     }
 }
