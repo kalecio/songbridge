@@ -1,6 +1,6 @@
 use serde::Serialize;
 
-#[derive(Debug, Serialize, Clone)]
+#[derive(Debug, Default, Serialize, Clone)]
 pub struct AudioDuration {
     pub duration_seconds: Option<u64>,
     duration_formatted: Option<String>,
@@ -11,15 +11,6 @@ impl AudioDuration {
         AudioDuration {
             duration_seconds,
             duration_formatted,
-        }
-    }
-}
-
-impl Default for AudioDuration {
-    fn default() -> Self {
-        AudioDuration {
-            duration_seconds: None,
-            duration_formatted: None,
         }
     }
 }

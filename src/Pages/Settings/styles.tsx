@@ -1,4 +1,4 @@
-import styled from 'styled-components';
+import { styled } from 'styled-components';
 import { FaFolderPlus, FaTrash } from 'react-icons/fa6';
 
 export const SettingsContainer = styled.div`

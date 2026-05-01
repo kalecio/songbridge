@@ -1,5 +1,5 @@
 use crate::metadata::commands::get_metadata;
-use crate::metadata::metadata::AudioMetadata;
+use crate::metadata::types::AudioMetadata;
 use crate::music_library::state::LibraryState;
 use std::sync::{Arc, Mutex};
 use tauri::State;

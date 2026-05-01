@@ -1,4 +1,4 @@
-import { useContext, useEffect, useRef } from 'react';
+import { useCallback, useContext, useEffect, useRef } from 'react';
 import { useNavigate, Route, Routes } from 'react-router';
 import { FaGear } from 'react-icons/fa6';
 import Controls from '../../Components/Controls/Controls';
@@ -39,13 +39,16 @@ const Player = () => {
   const intervalRef = useRef<number | null>(null);
   const endedRef = useRef(false);
 
-  const handleSeek = async (progressRatio: number) => {
-    try {
-      await invoke('seek', { percent: progressRatio, path });
-    } catch (error) {
-      console.error('Error seeking:', error);
-    }
-  };
+  const handleSeek = useCallback(
+    async (progressRatio: number) => {
+      try {
+        await invoke('seek', { percent: progressRatio, path });
+      } catch (error) {
+        console.error('Error seeking:', error);
+      }
+    },
+    [path],
+  );
 
   const handleOpenFile = async () => {
     const files = await open({

@@ -1,4 +1,4 @@
-use crate::metadata::metadata::AudioMetadata;
+use crate::metadata::types::AudioMetadata;
 
 pub struct LibraryState {
     pub songs: Vec<AudioMetadata>,

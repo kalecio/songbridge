@@ -35,9 +35,9 @@ pub fn format_duration(duration_seconds: Option<u64>) -> Option<String> {
         let minutes = d / 60;
         let seconds = d % 60;
         if hours > 0 {
-            return format!("{:02}:{:02}:{:02}", hours, minutes % 60, seconds);
+            format!("{:02}:{:02}:{:02}", hours, minutes % 60, seconds)
         } else {
-            return format!("{:02}:{:02}", minutes, seconds);
+            format!("{:02}:{:02}", minutes, seconds)
         }
     })
 }

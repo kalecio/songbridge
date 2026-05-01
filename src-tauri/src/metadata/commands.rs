@@ -1,4 +1,4 @@
-use crate::metadata::metadata::{AudioDuration, AudioMetadata};
+use crate::metadata::types::{AudioDuration, AudioMetadata};
 
 use crate::audio::utils::{calculate_track_duration, format_duration, get_audio_probe};
 use crate::metadata::utils::{
