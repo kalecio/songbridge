@@ -29,7 +29,7 @@ const Sidebar = () => {
   const [songs, setSongs] = useState<MetadataType[]>([]);
   const metadataCache = useRef(new Map<string, MetadataType>());
   const context = useContext(AppContext);
-  const { showQueue, setShowQueue, setCurrentPath, currentPlaylist, playlists, currentPath } = context;
+  const { showQueue, setShowQueue, setCurrentPath, currentPlaylist, playlists, currentPath, library } = context;
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -92,7 +92,11 @@ const Sidebar = () => {
                 onClick={() => navigate(`/playlist/${playlist.id}`)}
               >
                 <PlaylistThumb>
-                  <AlbumImage metadata={playlist.songs[0]} height="100%" width="100%" />
+                  <AlbumImage
+                    metadata={library.find((l) => l.path === playlist.songs[0]?.path) ?? playlist.songs[0]}
+                    height="100%"
+                    width="100%"
+                  />
                 </PlaylistThumb>
                 {playlist.name}
               </PlaylistItem>

@@ -9,9 +9,6 @@ pub struct DbSong {
     pub path: String,
     pub title: Option<String>,
     pub artist: Option<String>,
-    pub image: Option<String>,
-    pub duration_seconds: Option<f64>,
-    pub duration_formatted: Option<String>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -46,8 +43,8 @@ pub(crate) fn get_playlists(conn: &Connection) -> Result<Vec<DbPlaylist>, String
     for (id, name) in rows {
         let mut song_stmt = conn
             .prepare(
-                "SELECT song_path, title, artist, image, duration_seconds, duration_formatted \
-                 FROM playlist_songs WHERE playlist_id = ? ORDER BY position",
+                "SELECT song_path, title, artist FROM playlist_songs \
+                 WHERE playlist_id = ? ORDER BY position",
             )
             .map_err(|e| e.to_string())?;
 
@@ -57,9 +54,6 @@ pub(crate) fn get_playlists(conn: &Connection) -> Result<Vec<DbPlaylist>, String
                     path: row.get(0)?,
                     title: row.get(1)?,
                     artist: row.get(2)?,
-                    image: row.get(3)?,
-                    duration_seconds: row.get(4)?,
-                    duration_formatted: row.get(5)?,
                 })
             })
             .map_err(|e| e.to_string())?
@@ -93,19 +87,9 @@ pub(crate) fn upsert_playlist(
 
     for (position, song) in songs.iter().enumerate() {
         conn.execute(
-            "INSERT INTO playlist_songs \
-             (playlist_id, song_path, position, title, artist, image, duration_seconds, duration_formatted) \
-             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
-            params![
-                id,
-                song.path,
-                position as i64,
-                song.title,
-                song.artist,
-                song.image,
-                song.duration_seconds,
-                song.duration_formatted
-            ],
+            "INSERT INTO playlist_songs (playlist_id, song_path, position, title, artist) \
+             VALUES (?1, ?2, ?3, ?4, ?5)",
+            params![id, song.path, position as i64, song.title, song.artist],
         )
         .map_err(|e| e.to_string())?;
     }
@@ -295,9 +279,6 @@ mod tests {
                 path: p.to_string(),
                 title: None,
                 artist: None,
-                image: None,
-                duration_seconds: None,
-                duration_formatted: None,
             })
             .collect()
     }
@@ -311,17 +292,11 @@ mod tests {
                 path: "/music/a.mp3".into(),
                 title: Some("Track A".into()),
                 artist: Some("Artist".into()),
-                image: Some("base64data".into()),
-                duration_seconds: Some(213.5),
-                duration_formatted: Some("3:33".into()),
             },
             DbSong {
                 path: "/music/b.mp3".into(),
                 title: None,
                 artist: None,
-                image: None,
-                duration_seconds: None,
-                duration_formatted: None,
             },
         ];
 
@@ -333,15 +308,9 @@ mod tests {
         assert_eq!(playlists[0].name, "Chill Vibes");
         assert_eq!(playlists[0].songs[0].path, "/music/a.mp3");
         assert_eq!(playlists[0].songs[0].title.as_deref(), Some("Track A"));
-        assert_eq!(playlists[0].songs[0].image.as_deref(), Some("base64data"));
-        assert_eq!(playlists[0].songs[0].duration_seconds, Some(213.5));
-        assert_eq!(
-            playlists[0].songs[0].duration_formatted.as_deref(),
-            Some("3:33")
-        );
+        assert_eq!(playlists[0].songs[0].artist.as_deref(), Some("Artist"));
         assert_eq!(playlists[0].songs[1].path, "/music/b.mp3");
         assert!(playlists[0].songs[1].title.is_none());
-        assert!(playlists[0].songs[1].image.is_none());
     }
 
     #[test]
@@ -378,9 +347,6 @@ mod tests {
                 path: format!("/track{i}.mp3"),
                 title: None,
                 artist: None,
-                image: None,
-                duration_seconds: None,
-                duration_formatted: None,
             })
             .collect();
 
