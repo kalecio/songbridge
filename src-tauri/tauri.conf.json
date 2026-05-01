@@ -14,11 +14,12 @@
       {
         "title": "songbridge",
         "minWidth": 1280,
-        "minHeight": 720
+        "minHeight": 720,
+        "maximized": true
       }
     ],
     "security": {
-      "csp": null
+      "csp": "default-src 'self'; connect-src ipc: http://ipc.localhost; img-src 'self' data: blob:; style-src 'self' 'unsafe-inline'; script-src 'self'"
     }
   },
   "bundle": {

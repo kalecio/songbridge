@@ -1,7 +1,10 @@
+use music_library::state::LibraryState;
 use std::sync::{Arc, Mutex};
+use tauri::Manager;
 
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 mod audio;
+mod db;
 mod metadata;
 mod music_library;
 
@@ -19,10 +22,21 @@ pub use metadata::utils::{determine_mime_type, extract_album_art_probed};
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let audio_state = Arc::new(Mutex::new(AudioState::new()));
+    let library_state = Arc::new(Mutex::new(LibraryState::new()));
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
         .manage(audio_state)
+        .manage(library_state)
+        .setup(|app| {
+            let data_dir = app.path().app_data_dir()?;
+            std::fs::create_dir_all(&data_dir)?;
+            let db_path = data_dir.join("songbridge.db");
+            let db_state = db::state::DbState::new(&db_path)
+                .map_err(|e| format!("Failed to open database: {e}"))?;
+            app.manage(db_state);
+            Ok(())
+        })
         .invoke_handler(tauri::generate_handler![
             audio::commands::load_song,
             audio::commands::play_song,
@@ -33,11 +47,18 @@ pub fn run() {
             audio::commands::seek,
             audio::commands::get_progress,
             metadata::commands::get_metadata,
+            music_library::commands::scan_music_library,
             music_library::commands::get_all_songs,
-            music_library::commands::get_all_albums,
-            music_library::commands::get_all_artists,
-            music_library::commands::get_songs_by_albuns,
-            music_library::commands::get_albuns_by_artist,
+            music_library::commands::get_songs_by_album,
+            music_library::commands::get_songs_by_artist,
+            db::commands::db_get_playlists,
+            db::commands::db_upsert_playlist,
+            db::commands::db_delete_playlist,
+            db::commands::db_get_preferences,
+            db::commands::db_save_preferences,
+            db::commands::db_get_library_paths,
+            db::commands::db_add_library_path,
+            db::commands::db_remove_library_path,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

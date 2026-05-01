@@ -1,4 +1,4 @@
-import { useContext, useEffect, useState } from 'react';
+import { useCallback, useContext, useEffect, useState } from 'react';
 import { Controls, Shuffle, Prev, Play, Next, Repeat, Pause } from './styles';
 import { invoke } from '@tauri-apps/api/core';
 import { AppContext } from '../../Context/AppContext';
@@ -21,25 +21,11 @@ const Player = () => {
     setOnShuffle,
   } = context;
 
-  useEffect(() => {
-    if (!path) {
-      return;
-    }
-    const loadSong = async () => {
-      await playNewSong();
-    };
-    loadSong();
-  }, [path]);
-
-  const playNewSong = async () => {
+  const playNewSong = useCallback(async () => {
     try {
-      // Get metadata for the song first to get duration
       const metadata = await invoke<MetadataType>('get_metadata', { path });
-
       await invoke('load_song', { path });
       await invoke('play_song');
-
-      // Update context
       setCurrentPath?.(path);
       setIsPlaying?.(true);
       setMetadata?.(metadata);
@@ -47,7 +33,12 @@ const Player = () => {
     } catch (error) {
       console.error('Error playing song:', error);
     }
-  };
+  }, [path, setCurrentPath, setIsPlaying, setMetadata]);
+
+  useEffect(() => {
+    if (!path) return;
+    playNewSong();
+  }, [path, playNewSong]);
 
   const handleNextSong = async () => {
     if (onShuffle) {
@@ -95,18 +86,15 @@ const Player = () => {
 
   return (
     <Controls>
-      <Shuffle $onShuffle={onShuffle} onClick={() => setOnShuffle?.(!onShuffle)} />
-      <Prev onClick={handlePreviousSong} />
-      {isPlaying ? <Pause onClick={pause} /> : <Play onClick={isSongLoaded ? resume : playNewSong} />}
-      <Next onClick={handleNextSong} />
-      <Repeat
-        $onRepeat={onRepeat}
-        onClick={() => {
-          console.log('repeat clicked 1', onRepeat);
-          setOnRepeat?.(!onRepeat);
-          console.log('repeat clicked 2', onRepeat);
-        }}
-      />
+      <Shuffle aria-label="shuffle" $onShuffle={onShuffle} onClick={() => setOnShuffle?.(!onShuffle)} />
+      <Prev aria-label="previous" onClick={handlePreviousSong} />
+      {isPlaying ? (
+        <Pause aria-label="pause" onClick={pause} />
+      ) : (
+        <Play aria-label="play" onClick={isSongLoaded ? resume : playNewSong} />
+      )}
+      <Next aria-label="next" onClick={handleNextSong} />
+      <Repeat aria-label="repeat" $onRepeat={onRepeat} onClick={() => setOnRepeat?.(!onRepeat)} />
     </Controls>
   );
 };

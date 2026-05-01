@@ -1,4 +1,4 @@
-import styled from 'styled-components';
+import { styled } from 'styled-components';
 import AlbumPlaceholder from '../../assets/images/album-placeholder.svg';
 
 const AlbumImagePlaceholder = styled(AlbumPlaceholder)`
@@ -20,6 +20,7 @@ const PlayerAlbumArt = styled(AlbumImage)<{ $height?: string; $width?: string }>
   cursor: pointer;
   width: ${(props) => props.$width || '25rem'};
   height: ${(props) => props.$height || '25rem'};
+  object-fit: cover;
 `;
 
 const PlayerAlbumArtPlaceholder = styled(AlbumImagePlaceholder)<{ $height?: string; $width?: string }>`

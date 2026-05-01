@@ -7,9 +7,7 @@ use songbridge_lib::{calculate_track_duration, get_audio_probe, AudioState};
 fn probe_and_calculate_track_duration_from_sample_file() {
     // Path relative to crate root (src-tauri)
     let path = "music-files/Polygondwanaland.mp3";
-    // Ensure probe can parse the file
-    let probe = get_audio_probe(path);
-    // calculate duration should return Some(u64) for a valid audio file
+    let probe = get_audio_probe(path).expect("should open sample file");
     let duration = calculate_track_duration(&probe);
     assert!(duration.is_some(), "expected some duration for sample file");
     let secs = duration.unwrap();
@@ -29,7 +27,7 @@ fn commands_integration_tests() {
     // Load the song via the inner API and verify track_duration and path.
     {
         let mut s = audio_state.lock().unwrap();
-        s.load_song(&path);
+        s.load_song(&path).expect("should load sample file");
         assert_eq!(s.path, path);
         assert!(s.track_duration.duration_seconds.is_some());
     }

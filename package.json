@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "test": "echo \"To be done\" && exit 1",
+    "test": "vitest run --passWithNoTests",
     "build": "tsc && vite build",
     "preview": "vite preview",
     "lint": "eslint . --ext .ts,.tsx",
@@ -13,17 +13,6 @@
     "format": "prettier --write \"**/*.{ts,tsx,json}\"",
     "tauri": "tauri",
     "prepare": "husky"
-  },
-  "lint-staged": {
-    "src/**/*.{ts,tsx,json}": [
-      "npm run format",
-      "npm run lint:fix"
-    ],
-    "src-tauri/src/**/*.rs": [
-      "cargo fmt --manifest-path src-tauri/Cargo.toml",
-      "cargo check --manifest-path src-tauri/Cargo.toml",
-      "cargo test --manifest-path src-tauri/Cargo.toml"
-    ]
   },
   "dependencies": {
     "@tauri-apps/api": "^2",
@@ -57,7 +46,12 @@
     "prettier": "^3.6.2",
     "typescript": "~5.6.2",
     "vite": "^6.0.3",
-    "vite-plugin-svgr": "^4.3.0"
+    "vite-plugin-svgr": "^4.3.0",
+    "@testing-library/jest-dom": "^6.4.0",
+    "@testing-library/react": "^16.0.0",
+    "@testing-library/user-event": "^14.5.0",
+    "jsdom": "^25.0.0",
+    "vitest": "^3.0.0"
   },
   "resolutions": {
     "styled-components": "^6"

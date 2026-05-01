@@ -17,7 +17,12 @@ const AlbumImage = ({
       {metadata?.image ? (
         <PlayerAlbumArt $height={height} $width={width} src={metadata?.image} alt={metadata?.album} onClick={onClick} />
       ) : (
-        <AlbumImagePlaceholderContainer onClick={onClick} $height={height} $width={width}>
+        <AlbumImagePlaceholderContainer
+          data-testid="album-placeholder-container"
+          onClick={onClick}
+          $height={height}
+          $width={width}
+        >
           <PlayerAlbumArtPlaceholder $height={height} $width={width} />
         </AlbumImagePlaceholderContainer>
       )}

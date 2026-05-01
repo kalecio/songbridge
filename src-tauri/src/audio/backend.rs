@@ -28,7 +28,7 @@ pub fn spawn_audio_thread() -> Sender<AudioCommand> {
         // resources remain local to the audio thread.
         let _stream =
             OutputStreamBuilder::open_default_stream().expect("open default audio stream");
-        let sink = Sink::connect_new(&_stream.mixer());
+        let sink = Sink::connect_new(_stream.mixer());
 
         while let Ok(cmd) = rx.recv() {
             match cmd {

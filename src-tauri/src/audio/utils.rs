@@ -6,17 +6,16 @@ use symphonia::core::{
     probe::{Hint, ProbeResult},
 };
 
-pub fn get_audio_probe(path: &str) -> ProbeResult {
-    let file = File::open(path).expect("file open failed");
+pub fn get_audio_probe(path: &str) -> Result<ProbeResult, String> {
+    let file = File::open(path).map_err(|e| format!("failed to open '{}': {}", path, e))?;
     let mss = MediaSourceStream::new(Box::new(file), Default::default());
     let hint = Hint::new();
 
     let meta_opts: MetadataOptions = Default::default();
     let fmt_opts: FormatOptions = Default::default();
-    let probe = symphonia::default::get_probe()
+    symphonia::default::get_probe()
         .format(&hint, mss, &fmt_opts, &meta_opts)
-        .expect("unsupported format");
-    probe
+        .map_err(|e| format!("unsupported format '{}': {}", path, e))
 }
 
 pub fn calculate_track_duration(probe: &ProbeResult) -> Option<u64> {
@@ -36,9 +35,9 @@ pub fn format_duration(duration_seconds: Option<u64>) -> Option<String> {
         let minutes = d / 60;
         let seconds = d % 60;
         if hours > 0 {
-            return format!("{:02}:{:02}:{:02}", hours, minutes % 60, seconds);
+            format!("{:02}:{:02}:{:02}", hours, minutes % 60, seconds)
         } else {
-            return format!("{:02}:{:02}", minutes, seconds);
+            format!("{:02}:{:02}", minutes, seconds)
         }
     })
 }

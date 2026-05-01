@@ -1,6 +1,6 @@
 use super::utils::{calculate_track_duration, format_duration, get_audio_probe};
 use crate::audio::backend::{spawn_audio_thread, AudioCommand};
-use crate::metadata::metadata::AudioDuration;
+use crate::metadata::types::AudioDuration;
 use crossbeam_channel::Sender;
 use std::{sync::mpsc, time::Duration};
 
@@ -10,6 +10,12 @@ pub struct AudioState {
     original_volume: f32,
     is_muted: bool,
     pub track_duration: AudioDuration,
+}
+
+impl Default for AudioState {
+    fn default() -> Self {
+        Self::new()
+    }
 }
 
 impl AudioState {
@@ -24,13 +30,13 @@ impl AudioState {
         }
     }
 
-    pub fn load_song(&mut self, path: &str) {
-        // Update metadata on the main thread and instruct the audio thread to load the file.
-        let probe = get_audio_probe(path);
+    pub fn load_song(&mut self, path: &str) -> Result<(), String> {
+        let probe = get_audio_probe(path)?;
         let track_duration = calculate_track_duration(&probe);
         self.track_duration = AudioDuration::new(track_duration, format_duration(track_duration));
         self.path = path.to_string();
         let _ = self.audio_tx.send(AudioCommand::Load(path.to_string()));
+        Ok(())
     }
 
     pub fn play(&self) {
@@ -102,7 +108,7 @@ mod tests {
             audio_tx: tx,
             original_volume: 1.0,
             is_muted: false,
-            track_duration: crate::metadata::metadata::AudioDuration::default(),
+            track_duration: crate::metadata::types::AudioDuration::default(),
         };
 
         state.play();
@@ -132,7 +138,7 @@ mod tests {
             audio_tx: tx,
             original_volume: 1.0,
             is_muted: false,
-            track_duration: crate::metadata::metadata::AudioDuration::default(),
+            track_duration: crate::metadata::types::AudioDuration::default(),
         };
 
         state.set_volume(0.6);
@@ -165,7 +171,7 @@ mod tests {
             audio_tx: tx,
             original_volume: 0.8,
             is_muted: false,
-            track_duration: crate::metadata::metadata::AudioDuration::default(),
+            track_duration: crate::metadata::types::AudioDuration::default(),
         };
 
         state.toggle_mute();
@@ -191,7 +197,7 @@ mod tests {
             audio_tx: tx.clone(),
             original_volume: 1.0,
             is_muted: false,
-            track_duration: crate::metadata::metadata::AudioDuration::default(),
+            track_duration: crate::metadata::types::AudioDuration::default(),
         };
 
         // Spawn a small helper thread that will respond to GetPosition requests
