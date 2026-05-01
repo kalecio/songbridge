@@ -2,9 +2,9 @@ import { useContext } from 'react';
 import { useParams } from 'react-router';
 import { AppContext } from '../../Context/AppContext';
 import { MetadataType, PlaylistType } from '../../types';
-import Playlist from './Playlist';
+import Playlist from '../../Components/Playlist/Playlist';
 
-const PlaylistRoute = ({ playlists }: { playlists?: PlaylistType[] }) => {
+const Detail = ({ playlists }: { playlists?: PlaylistType[] }) => {
   const { id } = useParams<{ id: string }>();
   const { currentPath, setCurrentPath, setCurrentPlaylist } = useContext(AppContext);
 
@@ -23,10 +23,10 @@ const PlaylistRoute = ({ playlists }: { playlists?: PlaylistType[] }) => {
       name={playlist?.name ?? ''}
       type="Playlist"
       activePath={currentPath}
-      onSongClick={playSong}
+      onSongClick={(song) => playSong(song)}
       onPlayAll={() => songs[0] && playSong(songs[0])}
     />
   );
 };
 
-export default PlaylistRoute;
+export default Detail;

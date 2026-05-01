@@ -12,13 +12,14 @@ import { Container, ContentContainer, HomeCenter, Main, PlayerContainer, Setting
 import { AppContext } from '../../Context/AppContext';
 import Sidebar from '../../Components/Sidebar/Sidebar';
 import AlbumImage from '../../Components/AlbumImage/AlbumImage';
-import PlaylistRoute from '../../Components/Playlist/PlaylistRoute';
+import PlaylistRoute from '../Playlist/Detail';
 import Songs from '../Songs/List';
 import Albums from '../Albuns/List';
 import AlbumDetail from '../Albuns/Detail';
 import Artists from '../Artists/List';
 import ArtistDetail from '../Artists/Detail';
 import Settings from '../Settings/Settings';
+import CreatePlaylist from '../Playlist/Create';
 
 const Player = () => {
   const navigate = useNavigate();
@@ -166,7 +167,7 @@ const Player = () => {
             <Route path="/songs" element={<Songs />} />
             <Route path="/settings" element={<Settings />} />
             <Route path="/playlist/:id" element={<PlaylistRoute playlists={playlists} />} />
-            <Route path="/playlist" element={<div>Create Playlist View</div>} />
+            <Route path="/playlist" element={<CreatePlaylist />} />
           </Routes>
         </Main>
       </ContentContainer>

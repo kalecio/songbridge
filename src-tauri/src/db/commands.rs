@@ -5,10 +5,20 @@ use tauri::State;
 use super::state::DbState;
 
 #[derive(Serialize, Deserialize)]
+pub struct DbSong {
+    pub path: String,
+    pub title: Option<String>,
+    pub artist: Option<String>,
+    pub image: Option<String>,
+    pub duration_seconds: Option<f64>,
+    pub duration_formatted: Option<String>,
+}
+
+#[derive(Serialize, Deserialize)]
 pub struct DbPlaylist {
     pub id: String,
     pub name: String,
-    pub song_paths: Vec<String>,
+    pub songs: Vec<DbSong>,
 }
 
 #[derive(Serialize, Deserialize)]
@@ -35,20 +45,28 @@ pub(crate) fn get_playlists(conn: &Connection) -> Result<Vec<DbPlaylist>, String
     let mut result = Vec::new();
     for (id, name) in rows {
         let mut song_stmt = conn
-            .prepare("SELECT song_path FROM playlist_songs WHERE playlist_id = ? ORDER BY position")
+            .prepare(
+                "SELECT song_path, title, artist, image, duration_seconds, duration_formatted \
+                 FROM playlist_songs WHERE playlist_id = ? ORDER BY position",
+            )
             .map_err(|e| e.to_string())?;
 
-        let song_paths: Vec<String> = song_stmt
-            .query_map(params![id], |row| row.get(0))
+        let songs: Vec<DbSong> = song_stmt
+            .query_map(params![id], |row| {
+                Ok(DbSong {
+                    path: row.get(0)?,
+                    title: row.get(1)?,
+                    artist: row.get(2)?,
+                    image: row.get(3)?,
+                    duration_seconds: row.get(4)?,
+                    duration_formatted: row.get(5)?,
+                })
+            })
             .map_err(|e| e.to_string())?
             .collect::<Result<_, _>>()
             .map_err(|e| e.to_string())?;
 
-        result.push(DbPlaylist {
-            id,
-            name,
-            song_paths,
-        });
+        result.push(DbPlaylist { id, name, songs });
     }
 
     Ok(result)
@@ -58,7 +76,7 @@ pub(crate) fn upsert_playlist(
     conn: &Connection,
     id: &str,
     name: &str,
-    song_paths: &[String],
+    songs: &[DbSong],
 ) -> Result<(), String> {
     conn.execute(
         "INSERT INTO playlists (id, name) VALUES (?1, ?2)
@@ -73,10 +91,21 @@ pub(crate) fn upsert_playlist(
     )
     .map_err(|e| e.to_string())?;
 
-    for (position, path) in song_paths.iter().enumerate() {
+    for (position, song) in songs.iter().enumerate() {
         conn.execute(
-            "INSERT INTO playlist_songs (playlist_id, song_path, position) VALUES (?1, ?2, ?3)",
-            params![id, path, position as i64],
+            "INSERT INTO playlist_songs \
+             (playlist_id, song_path, position, title, artist, image, duration_seconds, duration_formatted) \
+             VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)",
+            params![
+                id,
+                song.path,
+                position as i64,
+                song.title,
+                song.artist,
+                song.image,
+                song.duration_seconds,
+                song.duration_formatted
+            ],
         )
         .map_err(|e| e.to_string())?;
     }
@@ -184,10 +213,10 @@ pub fn db_upsert_playlist(
     state: State<DbState>,
     id: String,
     name: String,
-    song_paths: Vec<String>,
+    songs: Vec<DbSong>,
 ) -> Result<(), String> {
     let conn = state.conn.lock().map_err(|e| e.to_string())?;
-    upsert_playlist(&conn, &id, &name, &song_paths)
+    upsert_playlist(&conn, &id, &name, &songs)
 }
 
 #[tauri::command]
@@ -259,19 +288,60 @@ mod tests {
         assert!(result.is_empty());
     }
 
+    fn make_songs(paths: &[&str]) -> Vec<DbSong> {
+        paths
+            .iter()
+            .map(|p| DbSong {
+                path: p.to_string(),
+                title: None,
+                artist: None,
+                image: None,
+                duration_seconds: None,
+                duration_formatted: None,
+            })
+            .collect()
+    }
+
     #[test]
     fn upsert_and_get_playlist_roundtrip() {
         let db = setup();
         let conn = db.conn.lock().unwrap();
-        let paths = vec!["/music/a.mp3".to_string(), "/music/b.mp3".to_string()];
+        let songs = vec![
+            DbSong {
+                path: "/music/a.mp3".into(),
+                title: Some("Track A".into()),
+                artist: Some("Artist".into()),
+                image: Some("base64data".into()),
+                duration_seconds: Some(213.5),
+                duration_formatted: Some("3:33".into()),
+            },
+            DbSong {
+                path: "/music/b.mp3".into(),
+                title: None,
+                artist: None,
+                image: None,
+                duration_seconds: None,
+                duration_formatted: None,
+            },
+        ];
 
-        upsert_playlist(&conn, "pl-1", "Chill Vibes", &paths).unwrap();
+        upsert_playlist(&conn, "pl-1", "Chill Vibes", &songs).unwrap();
 
         let playlists = get_playlists(&conn).unwrap();
         assert_eq!(playlists.len(), 1);
         assert_eq!(playlists[0].id, "pl-1");
         assert_eq!(playlists[0].name, "Chill Vibes");
-        assert_eq!(playlists[0].song_paths, paths);
+        assert_eq!(playlists[0].songs[0].path, "/music/a.mp3");
+        assert_eq!(playlists[0].songs[0].title.as_deref(), Some("Track A"));
+        assert_eq!(playlists[0].songs[0].image.as_deref(), Some("base64data"));
+        assert_eq!(playlists[0].songs[0].duration_seconds, Some(213.5));
+        assert_eq!(
+            playlists[0].songs[0].duration_formatted.as_deref(),
+            Some("3:33")
+        );
+        assert_eq!(playlists[0].songs[1].path, "/music/b.mp3");
+        assert!(playlists[0].songs[1].title.is_none());
+        assert!(playlists[0].songs[1].image.is_none());
     }
 
     #[test]
@@ -292,38 +362,50 @@ mod tests {
         let db = setup();
         let conn = db.conn.lock().unwrap();
 
-        upsert_playlist(
-            &conn,
-            "pl-1",
-            "Mix",
-            &["/a.mp3".to_string(), "/b.mp3".to_string()],
-        )
-        .unwrap();
-        upsert_playlist(&conn, "pl-1", "Mix", &["/c.mp3".to_string()]).unwrap();
+        upsert_playlist(&conn, "pl-1", "Mix", &make_songs(&["/a.mp3", "/b.mp3"])).unwrap();
+        upsert_playlist(&conn, "pl-1", "Mix", &make_songs(&["/c.mp3"])).unwrap();
 
         let playlists = get_playlists(&conn).unwrap();
-        assert_eq!(playlists[0].song_paths, vec!["/c.mp3"]);
+        assert_eq!(playlists[0].songs[0].path, "/c.mp3");
     }
 
     #[test]
     fn songs_preserve_insertion_order() {
         let db = setup();
         let conn = db.conn.lock().unwrap();
-        let paths: Vec<String> = (0..5).map(|i| format!("/track{i}.mp3")).collect();
+        let songs: Vec<DbSong> = (0..5)
+            .map(|i| DbSong {
+                path: format!("/track{i}.mp3"),
+                title: None,
+                artist: None,
+                image: None,
+                duration_seconds: None,
+                duration_formatted: None,
+            })
+            .collect();
 
-        upsert_playlist(&conn, "pl-1", "Ordered", &paths).unwrap();
+        upsert_playlist(&conn, "pl-1", "Ordered", &songs).unwrap();
 
         let result = get_playlists(&conn).unwrap();
-        assert_eq!(result[0].song_paths, paths);
+        let got_paths: Vec<&str> = result[0].songs.iter().map(|s| s.path.as_str()).collect();
+        assert_eq!(
+            got_paths,
+            vec![
+                "/track0.mp3",
+                "/track1.mp3",
+                "/track2.mp3",
+                "/track3.mp3",
+                "/track4.mp3"
+            ]
+        );
     }
 
     #[test]
     fn delete_playlist_removes_it_and_its_songs() {
         let db = setup();
         let conn = db.conn.lock().unwrap();
-        let paths = vec!["/a.mp3".to_string()];
 
-        upsert_playlist(&conn, "pl-1", "To Delete", &paths).unwrap();
+        upsert_playlist(&conn, "pl-1", "To Delete", &make_songs(&["/a.mp3"])).unwrap();
         delete_playlist(&conn, "pl-1").unwrap();
 
         assert!(get_playlists(&conn).unwrap().is_empty());
