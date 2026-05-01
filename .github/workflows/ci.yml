@@ -58,6 +58,6 @@ jobs:
 
       - name: Security audit
         run: |
-          cargo install cargo-audit --locked
+          command -v cargo-audit >/dev/null 2>&1 || cargo install cargo-audit --locked
           cargo audit
         working-directory: src-tauri
