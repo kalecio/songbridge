@@ -123,4 +123,11 @@ describe('Controls', () => {
       expect(setIsPlaying).toHaveBeenCalledWith(false);
     });
   });
+
+  it('does not invoke load_song or play_song when currentPath is undefined on mount', async () => {
+    renderWithContext(<Controls />, { currentPath: undefined });
+    await act(async () => {});
+    expect(mockInvoke).not.toHaveBeenCalledWith('load_song', expect.anything());
+    expect(mockInvoke).not.toHaveBeenCalledWith('play_song');
+  });
 });
