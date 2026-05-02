@@ -38,7 +38,8 @@ jobs:
             libayatana-appindicator3-dev \
             librsvg2-dev \
             patchelf \
-            libasound2-dev
+            libasound2-dev \
+            xdg-utils
 
       - uses: actions/setup-node@v4
         with:
