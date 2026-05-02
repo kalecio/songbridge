@@ -1,23 +1,36 @@
-import { useContext } from 'react';
+import { useContext, useRef, useState } from 'react';
 import { open } from '@tauri-apps/plugin-dialog';
 import { invoke } from '@tauri-apps/api/core';
 import { AppContext } from '../../Context/AppContext';
 import {
   AddButton,
+  ButtonRow,
   EmptyNote,
   FolderPlusIcon,
   PathItem,
   PathList,
   PathText,
   RemoveButton,
+  RescanButton,
+  RescanIcon,
+  ScanningBadge,
   Section,
   SectionTitle,
   SettingsContainer,
+  SuccessBadge,
   TrashIcon,
 } from './styles';
 
 const Settings = () => {
   const { libraryPaths, setLibraryPaths, scanLibrary, isScanning } = useContext(AppContext);
+  const [scanSuccess, setScanSuccess] = useState(false);
+  const successTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const showSuccess = () => {
+    setScanSuccess(true);
+    if (successTimer.current) clearTimeout(successTimer.current);
+    successTimer.current = setTimeout(() => setScanSuccess(false), 3000);
+  };
 
   const handleAddFolder = async () => {
     const folder = await open({ directory: true, multiple: false });
@@ -27,6 +40,7 @@ const Settings = () => {
     const updated = [...libraryPaths, folder];
     setLibraryPaths?.(updated);
     await scanLibrary?.(updated);
+    showSuccess();
   };
 
   const handleRemove = async (path: string) => {
@@ -34,6 +48,12 @@ const Settings = () => {
     const updated = libraryPaths.filter((p) => p !== path);
     setLibraryPaths?.(updated);
     await scanLibrary?.(updated);
+    showSuccess();
+  };
+
+  const handleRescan = async () => {
+    await scanLibrary?.(libraryPaths);
+    showSuccess();
   };
 
   return (
@@ -56,10 +76,18 @@ const Settings = () => {
           </PathList>
         )}
 
-        <AddButton onClick={handleAddFolder} disabled={isScanning}>
-          <FolderPlusIcon />
-          Add folder
-        </AddButton>
+        <ButtonRow>
+          <AddButton onClick={handleAddFolder} disabled={isScanning}>
+            <FolderPlusIcon />
+            Add folder
+          </AddButton>
+          <RescanButton onClick={handleRescan} disabled={isScanning || libraryPaths.length === 0}>
+            <RescanIcon $spinning={isScanning} />
+            Rescan library
+          </RescanButton>
+          {isScanning && <ScanningBadge>Scanning…</ScanningBadge>}
+          {!isScanning && scanSuccess && <SuccessBadge>Library scan complete!</SuccessBadge>}
+        </ButtonRow>
       </Section>
     </SettingsContainer>
   );

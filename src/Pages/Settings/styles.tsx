@@ -1,5 +1,5 @@
-import { styled } from 'styled-components';
-import { FaFolderPlus, FaTrash } from 'react-icons/fa6';
+import { styled, keyframes, css } from 'styled-components';
+import { FaFolderPlus, FaTrash, FaArrowsRotate } from 'react-icons/fa6';
 
 export const SettingsContainer = styled.div`
   display: flex;
@@ -112,4 +112,63 @@ export const TrashIcon = styled(FaTrash)`
 `;
 export const FolderPlusIcon = styled(FaFolderPlus)`
   ${iconStyle}
+`;
+
+const spin = keyframes`
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+`;
+
+export const ButtonRow = styled.div`
+  display: flex;
+  justify-content: flex-start;
+  flex-direction: column;
+  gap: 0.75rem;
+  max-height: 12rem;
+`;
+
+export const RescanButton = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: none;
+  color: #9b7ebd;
+  border: 1.5px solid #9b7ebd;
+  border-radius: 2rem;
+  padding: 0.5rem 1.2rem;
+  font-size: 0.875rem;
+  cursor: pointer;
+  align-self: flex-start;
+  transition:
+    background 0.15s,
+    color 0.15s;
+  max-height: 2.5rem;
+
+  &:hover {
+    background: #f3e8ff;
+  }
+
+  &:disabled {
+    opacity: 0.6;
+    cursor: default;
+  }
+`;
+
+export const RescanIcon = styled(FaArrowsRotate)<{ $spinning?: boolean }>`
+  ${iconStyle}
+  ${({ $spinning }) =>
+    $spinning &&
+    css`
+      animation: ${spin} 1s linear infinite;
+    `}
+`;
+
+export const ScanningBadge = styled.span`
+  font-size: 0.8rem;
+  color: #9b7ebd;
+`;
+
+export const SuccessBadge = styled.span`
+  font-size: 0.8rem;
+  color: #2e7d32;
 `;

@@ -2,45 +2,125 @@
 
 # Songbridge
 
-Songbridge is a open source cross-plataform music player and library manager for local files.
+Songbridge is an open-source, cross-platform music player and library manager for local files.
+
+[![CI](https://github.com/kalecio/songbridge/actions/workflows/ci.yml/badge.svg)](https://github.com/kalecio/songbridge/actions/workflows/ci.yml)
+[![License: CC BY-NC-SA 4.0](https://img.shields.io/badge/License-CC%20BY--NC--SA%204.0-lightgrey.svg)](./LICENSE)
+[![Discord](https://img.shields.io/badge/Discord-%235865F2.svg?style=for-the-badge&logo=discord&logoColor=white)](https://discord.gg/dEej9RPjPd)
+
+---
+
+## Features
+
+- Browse and play music from your local library
+- Organize tracks by artist and album
+- Create and manage playlists
+- Persistent playback queue
+- Configurable library scan paths with manual rescan
+- Metadata support: title, artist, album, cover art
+- Persistent preferences and playlists via SQLite
+
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Desktop shell | [Tauri v2](https://v2.tauri.app/) |
+| Frontend | React 18, TypeScript, styled-components |
+| Audio engine | Rust (rodio + symphonia) |
+| Database | SQLite (rusqlite) |
+| Logging | tauri-plugin-log |
+
+## Supported Platforms
+
+- macOS (Apple Silicon and Intel)
+- Linux (x86_64 and ARM)
+- Windows
+
+---
 
 ## Development
-### Recommended IDE Setup
-
-- [VS Code](https://code.visualstudio.com/) + [Tauri](https://marketplace.visualstudio.com/items?itemName=tauri-apps.tauri-vscode) + [rust-analyzer](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer)
 
 ### Prerequisites
 
-Necessary requirements to develop the app:
-* [Node.js](https://nodejs.org/en/download) version 20.17.0
-* [Tauri](https://v2.tauri.app/) version 11.5.2
-* [RustUp](https://rustup.rs/)
+- [Node.js](https://nodejs.org/) v22+
+- [Rust](https://rustup.rs/) (stable toolchain via rustup)
 
-Make sure to follow the prerequisites in the [tauri documentation](https://v2.tauri.app/start/prerequisites) according to the OS you are using.
+Follow the [Tauri prerequisites guide](https://v2.tauri.app/start/prerequisites/) for your OS before continuing — it covers system-level dependencies.
 
-### Running the app
+### Recommended IDE
 
-To run the app in development mode you can use:
+[VS Code](https://code.visualstudio.com/) with the following extensions:
+
+- [Tauri](https://marketplace.visualstudio.com/items?itemName=tauri-apps.tauri-vscode)
+- [rust-analyzer](https://marketplace.visualstudio.com/items?itemName=rust-lang.rust-analyzer)
+
+### Running
+
 ```sh
-npm run tauri dev 
+npm install
+npm run tauri dev
 ```
 
-To build the app use:
+### Building
+
 ```sh
-npm run tauri build 
+npm run tauri build
 ```
-### Trobleshoot
-#### Running on Linux
 
-Problems may happen while trying to run the commands above on linux, for that try using these enviroment variables `WEBKIT_DISABLE_DMABUF_RENDERER=1` and/or `WEBKIT_DISABLE_COMPOSITING_MODE=1` when executing the development mode and `NO_STRIP=true` when building the app.
+### Testing
 
-Examples:
+```sh
+# Frontend (Vitest)
+npm test
+
+# Rust unit tests
+cargo test --manifest-path src-tauri/Cargo.toml --lib
+```
+
+### Linting
+
+```sh
+npm run lint          # ESLint
+cargo fmt --manifest-path src-tauri/Cargo.toml --check
+cargo clippy --manifest-path src-tauri/Cargo.toml -- -D warnings
+```
+
+---
+
+## Troubleshooting
+
+### Linux
+
+If you encounter rendering issues, try setting one or both of these environment variables:
+
 ```sh
 WEBKIT_DISABLE_DMABUF_RENDERER=1 WEBKIT_DISABLE_COMPOSITING_MODE=1 npm run tauri dev
 ```
+
+For builds:
+
 ```sh
-NO_STRIP=true npm run tauri build 
+NO_STRIP=true npm run tauri build
 ```
 
-## Licence
-[Lesser GLP](./LICENSE)
+### Log files
+
+Songbridge writes timestamped logs to a file for debugging. The location depends on your OS:
+
+| OS | Path |
+|---|---|
+| macOS | `~/Library/Logs/com.songbridge.app/songbridge.log` |
+| Linux | `~/.local/share/com.songbridge.app/logs/songbridge.log` |
+| Windows | `%APPDATA%\com.songbridge.app\logs\songbridge.log` |
+
+When reporting a bug, attaching this log file helps us diagnose the issue faster.
+
+---
+
+## Contributing
+
+Contributions are welcome. Please read [CONTRIBUTORS.md](./CONTRIBUTORS.md) before opening a pull request.
+
+## License
+
+[CC BY-NC-SA 4.0](./LICENSE)
