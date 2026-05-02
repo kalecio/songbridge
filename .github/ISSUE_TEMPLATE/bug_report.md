@@ -1,38 +1,60 @@
 ---
 name: Bug report
-about: Create a report to help us improve
-title: ''
-labels: ''
+about: Report something that is broken or behaving unexpectedly
+title: '[Bug] '
+labels: bug
 assignees: ''
 
 ---
 
-**Describe the bug**
+## Description
+
 A clear and concise description of what the bug is.
 
-**To Reproduce**
-Steps to reproduce the behavior:
-1. Go to '...'
-2. Click on '....'
-3. Scroll down to '....'
-4. See error
+## Steps to Reproduce
 
-**Expected behavior**
-A clear and concise description of what you expected to happen.
+1. 
+2. 
+3. 
 
-**Screenshots**
-If applicable, add screenshots to help explain your problem.
+## Expected Behaviour
 
-**Desktop (please complete the following information):**
- - OS: [e.g. iOS]
- - Browser [e.g. chrome, safari]
- - Version [e.g. 22]
+What you expected to happen.
 
-**Smartphone (please complete the following information):**
- - Device: [e.g. iPhone6]
- - OS: [e.g. iOS8.1]
- - Browser [e.g. stock browser, safari]
- - Version [e.g. 22]
+## Actual Behaviour
 
-**Additional context**
-Add any other context about the problem here.
+What actually happened. Include any error messages shown in the UI.
+
+## Environment
+
+| Field | Value |
+|---|---|
+| Songbridge version | e.g. 0.1.0 |
+| OS | e.g. macOS 15.2, Ubuntu 24.04, Windows 11 |
+| Architecture | e.g. Apple Silicon, x86_64 |
+
+## Log File
+
+Please attach or paste the contents of your log file — it helps us diagnose the issue much faster.
+
+Log file locations:
+- **macOS:** `~/Library/Logs/com.songbridge.app/songbridge.log`
+- **Linux:** `~/.local/share/com.songbridge.app/logs/songbridge.log`
+- **Windows:** `%APPDATA%\com.songbridge.app\logs\songbridge.log`
+
+<details>
+<summary>Log output</summary>
+
+```
+Paste log content here
+```
+
+</details>
+
+## Screenshots
+
+If applicable, add screenshots to help illustrate the problem.
+
+## Additional Context
+
+Any other context that might be relevant (audio format involved, library size, etc.).
