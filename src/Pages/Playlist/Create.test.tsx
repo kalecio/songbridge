@@ -29,6 +29,7 @@ const Wrapper = ({
           libraryPaths: [],
           progress: 0,
           currentPlaylist: [],
+          currentTheme: 'Midnight',
           playlists,
           setPlaylists,
         }}

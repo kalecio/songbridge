@@ -36,15 +36,15 @@ export const PlayNowButton = styled.button`
   font-size: 1rem;
   gap: 0.5rem;
   max-width: 140px;
-  background-color: #9b7ebd;
-  color: white;
+  background-color: ${({ theme }) => theme.primary};
+  color: ${({ theme }) => theme.textOnPrimary};
   border: none;
   border-radius: 0.75rem;
   cursor: pointer;
 
   &:hover {
-    background: #e4d4f7;
-    color: #5a3a7a;
+    background: ${({ theme }) => theme.active};
+    color: ${({ theme }) => theme.primaryDeep};
   }
 `;
 
@@ -68,7 +68,7 @@ export const Play = styled(FaCirclePlay)`
   max-width: 30px;
   max-height: 30px;
   cursor: pointer;
-  color: #f49bab;
+  color: ${({ theme }) => theme.accent};
 `;
 
 export const SongList = styled.div`
@@ -90,14 +90,14 @@ export const SongItem = styled.div<{ $active?: boolean; $missing?: boolean }>`
   cursor: ${(p) => (p.$missing ? 'default' : 'pointer')};
   border-radius: 0.75rem;
   padding: 0.75rem 0.5rem;
-  background: ${(p) => (p.$active ? '#f49bab33' : 'transparent')};
+  background: ${(p) => (p.$active ? p.theme.accentBg : 'transparent')};
   opacity: ${(p) => (p.$missing ? 0.45 : 1)};
   transition:
     background 0.15s,
     opacity 0.15s;
 
   &:hover {
-    background: ${(p) => (p.$active ? '#f49bab55' : p.$missing ? 'transparent' : '#f7cdd4')};
+    background: ${(p) => (p.$active ? p.theme.accentBgHover : p.$missing ? 'transparent' : p.theme.accentHover)};
   }
 `;
 
@@ -129,7 +129,7 @@ export const SongDuration = styled.span`
 
 export const MissingIcon = styled(FaCircleExclamation)`
   flex-shrink: 0;
-  color: #c0392b;
+  color: ${({ theme }) => theme.error};
   width: 1rem;
   height: 1rem;
 `;
@@ -138,7 +138,7 @@ export const RemoveMissingButton = styled.button`
   background: none;
   border: none;
   cursor: pointer;
-  color: #c0392b;
+  color: ${({ theme }) => theme.error};
   display: flex;
   align-items: center;
   padding: 0.2rem;

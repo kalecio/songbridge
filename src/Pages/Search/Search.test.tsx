@@ -15,6 +15,7 @@ const defaultContext: AppContextValue = {
   libraryPaths: [],
   progress: 0,
   currentPlaylist: [],
+  currentTheme: 'Midnight',
 };
 
 const library: MetadataType[] = [

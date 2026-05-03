@@ -2,6 +2,7 @@ import { useContext, useRef, useState } from 'react';
 import { open } from '@tauri-apps/plugin-dialog';
 import { invoke } from '@tauri-apps/api/core';
 import { AppContext } from '../../Context/AppContext';
+import { themes } from '../../theme';
 import {
   AddButton,
   ButtonRow,
@@ -18,11 +19,15 @@ import {
   SectionTitle,
   SettingsContainer,
   SuccessBadge,
+  ThemeLabel,
+  ThemeRow,
+  ThemeSelect,
   TrashIcon,
 } from './styles';
 
 const Settings = () => {
-  const { libraryPaths, setLibraryPaths, scanLibrary, isScanning } = useContext(AppContext);
+  const { libraryPaths, setLibraryPaths, scanLibrary, isScanning, currentTheme, setCurrentTheme } =
+    useContext(AppContext);
   const [scanSuccess, setScanSuccess] = useState(false);
   const successTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
@@ -58,6 +63,20 @@ const Settings = () => {
 
   return (
     <SettingsContainer>
+      <Section>
+        <SectionTitle>Appearance</SectionTitle>
+        <ThemeRow>
+          <ThemeLabel htmlFor="theme-select">Theme</ThemeLabel>
+          <ThemeSelect id="theme-select" value={currentTheme} onChange={(e) => setCurrentTheme?.(e.target.value)}>
+            {Object.keys(themes).map((name) => (
+              <option key={name} value={name}>
+                {name}
+              </option>
+            ))}
+          </ThemeSelect>
+        </ThemeRow>
+      </Section>
+
       <Section>
         <SectionTitle>Music Library Paths</SectionTitle>
 

@@ -2,14 +2,14 @@ import { FaAngleLeft, FaCompactDisc, FaHouse, FaMicrophoneLines, FaMusic, FaPlus
 import { styled } from 'styled-components';
 
 const SidebarContainer = styled.div`
-  background-color: #f7f4fc;
+  background-color: ${({ theme }) => theme.surfaceAlt};
   width: 30%;
   min-width: 200px;
   display: flex;
   flex-direction: column;
   padding: 1.5rem 1rem;
   overflow-y: auto;
-  border-right: 1px solid #e5d8f5;
+  border-right: 1px solid ${({ theme }) => theme.border};
   gap: 0.1rem;
 `;
 
@@ -24,7 +24,7 @@ const AppLogo = styled.div`
 const AppName = styled.span`
   font-size: 1.1rem;
   font-weight: 700;
-  color: #3a1f5a;
+  color: ${({ theme }) => theme.textPrimary};
 `;
 
 const SectionLabel = styled.span`
@@ -32,7 +32,7 @@ const SectionLabel = styled.span`
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: #9b7ebd;
+  color: ${({ theme }) => theme.primary};
   padding: 0.75rem 0.5rem 0.25rem;
   display: flex;
   align-items: center;
@@ -52,7 +52,7 @@ const PlusButtonContainer = styled.button`
   background: none;
   border: none;
   cursor: pointer;
-  color: #9b7ebd;
+  color: ${({ theme }) => theme.primary};
   display: flex;
   justify-content: center;
   align-items: center;
@@ -65,8 +65,8 @@ const PlusButtonContainer = styled.button`
   max-height: 2rem;
 
   &:hover {
-    color: #7f55b1;
-    background: #e8d8f5;
+    color: ${({ theme }) => theme.primaryDark};
+    background: ${({ theme }) => theme.hoverActive};
   }
 `;
 
@@ -81,21 +81,21 @@ const MenuItem = styled.div<{ $active?: boolean }>`
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  color: ${(p) => (p.$active ? '#7f55b1' : '#3a1f5a')};
+  color: ${(p) => (p.$active ? p.theme.primaryDark : p.theme.textPrimary)};
   cursor: pointer;
   padding: 0.6rem 0.75rem;
   border-radius: 0.65rem;
   font-size: 0.9rem;
   font-weight: ${(p) => (p.$active ? '600' : '400')};
-  background: ${(p) => (p.$active ? '#e8d8f5' : 'transparent')};
+  background: ${(p) => (p.$active ? p.theme.hoverActive : 'transparent')};
   transition:
     background 0.15s,
     color 0.15s;
   max-height: 3rem;
 
   &:hover {
-    background: ${(p) => (p.$active ? '#e8d8f5' : '#ede5f8')};
-    color: #7f55b1;
+    background: ${(p) => (p.$active ? p.theme.hoverActive : p.theme.hover)};
+    color: ${({ theme }) => theme.primaryDark};
   }
 `;
 
@@ -103,13 +103,13 @@ const PlaylistItem = styled.div<{ $active?: boolean }>`
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  color: ${(p) => (p.$active ? '#7f55b1' : '#3a1f5a')};
+  color: ${(p) => (p.$active ? p.theme.primaryDark : p.theme.textPrimary)};
   cursor: pointer;
   padding: 0.4rem 0.5rem;
   border-radius: 0.65rem;
   font-size: 0.875rem;
   font-weight: ${(p) => (p.$active ? '600' : '400')};
-  background: ${(p) => (p.$active ? '#e8d8f5' : 'transparent')};
+  background: ${(p) => (p.$active ? p.theme.hoverActive : 'transparent')};
   transition:
     background 0.15s,
     color 0.15s;
@@ -119,8 +119,8 @@ const PlaylistItem = styled.div<{ $active?: boolean }>`
   max-height: 3rem;
 
   &:hover {
-    background: ${(p) => (p.$active ? '#e8d8f5' : '#ede5f8')};
-    color: #7f55b1;
+    background: ${(p) => (p.$active ? p.theme.hoverActive : p.theme.hover)};
+    color: ${({ theme }) => theme.primaryDark};
   }
 `;
 
@@ -136,7 +136,7 @@ const QueueHeader = styled.div`
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  color: #3a1f5a;
+  color: ${({ theme }) => theme.textPrimary};
   font-weight: 600;
   font-size: 0.9rem;
   cursor: pointer;
@@ -144,7 +144,7 @@ const QueueHeader = styled.div`
   max-height: 2.5rem;
 
   &:hover {
-    color: #7f55b1;
+    color: ${({ theme }) => theme.primaryDark};
   }
 `;
 

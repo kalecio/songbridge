@@ -18,7 +18,7 @@ export const Card = styled.div`
   transition: background 0.15s;
 
   &:hover {
-    background: #f0e8fa;
+    background: ${({ theme }) => theme.surfaceRaised};
   }
 `;
 
@@ -28,7 +28,7 @@ export const Avatar = styled.div`
   aspect-ratio: 1 / 1;
   flex-shrink: 0;
   border-radius: 50%;
-  background: linear-gradient(135deg, #9b7ebd, #f49bab);
+  background: linear-gradient(135deg, ${({ theme }) => theme.primary}, ${({ theme }) => theme.accent});
   color: #fff;
   display: flex;
   align-items: center;
@@ -38,7 +38,7 @@ export const Avatar = styled.div`
 `;
 
 export const ArtistName = styled.div`
-  color: #3a1f5a;
+  color: ${({ theme }) => theme.textPrimary};
   font-weight: 600;
   font-size: 0.9rem;
   text-align: center;
@@ -49,7 +49,7 @@ export const ArtistName = styled.div`
 `;
 
 export const ArtistMeta = styled.div`
-  color: #9b7ebd;
+  color: ${({ theme }) => theme.primary};
   font-size: 0.75rem;
   text-align: center;
 `;

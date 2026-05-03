@@ -1,9 +1,18 @@
 import { useEffect, useState } from 'react';
+import { createGlobalStyle, ThemeProvider } from 'styled-components';
 import './App.css';
 import Player from './Pages/Player/Player';
 import { AppContext } from './Context/AppContext';
 import { MetadataType, PlaylistType } from './types';
 import { invoke } from '@tauri-apps/api/core';
+import { themes, defaultTheme } from './theme';
+
+const GlobalStyle = createGlobalStyle`
+  body {
+    background-color: ${({ theme }) => theme.background};
+    color: ${({ theme }) => theme.textPrimary};
+  }
+`;
 
 function App() {
   const [currentPath, setCurrentPath] = useState<string | undefined>(undefined);
@@ -18,6 +27,9 @@ function App() {
   const [library, setLibrary] = useState<MetadataType[]>([]);
   const [libraryPaths, setLibraryPaths] = useState<string[]>([]);
   const [isScanning, setIsScanning] = useState<boolean>(false);
+  const [currentTheme, setCurrentTheme] = useState<string>(defaultTheme.name);
+
+  const activeTheme = themes[currentTheme] ?? defaultTheme;
 
   const scanLibrary = async (paths: string[]) => {
     setIsScanning(true);
@@ -40,10 +52,12 @@ function App() {
           current_playlist: string[];
           on_repeat: boolean;
           on_shuffle: boolean;
+          theme: string;
         }>('db_get_preferences');
         if (prefs.current_playlist.length) setCurrentPlaylist(prefs.current_playlist);
         setOnRepeat(prefs.on_repeat);
         setOnShuffle(prefs.on_shuffle);
+        if (themes[prefs.theme]) setCurrentTheme(prefs.theme);
 
         const dbPlaylists =
           await invoke<{ id: string; name: string; songs: { path: string; title?: string; artist?: string }[] }[]>(
@@ -75,8 +89,9 @@ function App() {
       currentPlaylist,
       onRepeat,
       onShuffle,
+      theme: currentTheme,
     }).catch(() => {});
-  }, [currentPath, currentPlaylist, onRepeat, onShuffle]);
+  }, [currentPath, currentPlaylist, onRepeat, onShuffle, currentTheme]);
 
   // Persist playlists whenever they change
   useEffect(() => {
@@ -100,6 +115,7 @@ function App() {
         metadata,
         playlists,
         currentPlaylist,
+        currentTheme,
         onRepeat,
         onShuffle,
         showQueue,
@@ -108,6 +124,7 @@ function App() {
         isScanning,
         setCurrentPath,
         setCurrentPlaylist,
+        setCurrentTheme,
         setLibrary,
         setLibraryPaths,
         scanLibrary,
@@ -121,7 +138,10 @@ function App() {
         setShowQueue,
       }}
     >
-      <Player />
+      <ThemeProvider theme={activeTheme}>
+        <GlobalStyle />
+        <Player />
+      </ThemeProvider>
     </AppContext.Provider>
   );
 }

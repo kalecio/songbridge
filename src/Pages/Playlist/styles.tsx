@@ -12,8 +12,8 @@ export const Container = styled.div`
 export const LeftPanel = styled.aside`
   width: 220px;
   flex-shrink: 0;
-  background: #f3e8ff;
-  border-right: 1px solid #d4b8f0;
+  background: ${({ theme }) => theme.surfaceRaised};
+  border-right: 1px solid ${({ theme }) => theme.borderLight};
   display: flex;
   flex-direction: column;
   overflow-y: auto;
@@ -23,8 +23,8 @@ export const LeftPanel = styled.aside`
 export const NewButton = styled.button`
   margin: 0.75rem;
   padding: 0.5rem 0.75rem;
-  background: #9b7ebd;
-  color: #fff;
+  background: ${({ theme }) => theme.primary};
+  color: ${({ theme }) => theme.textOnPrimary};
   border: none;
   border-radius: 2rem;
   font-size: 0.8rem;
@@ -34,7 +34,7 @@ export const NewButton = styled.button`
   max-width: 8rem;
 
   &:hover {
-    background: #7f55b1;
+    background: ${({ theme }) => theme.primaryDark};
   }
 `;
 
@@ -44,13 +44,13 @@ export const PlaylistItem = styled.div<{ $active?: boolean }>`
   gap: 0.5rem;
   padding: 0.6rem 0.75rem;
   cursor: pointer;
-  background: ${(p) => (p.$active ? '#e4d4f7' : 'transparent')};
-  border-left: 3px solid ${(p) => (p.$active ? '#9b7ebd' : 'transparent')};
+  background: ${(p) => (p.$active ? p.theme.active : 'transparent')};
+  border-left: 3px solid ${(p) => (p.$active ? p.theme.primary : 'transparent')};
   transition: background 0.15s;
   max-height: 4rem;
 
   &:hover {
-    background: ${(p) => (p.$active ? '#e4d4f7' : '#ecdff8')};
+    background: ${(p) => (p.$active ? p.theme.active : p.theme.hover)};
   }
 `;
 
@@ -65,7 +65,7 @@ export const PlaylistItemInfo = styled.div`
 export const PlaylistItemName = styled.div`
   font-size: 0.85rem;
   font-weight: 500;
-  color: #3a1f5a;
+  color: ${({ theme }) => theme.textPrimary};
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -74,7 +74,7 @@ export const PlaylistItemName = styled.div`
 
 export const PlaylistItemCount = styled.div`
   font-size: 0.7rem;
-  color: #9b7ebd;
+  color: ${({ theme }) => theme.primary};
   max-height: 1.5rem;
 `;
 
@@ -82,7 +82,7 @@ export const DeleteBtn = styled.button`
   background: none;
   border: none;
   cursor: pointer;
-  color: #c0a0d8;
+  color: ${({ theme }) => theme.mutedAccent};
   display: flex;
   align-items: center;
   padding: 0.2rem;
@@ -93,7 +93,7 @@ export const DeleteBtn = styled.button`
   max-height: 1.5rem;
 
   &:hover {
-    color: #c0392b;
+    color: ${({ theme }) => theme.error};
   }
 `;
 
@@ -108,7 +108,7 @@ export const RightPanel = styled.main`
 
 export const EmptyState = styled.p`
   margin: auto;
-  color: #9b7ebd;
+  color: ${({ theme }) => theme.primary};
   font-size: 0.9rem;
 `;
 
@@ -123,7 +123,7 @@ export const EditorHeader = styled.div`
 export const NameInput = styled.input`
   font-size: 1.5rem;
   font-weight: 700;
-  color: #3a1f5a;
+  color: ${({ theme }) => theme.textPrimary};
   background: none;
   border: none;
   border-bottom: 2px solid transparent;
@@ -133,13 +133,13 @@ export const NameInput = styled.input`
   max-height: 2rem;
 
   &:focus {
-    border-bottom-color: #9b7ebd;
+    border-bottom-color: ${({ theme }) => theme.primary};
   }
 `;
 
 export const SongCount = styled.span`
   font-size: 0.8rem;
-  color: #9b7ebd;
+  color: ${({ theme }) => theme.primary};
   max-height: 2rem;
 `;
 
@@ -163,23 +163,23 @@ export const ColumnTitle = styled.h3`
   font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: #7f55b1;
+  color: ${({ theme }) => theme.primaryDark};
   margin: 0 0 0.25rem;
   max-height: 1.5rem;
 `;
 
 export const SearchInput = styled.input`
   padding: 0.4rem 0.75rem;
-  border: 1px solid #d4b8f0;
+  border: 1px solid ${({ theme }) => theme.borderLight};
   border-radius: 2rem;
   font-size: 0.8rem;
   outline: none;
-  background: #fff;
-  color: #3a1f5a;
+  background: ${({ theme }) => theme.surface};
+  color: ${({ theme }) => theme.textPrimary};
   max-height: 2.5rem;
 
   &:focus {
-    border-color: #9b7ebd;
+    border-color: ${({ theme }) => theme.primary};
   }
 `;
 
@@ -201,7 +201,7 @@ export const SongRow = styled.div`
   max-height: 3rem;
 
   &:hover {
-    background: #ecdff8;
+    background: ${({ theme }) => theme.hover};
   }
 `;
 
@@ -216,7 +216,7 @@ export const SongMeta = styled.div`
 export const SongTitle = styled.div`
   font-size: 0.82rem;
   font-weight: 500;
-  color: #3a1f5a;
+  color: ${({ theme }) => theme.textPrimary};
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -224,7 +224,7 @@ export const SongTitle = styled.div`
 
 export const SongArtist = styled.div`
   font-size: 0.72rem;
-  color: #9b7ebd;
+  color: ${({ theme }) => theme.primary};
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -246,20 +246,20 @@ export const IconButton = styled.button`
 export const RemoveIcon = styled(FaMinus)`
   max-width: 0.75rem;
   max-height: 0.75rem;
-  color: #c0a0d8;
+  color: ${({ theme }) => theme.mutedAccent};
 
   ${IconButton}:hover & {
-    color: #c0392b;
+    color: ${({ theme }) => theme.error};
   }
 `;
 
 export const AddIcon = styled(FaPlus)`
   max-width: 0.75rem;
   max-height: 0.75rem;
-  color: #c0a0d8;
+  color: ${({ theme }) => theme.mutedAccent};
 
   ${IconButton}:hover & {
-    color: #7f55b1;
+    color: ${({ theme }) => theme.primaryDark};
   }
 `;
 
@@ -270,6 +270,6 @@ export const TrashIcon = styled(FaTrash)`
 
 export const EmptyColumn = styled.p`
   font-size: 0.8rem;
-  color: #c0a0d8;
+  color: ${({ theme }) => theme.mutedAccent};
   margin: 0;
 `;

@@ -21,7 +21,7 @@ export const SectionTitle = styled.h2`
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: #9b7ebd;
+  color: ${({ theme }) => theme.primary};
   margin: 0 0 0.5rem;
   max-height: 1.5rem;
 `;
@@ -37,7 +37,7 @@ export const SongRow = styled.div`
   max-height: 3rem;
 
   &:hover {
-    background: #f3e8ff;
+    background: ${({ theme }) => theme.hover};
   }
 `;
 
@@ -49,7 +49,7 @@ export const SongInfo = styled.div`
 
 export const SongTitle = styled.span`
   font-size: 0.9rem;
-  color: #3a1f5a;
+  color: ${({ theme }) => theme.textPrimary};
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -59,7 +59,7 @@ export const SongTitle = styled.span`
 
 export const SongArtist = styled.span`
   font-size: 0.8rem;
-  color: #9b7ebd;
+  color: ${({ theme }) => theme.primary};
   display: flex;
   align-items: center;
 `;
@@ -76,7 +76,7 @@ export const ArtistRow = styled.div`
   max-width: 8rem;
 
   &:hover {
-    background: #f3e8ff;
+    background: ${({ theme }) => theme.hover};
   }
 `;
 
@@ -84,8 +84,8 @@ export const ArtistAvatar = styled.div`
   width: 3.5rem;
   height: 3.5rem;
   border-radius: 50%;
-  background: #d4b8f0;
-  color: #3a1f5a;
+  background: ${({ theme }) => theme.borderLight};
+  color: ${({ theme }) => theme.textPrimary};
   display: flex;
   align-items: center;
   justify-content: center;
@@ -96,7 +96,7 @@ export const ArtistAvatar = styled.div`
 
 export const ArtistName = styled.span`
   font-size: 0.9rem;
-  color: #3a1f5a;
+  color: ${({ theme }) => theme.textPrimary};
   max-height: 1.5rem;
   text-align: center;
 `;
@@ -112,7 +112,7 @@ export const AlbumRow = styled.div`
   max-height: 3rem;
 
   &:hover {
-    background: #f3e8ff;
+    background: ${({ theme }) => theme.hover};
   }
 `;
 
@@ -132,7 +132,7 @@ export const AlbumInfo = styled.div`
 
 export const AlbumTitle = styled.span`
   font-size: 0.9rem;
-  color: #3a1f5a;
+  color: ${({ theme }) => theme.textPrimary};
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -140,11 +140,11 @@ export const AlbumTitle = styled.span`
 
 export const AlbumArtist = styled.span`
   font-size: 0.8rem;
-  color: #9b7ebd;
+  color: ${({ theme }) => theme.primary};
 `;
 
 export const NoResults = styled.p`
   font-size: 0.8rem;
-  color: #b89fd4;
+  color: ${({ theme }) => theme.textMuted};
   margin: 0;
 `;

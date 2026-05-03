@@ -22,6 +22,7 @@ const defaultContext: AppContextValue = {
   libraryPaths: [],
   progress: 0,
   currentPlaylist: [],
+  currentTheme: 'Midnight',
 };
 
 const renderDetail = (playlists: PlaylistType[], contextOverrides: Partial<AppContextValue> = {}, playlistId = '1') => {

@@ -18,18 +18,18 @@ export const Card = styled.div`
   height: 240px;
   display: flex;
   flex-direction: column;
-  background: #fff;
+  background: ${({ theme }) => theme.cardBackground};
   border-radius: 1rem;
   overflow: hidden;
   cursor: pointer;
-  box-shadow: 0 2px 8px rgba(90, 58, 122, 0.1);
+  box-shadow: 0 2px 8px ${({ theme }) => theme.cardShadow};
   transition:
     transform 0.15s,
     box-shadow 0.15s;
 
   &:hover {
     transform: translateY(-3px);
-    box-shadow: 0 6px 16px rgba(90, 58, 122, 0.2);
+    box-shadow: 0 6px 16px ${({ theme }) => theme.cardShadowHover};
   }
 `;
 
@@ -51,7 +51,7 @@ export const CardInfo = styled.div`
 `;
 
 export const CardTitle = styled.div`
-  color: #3a1f5a;
+  color: ${({ theme }) => theme.textPrimary};
   font-weight: 700;
   font-size: 0.9rem;
   white-space: nowrap;
@@ -68,7 +68,7 @@ export const CardBottom = styled.div`
 `;
 
 export const CardArtist = styled.div`
-  color: #9b7ebd;
+  color: ${({ theme }) => theme.primary};
   font-size: 0.75rem;
   white-space: nowrap;
   overflow: hidden;
@@ -77,7 +77,7 @@ export const CardArtist = styled.div`
 `;
 
 export const CardCount = styled.div`
-  color: #9b7ebd;
+  color: ${({ theme }) => theme.primary};
   font-size: 0.75rem;
   white-space: nowrap;
   flex-shrink: 0;
