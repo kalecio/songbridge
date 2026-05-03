@@ -1,5 +1,5 @@
 import { useCallback, useContext, useEffect, useRef } from 'react';
-import { useNavigate, Route, Routes } from 'react-router';
+import { useNavigate, useLocation, Route, Routes } from 'react-router';
 import { error as logError } from '../../logger';
 import { FaGear } from 'react-icons/fa6';
 import Controls from '../../Components/Controls/Controls';
@@ -9,7 +9,20 @@ import Volume from '../../Components/Volume/Volume';
 import { invoke } from '@tauri-apps/api/core';
 import { open } from '@tauri-apps/plugin-dialog';
 
-import { Container, ContentContainer, HomeCenter, Main, PlayerContainer, SettingsButton, StyledPlayer } from './styles';
+import {
+  AppHeader,
+  Container,
+  ContentContainer,
+  HomeCenter,
+  Main,
+  MainWrapper,
+  PlayerContainer,
+  SearchIcon,
+  SearchInput,
+  SearchWrapper,
+  SettingsButton,
+  StyledPlayer,
+} from './styles';
 import { AppContext } from '../../Context/AppContext';
 import Sidebar from '../../Components/Sidebar/Sidebar';
 import AlbumImage from '../../Components/AlbumImage/AlbumImage';
@@ -20,10 +33,12 @@ import AlbumDetail from '../Albuns/Detail';
 import Artists from '../Artists/List';
 import ArtistDetail from '../Artists/Detail';
 import Settings from '../Settings/Settings';
+import Search from '../Search/Search';
 import CreatePlaylist from '../Playlist/Create';
 
 const Player = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const context = useContext(AppContext);
   const {
     currentPath: path,
@@ -144,33 +159,57 @@ const Player = () => {
     endedRef.current = false;
   }, [path]);
 
+  const searchQuery = location.pathname === '/search' ? (new URLSearchParams(location.search).get('q') ?? '') : '';
+
+  const handleSearch = (value: string) => {
+    if (value.trim()) {
+      navigate(`/search?q=${encodeURIComponent(value.trim())}`);
+    } else {
+      navigate('/');
+    }
+  };
+
   return (
     <Container>
       <ContentContainer>
         <Sidebar />
-        <SettingsButton aria-label="Settings" onClick={() => navigate('/settings')}>
-          <FaGear />
-        </SettingsButton>
-        <Main>
-          <Routes>
-            <Route
-              path="/"
-              element={
-                <HomeCenter>
-                  <AlbumImage metadata={metadata} onClick={handleOpenFile} />
-                </HomeCenter>
-              }
-            />
-            <Route path="/artists" element={<Artists />} />
-            <Route path="/artists/:id" element={<ArtistDetail />} />
-            <Route path="/albums" element={<Albums />} />
-            <Route path="/albums/:id" element={<AlbumDetail />} />
-            <Route path="/songs" element={<Songs />} />
-            <Route path="/settings" element={<Settings />} />
-            <Route path="/playlist/:id" element={<PlaylistRoute playlists={playlists} />} />
-            <Route path="/playlist" element={<CreatePlaylist />} />
-          </Routes>
-        </Main>
+        <MainWrapper>
+          <AppHeader>
+            <SearchWrapper>
+              <SearchIcon />
+              <SearchInput
+                placeholder="Search songs, artists, albums…"
+                value={searchQuery}
+                onChange={(e) => handleSearch(e.target.value)}
+                aria-label="Search library"
+              />
+            </SearchWrapper>
+            <SettingsButton aria-label="Settings" onClick={() => navigate('/settings')}>
+              <FaGear />
+            </SettingsButton>
+          </AppHeader>
+          <Main>
+            <Routes>
+              <Route
+                path="/"
+                element={
+                  <HomeCenter>
+                    <AlbumImage metadata={metadata} onClick={handleOpenFile} />
+                  </HomeCenter>
+                }
+              />
+              <Route path="/artists" element={<Artists />} />
+              <Route path="/artists/:id" element={<ArtistDetail />} />
+              <Route path="/albums" element={<Albums />} />
+              <Route path="/albums/:id" element={<AlbumDetail />} />
+              <Route path="/songs" element={<Songs />} />
+              <Route path="/search" element={<Search />} />
+              <Route path="/settings" element={<Settings />} />
+              <Route path="/playlist/:id" element={<PlaylistRoute playlists={playlists} />} />
+              <Route path="/playlist" element={<CreatePlaylist />} />
+            </Routes>
+          </Main>
+        </MainWrapper>
       </ContentContainer>
       <PlayerContainer>
         <ProgressBar progress={progress} max={100} onSeek={handleSeek} />
