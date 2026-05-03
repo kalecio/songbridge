@@ -1,7 +1,9 @@
 {
   "name": "songbridge",
   "private": true,
-  "version": "0.1.0",
+  "version": "0.2.0",
+  "author": "Kalécio Santana <kalecio.santana@gmail.com>",
+  "description": "A desktop music player with library scanning, playlist management, and search",
   "type": "module",
   "scripts": {
     "dev": "vite",
