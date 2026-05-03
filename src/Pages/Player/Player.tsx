@@ -1,5 +1,6 @@
 import { useCallback, useContext, useEffect, useRef } from 'react';
 import { useNavigate, Route, Routes } from 'react-router';
+import { error as logError } from '../../logger';
 import { FaGear } from 'react-icons/fa6';
 import Controls from '../../Components/Controls/Controls';
 import ProgressBar from '../../Components/ProgressBar/ProgressBar';
@@ -45,7 +46,7 @@ const Player = () => {
       try {
         await invoke('seek', { percent: progressRatio, path });
       } catch (error) {
-        console.error('Error seeking:', error);
+        logError(`Seek failed: ${error}`).catch(() => {});
       }
     },
     [path],
@@ -99,7 +100,7 @@ const Player = () => {
                     endedRef.current = false;
                   }
                 } catch (err) {
-                  console.error('Error while repeating track:', err);
+                  logError(`Repeat failed: ${err}`).catch(() => {});
                 }
 
                 // If shuffle is enabled, pick a random next track
@@ -111,7 +112,7 @@ const Player = () => {
                     setCurrentPath?.(randomPath);
                   }
                 } catch (err) {
-                  console.error('Error while shuffling track:', err);
+                  logError(`Shuffle failed: ${err}`).catch(() => {});
                 }
 
                 // Otherwise advance to the next track in the playlist
@@ -124,7 +125,7 @@ const Player = () => {
             }
           }
         } catch (error) {
-          console.error('Error getting progress:', error);
+          logError(`Progress poll failed: ${error}`).catch(() => {});
         }
       }, 1000); // Update every second
     }

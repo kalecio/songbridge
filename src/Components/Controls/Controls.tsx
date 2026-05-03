@@ -2,6 +2,7 @@ import { useCallback, useContext, useEffect, useState } from 'react';
 import { Controls, Shuffle, Prev, Play, Next, Repeat, Pause } from './styles';
 import { invoke } from '@tauri-apps/api/core';
 import { AppContext } from '../../Context/AppContext';
+import { error as logError } from '../../logger';
 import { MetadataType } from '../../types';
 
 const Player = () => {
@@ -31,7 +32,7 @@ const Player = () => {
       setMetadata?.(metadata);
       setIsSongLoaded(true);
     } catch (error) {
-      console.error('Error playing song:', error);
+      logError(`Failed to play song '${path}': ${error}`).catch(() => {});
     }
   }, [path, setCurrentPath, setIsPlaying, setMetadata]);
 
@@ -71,7 +72,7 @@ const Player = () => {
       await invoke('pause');
       setIsPlaying?.(false);
     } catch (error) {
-      console.error('Error pausing:', error);
+      logError(`Pause failed: ${error}`).catch(() => {});
     }
   };
 
@@ -80,7 +81,7 @@ const Player = () => {
       await invoke('resume');
       setIsPlaying?.(true);
     } catch (error) {
-      console.error('Error resuming:', error);
+      logError(`Resume failed: ${error}`).catch(() => {});
     }
   };
 
