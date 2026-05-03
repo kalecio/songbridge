@@ -66,6 +66,7 @@ pub fn run() {
             music_library::commands::get_all_songs,
             music_library::commands::get_songs_by_album,
             music_library::commands::get_songs_by_artist,
+            music_library::commands::check_paths_exist,
             db::commands::db_get_playlists,
             db::commands::db_upsert_playlist,
             db::commands::db_delete_playlist,
