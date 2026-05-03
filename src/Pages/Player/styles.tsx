@@ -3,7 +3,7 @@ import { FaMagnifyingGlass } from 'react-icons/fa6';
 import { AlbumImage, AlbumImagePlaceholder } from '../../Components/Song/styles';
 
 const PlayerContainer = styled.div`
-  background-color: #9b7ebd;
+  background-color: ${({ theme }) => theme.playerBar};
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -24,10 +24,11 @@ const Container = styled.div`
   justify-content: stretch;
   align-items: stretch;
   overflow: hidden;
+  background-color: ${({ theme }) => theme.background};
 `;
 
 const Main = styled.div`
-  background-color: #ffe1e0;
+  background-color: ${({ theme }) => theme.background};
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -58,8 +59,8 @@ const AppHeader = styled.header`
   align-items: center;
   gap: 0.75rem;
   padding: 0.75rem 1rem;
-  border-bottom: 1px solid #e5d8f5;
-  background: #faf5ff;
+  border-bottom: 1px solid ${({ theme }) => theme.border};
+  background: ${({ theme }) => theme.surface};
   flex-shrink: 0;
   max-height: 3.5rem;
 `;
@@ -76,27 +77,27 @@ const SearchIcon = styled(FaMagnifyingGlass)`
   left: 0.65rem;
   width: 0.75rem;
   height: 0.75rem;
-  color: #9b7ebd;
+  color: ${({ theme }) => theme.primary};
   pointer-events: none;
 `;
 
 const SearchInput = styled.input`
   width: 100%;
   padding: 0.5rem 0.75rem 0.5rem 2rem;
-  border: 1px solid #d4b8f0;
+  border: 1px solid ${({ theme }) => theme.borderLight};
   border-radius: 0.65rem;
-  background: #fff;
+  background: ${({ theme }) => theme.surfaceRaised};
   font-size: 0.85rem;
-  color: #3a1f5a;
+  color: ${({ theme }) => theme.textPrimary};
   outline: none;
   transition: border-color 0.15s;
 
   &::placeholder {
-    color: #b89fd4;
+    color: ${({ theme }) => theme.textMuted};
   }
 
   &:focus {
-    border-color: #9b7ebd;
+    border-color: ${({ theme }) => theme.primary};
   }
 `;
 
@@ -111,14 +112,14 @@ const SettingsButton = styled.button`
   align-items: center;
   justify-content: center;
   cursor: pointer;
-  color: #7f55b1;
+  color: ${({ theme }) => theme.primaryDark};
   transition:
     background 0.15s,
     color 0.15s;
 
   &:hover {
-    background: #ede5f8;
-    color: #3a1f5a;
+    background: ${({ theme }) => theme.hover};
+    color: ${({ theme }) => theme.textPrimary};
   }
 `;
 

@@ -33,7 +33,7 @@ const MusicInfo = styled.div`
   padding: 15px 0px;
   display: flex;
   flex-direction: column;
-  color: #f5f2f2;
+  color: ${({ theme }) => theme.textOnPlayer};
 `;
 
 const MusicName = styled.span`

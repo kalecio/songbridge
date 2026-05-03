@@ -21,6 +21,25 @@ describe('Settings', () => {
     expect(getByText('Music Library Paths')).toBeInTheDocument();
   });
 
+  describe('theme selector', () => {
+    it('renders the Appearance section', () => {
+      const { getByText } = renderWithContext(<Settings />);
+      expect(getByText('Appearance')).toBeInTheDocument();
+    });
+
+    it('shows the current theme as the selected option', () => {
+      const { getByRole } = renderWithContext(<Settings />, { currentTheme: 'Pastel Colors' });
+      expect(getByRole('combobox')).toHaveValue('Pastel Colors');
+    });
+
+    it('calls setCurrentTheme when a different theme is selected', () => {
+      const setCurrentTheme = vi.fn();
+      const { getByRole } = renderWithContext(<Settings />, { currentTheme: 'Midnight', setCurrentTheme });
+      fireEvent.change(getByRole('combobox'), { target: { value: 'Pastel Colors' } });
+      expect(setCurrentTheme).toHaveBeenCalledWith('Pastel Colors');
+    });
+  });
+
   it('shows empty note when no paths are configured', () => {
     const { getByText } = renderWithContext(<Settings />, { libraryPaths: [] });
     expect(getByText(/default system music directory/i)).toBeInTheDocument();

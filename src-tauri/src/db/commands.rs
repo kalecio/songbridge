@@ -24,6 +24,7 @@ pub struct DbPreferences {
     pub current_playlist: Vec<String>,
     pub on_repeat: bool,
     pub on_shuffle: bool,
+    pub theme: String,
 }
 
 // ── helpers (testable without Tauri State) ────────────────────────────────────
@@ -120,6 +121,7 @@ pub(crate) fn get_preferences(conn: &Connection) -> Result<DbPreferences, String
             .unwrap_or_default(),
         on_repeat: get("on_repeat").map(|v| v == "true").unwrap_or(false),
         on_shuffle: get("on_shuffle").map(|v| v == "true").unwrap_or(false),
+        theme: get("theme").unwrap_or_else(|| "Midnight".to_string()),
     })
 }
 
@@ -129,6 +131,7 @@ pub(crate) fn save_preferences(
     current_playlist: &[String],
     on_repeat: bool,
     on_shuffle: bool,
+    theme: &str,
 ) -> Result<(), String> {
     let upsert = |key: &str, value: &str| {
         conn.execute(
@@ -152,6 +155,7 @@ pub(crate) fn save_preferences(
     upsert("current_playlist", &playlist_json).map_err(|e| e.to_string())?;
     upsert("on_repeat", if on_repeat { "true" } else { "false" }).map_err(|e| e.to_string())?;
     upsert("on_shuffle", if on_shuffle { "true" } else { "false" }).map_err(|e| e.to_string())?;
+    upsert("theme", theme).map_err(|e| e.to_string())?;
 
     Ok(())
 }
@@ -222,6 +226,7 @@ pub fn db_save_preferences(
     current_playlist: Vec<String>,
     on_repeat: bool,
     on_shuffle: bool,
+    theme: String,
 ) -> Result<(), String> {
     let conn = state.conn.lock().map_err(|e| e.to_string())?;
     save_preferences(
@@ -230,6 +235,7 @@ pub fn db_save_preferences(
         &current_playlist,
         on_repeat,
         on_shuffle,
+        &theme,
     )
 }
 
@@ -420,6 +426,7 @@ mod tests {
         assert!(prefs.current_playlist.is_empty());
         assert!(!prefs.on_repeat);
         assert!(!prefs.on_shuffle);
+        assert_eq!(prefs.theme, "Midnight");
     }
 
     #[test]
@@ -428,13 +435,22 @@ mod tests {
         let conn = db.conn.lock().unwrap();
         let playlist = vec!["/a.mp3".to_string(), "/b.mp3".to_string()];
 
-        save_preferences(&conn, Some("/music/song.mp3"), &playlist, true, false).unwrap();
+        save_preferences(
+            &conn,
+            Some("/music/song.mp3"),
+            &playlist,
+            true,
+            false,
+            "Pastel Colors",
+        )
+        .unwrap();
 
         let prefs = get_preferences(&conn).unwrap();
         assert_eq!(prefs.current_path.as_deref(), Some("/music/song.mp3"));
         assert_eq!(prefs.current_playlist, playlist);
         assert!(prefs.on_repeat);
         assert!(!prefs.on_shuffle);
+        assert_eq!(prefs.theme, "Pastel Colors");
     }
 
     #[test]
@@ -442,8 +458,16 @@ mod tests {
         let db = setup();
         let conn = db.conn.lock().unwrap();
 
-        save_preferences(&conn, Some("/music/song.mp3"), &[], false, false).unwrap();
-        save_preferences(&conn, None, &[], false, false).unwrap();
+        save_preferences(
+            &conn,
+            Some("/music/song.mp3"),
+            &[],
+            false,
+            false,
+            "Midnight",
+        )
+        .unwrap();
+        save_preferences(&conn, None, &[], false, false, "Midnight").unwrap();
 
         let prefs = get_preferences(&conn).unwrap();
         assert!(prefs.current_path.is_none());
@@ -454,12 +478,13 @@ mod tests {
         let db = setup();
         let conn = db.conn.lock().unwrap();
 
-        save_preferences(&conn, None, &[], false, false).unwrap();
-        save_preferences(&conn, None, &[], true, true).unwrap();
+        save_preferences(&conn, None, &[], false, false, "Midnight").unwrap();
+        save_preferences(&conn, None, &[], true, true, "Pastel Colors").unwrap();
 
         let prefs = get_preferences(&conn).unwrap();
         assert!(prefs.on_repeat);
         assert!(prefs.on_shuffle);
+        assert_eq!(prefs.theme, "Pastel Colors");
     }
 
     #[test]
@@ -467,7 +492,7 @@ mod tests {
         let db = setup();
         let conn = db.conn.lock().unwrap();
 
-        save_preferences(&conn, None, &[], false, false).unwrap();
+        save_preferences(&conn, None, &[], false, false, "Midnight").unwrap();
 
         let prefs = get_preferences(&conn).unwrap();
         assert!(prefs.current_playlist.is_empty());

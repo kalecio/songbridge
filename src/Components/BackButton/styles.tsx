@@ -12,10 +12,10 @@ export const Button = styled.button`
   gap: 0.4rem;
   max-height: 3rem;
   max-width: 6rem;
-  background: #9b7ebd;
+  background: ${({ theme }) => theme.primary};
   border: none;
   border-radius: 2rem;
-  color: #fff;
+  color: ${({ theme }) => theme.textOnPrimary};
   font-size: 0.85rem;
   cursor: pointer;
   padding: 0.4rem 0.9rem;
@@ -24,7 +24,7 @@ export const Button = styled.button`
     color 0.15s;
 
   &:hover {
-    background: #e4d4f7;
-    color: #5a3a7a;
+    background: ${({ theme }) => theme.active};
+    color: ${({ theme }) => theme.primaryDeep};
   }
 `;

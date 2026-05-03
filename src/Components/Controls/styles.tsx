@@ -12,42 +12,42 @@ const Shuffle = styled(FaShuffle)<{ $onShuffle: boolean }>`
   max-width: 60px;
   max-height: 30px;
   cursor: pointer;
-  color: ${(props) => (props.$onShuffle ? '#f49bab' : '#7f55b1')};
+  color: ${(props) => (props.$onShuffle ? props.theme.accent : props.theme.primaryDark)};
 `;
 
 const Next = styled(FaForward)`
   max-width: 60px;
   max-height: 30px;
   cursor: pointer;
-  color: #f49bab;
+  color: ${({ theme }) => theme.accent};
 `;
 
 const Prev = styled(FaBackward)`
   max-width: 60px;
   max-height: 30px;
   cursor: pointer;
-  color: #f49bab;
+  color: ${({ theme }) => theme.accent};
 `;
 
 const Repeat = styled(FaRepeat)<{ $onRepeat: boolean }>`
   max-width: 60px;
   max-height: 30px;
   cursor: pointer;
-  color: ${(props) => (props.$onRepeat ? '#f49bab' : '#7f55b1')};
+  color: ${(props) => (props.$onRepeat ? props.theme.accent : props.theme.primaryDark)};
 `;
 
 const Play = styled(FaPlay)`
   max-width: 60px;
   max-height: 30px;
   cursor: pointer;
-  color: #f49bab;
+  color: ${({ theme }) => theme.accent};
 `;
 
 const Pause = styled(FaPause)`
   max-width: 60px;
   max-height: 30px;
   cursor: pointer;
-  color: #f49bab;
+  color: ${({ theme }) => theme.accent};
 `;
 
 export { Controls, Shuffle, Next, Prev, Repeat, Play, Pause };

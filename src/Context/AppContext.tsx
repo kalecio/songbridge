@@ -1,9 +1,10 @@
-import { createContext } from 'react';
+import React, { createContext } from 'react';
 import { MetadataType, PlaylistType } from '../types';
 
 interface AppContext {
   currentPath?: string;
   currentPlaylist: string[];
+  currentTheme: string;
   isPlaying: boolean;
   isScanning: boolean;
   library: MetadataType[];
@@ -16,11 +17,12 @@ interface AppContext {
   showQueue?: boolean;
   setCurrentPath?: (_path?: string) => void;
   setCurrentPlaylist?: (_playlist: string[]) => void;
+  setCurrentTheme?: (_theme: string) => void;
   setIsScanning?: (_isScanning: boolean) => void;
   setLibrary?: (_library: MetadataType[]) => void;
   setLibraryPaths?: (_paths: string[]) => void;
   scanLibrary?: (_paths: string[]) => Promise<void>;
-  setPlaylists?: (_playlists: PlaylistType[]) => void;
+  setPlaylists?: React.Dispatch<React.SetStateAction<PlaylistType[]>>;
   setIsPlaying?: (_playing: boolean) => void;
   setProgress?: (_progress: number) => void;
   setMetadata?: (_metadata?: MetadataType) => void;
@@ -38,4 +40,5 @@ export const AppContext = createContext<AppContext>({
   libraryPaths: [],
   progress: 0,
   currentPlaylist: [],
+  currentTheme: 'Midnight',
 });

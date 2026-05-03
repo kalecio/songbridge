@@ -1,14 +1,14 @@
 import { styled } from 'styled-components';
 
 const ProgressBarInner = styled.div<{ $height?: number }>`
-  background-color: #f49bab;
+  background-color: ${({ theme }) => theme.accent};
   width: 0; /* Adjust with JavaScript */
   height: ${(props) => props.$height || '15px'};
   border-radius: 10px;
 `;
 
 const CustomProgressBar = styled.div<{ $height?: number }>`
-  background-color: #7f55b1;
+  background-color: ${({ theme }) => theme.primaryDark};
   border-radius: 10px;
   padding: 0px;
   height: ${(props) => props.$height || '15px'};

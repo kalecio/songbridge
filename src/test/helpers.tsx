@@ -13,6 +13,7 @@ const defaultContext: AppContextValue = {
   libraryPaths: [],
   progress: 0,
   currentPlaylist: [],
+  currentTheme: 'Midnight',
 };
 
 export const renderWithContext = (

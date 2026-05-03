@@ -27,7 +27,7 @@ export const HeroBg = styled.img`
 export const HeroPlaceholder = styled.div`
   position: absolute;
   inset: 0;
-  background: linear-gradient(135deg, #7f55b1, #f49bab);
+  background: linear-gradient(135deg, ${({ theme }) => theme.primaryDark}, ${({ theme }) => theme.accent});
   display: flex;
   align-items: center;
   justify-content: center;
@@ -65,5 +65,5 @@ export const HeroStats = styled.div`
 `;
 
 export const HeroContent = styled.div`
-  background: #ffe1e0;
+  background: ${({ theme }) => theme.background};
 `;

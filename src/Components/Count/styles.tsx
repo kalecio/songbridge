@@ -3,8 +3,8 @@ import { styled } from 'styled-components';
 export const Count = styled.span`
   font-size: 0.9rem;
   font-weight: normal;
-  color: #9b7ebd;
-  background: #f0e0f8;
+  color: ${({ theme }) => theme.primary};
+  background: ${({ theme }) => theme.surfaceRaised};
   border-radius: 1rem;
   padding: 1rem 0.6rem;
   max-width: 3rem;

@@ -19,10 +19,10 @@ export const Section = styled.section`
 export const SectionTitle = styled.h2`
   font-size: 1rem;
   font-weight: 600;
-  color: #3a1f5a;
+  color: ${({ theme }) => theme.textPrimary};
   margin: 0;
   padding-bottom: 0.5rem;
-  border-bottom: 1px solid #d4b8f0;
+  border-bottom: 1px solid ${({ theme }) => theme.borderLight};
   max-height: 1.5rem;
 `;
 
@@ -39,8 +39,8 @@ export const PathItem = styled.li`
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  background: #f3e8ff;
-  border: 1px solid #d4b8f0;
+  background: ${({ theme }) => theme.surfaceRaised};
+  border: 1px solid ${({ theme }) => theme.borderLight};
   border-radius: 0.5rem;
   padding: 0.6rem 0.9rem;
   max-height: 2.5rem;
@@ -49,7 +49,7 @@ export const PathItem = styled.li`
 export const PathText = styled.span`
   flex: 1;
   font-size: 0.85rem;
-  color: #3a1f5a;
+  color: ${({ theme }) => theme.textPrimary};
   word-break: break-all;
 `;
 
@@ -57,7 +57,7 @@ export const RemoveButton = styled.button`
   background: none;
   border: none;
   cursor: pointer;
-  color: #9b7ebd;
+  color: ${({ theme }) => theme.primary};
   display: flex;
   align-items: center;
   padding: 0.2rem;
@@ -67,7 +67,7 @@ export const RemoveButton = styled.button`
   max-width: 1.5rem;
 
   &:hover {
-    color: #c0392b;
+    color: ${({ theme }) => theme.error};
   }
 `;
 
@@ -75,8 +75,8 @@ export const AddButton = styled.button`
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  background: #9b7ebd;
-  color: #fff;
+  background: ${({ theme }) => theme.primary};
+  color: ${({ theme }) => theme.textOnPrimary};
   border: none;
   border-radius: 2rem;
   padding: 0.5rem 1.2rem;
@@ -87,7 +87,7 @@ export const AddButton = styled.button`
   max-height: 2.5rem;
 
   &:hover {
-    background: #7f55b1;
+    background: ${({ theme }) => theme.primaryDark};
   }
 
   &:disabled {
@@ -98,7 +98,7 @@ export const AddButton = styled.button`
 
 export const EmptyNote = styled.p`
   font-size: 0.85rem;
-  color: #9b7ebd;
+  color: ${({ theme }) => theme.primary};
   margin: 0;
 `;
 
@@ -132,8 +132,8 @@ export const RescanButton = styled.button`
   align-items: center;
   gap: 0.5rem;
   background: none;
-  color: #9b7ebd;
-  border: 1.5px solid #9b7ebd;
+  color: ${({ theme }) => theme.primary};
+  border: 1.5px solid ${({ theme }) => theme.primary};
   border-radius: 2rem;
   padding: 0.5rem 1.2rem;
   font-size: 0.875rem;
@@ -145,7 +145,7 @@ export const RescanButton = styled.button`
   max-height: 2.5rem;
 
   &:hover {
-    background: #f3e8ff;
+    background: ${({ theme }) => theme.surfaceRaised};
   }
 
   &:disabled {
@@ -165,10 +165,44 @@ export const RescanIcon = styled(FaArrowsRotate)<{ $spinning?: boolean }>`
 
 export const ScanningBadge = styled.span`
   font-size: 0.8rem;
-  color: #9b7ebd;
+  color: ${({ theme }) => theme.primary};
 `;
 
 export const SuccessBadge = styled.span`
   font-size: 0.8rem;
-  color: #2e7d32;
+  color: ${({ theme }) => theme.success};
+`;
+
+export const ThemeRow = styled.div`
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  max-height: 2.5rem;
+`;
+
+export const ThemeLabel = styled.label`
+  font-size: 0.9rem;
+  color: ${({ theme }) => theme.textPrimary};
+  min-width: 4rem;
+`;
+
+export const ThemeSelect = styled.select`
+  -webkit-appearance: none;
+  appearance: none;
+  padding: 0.4rem 2rem 0.4rem 0.75rem;
+  border: 1px solid ${({ theme }) => theme.borderLight};
+  border-radius: 0.5rem;
+  background-color: ${({ theme }) => theme.surfaceRaised};
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%237A8194' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 0.65rem center;
+  color: ${({ theme }) => theme.textPrimary};
+  font-size: 0.875rem;
+  cursor: pointer;
+  outline: none;
+  transition: border-color 0.15s;
+
+  &:focus {
+    border-color: ${({ theme }) => theme.primary};
+  }
 `;

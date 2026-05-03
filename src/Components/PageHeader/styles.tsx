@@ -1,7 +1,7 @@
 import { styled } from 'styled-components';
 
 export const PageHeader = styled.h2`
-  color: #5a3a7a;
+  color: ${({ theme }) => theme.primaryDeep};
   margin: 0 0 0.75rem;
   display: flex;
   align-items: center;
