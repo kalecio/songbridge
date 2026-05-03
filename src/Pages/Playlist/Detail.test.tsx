@@ -1,8 +1,15 @@
-import { fireEvent , render } from '@testing-library/react';
+import { fireEvent, render, waitFor } from '@testing-library/react';
+import { invoke } from '@tauri-apps/api/core';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { AppContext } from '../../Context/AppContext';
 import { PlaylistType } from '../../types';
 import Detail from './Detail';
+
+vi.mock('@tauri-apps/api/core', () => ({
+  invoke: vi.fn().mockResolvedValue([]),
+}));
+
+const mockInvoke = vi.mocked(invoke);
 
 type AppContextValue = React.ComponentProps<typeof AppContext.Provider>['value'];
 
@@ -137,5 +144,68 @@ describe('Detail', () => {
     const playlists: PlaylistType[] = [{ id: '99', name: 'Other Playlist', songs: [] }];
     const { queryByText } = renderDetail(playlists, {}, '1');
     expect(queryByText('Other Playlist')).not.toBeInTheDocument();
+  });
+
+  describe('remove missing tracks', () => {
+    it('removes a missing song from the playlist and calls setPlaylists', async () => {
+      mockInvoke.mockImplementation((cmd) => {
+        if (cmd === 'check_paths_exist') return Promise.resolve(['/a.mp3']);
+        return Promise.resolve([]);
+      });
+
+      const setPlaylists = vi.fn();
+      const playlists: PlaylistType[] = [
+        {
+          id: '1',
+          name: 'Test',
+          songs: [
+            { path: '/a.mp3', title: 'Missing Song' },
+            { path: '/b.mp3', title: 'Present Song' },
+          ],
+        },
+      ];
+
+      const { getByLabelText } = renderDetail(playlists, { setPlaylists });
+      await waitFor(() => expect(getByLabelText('Remove missing track Missing Song')).toBeInTheDocument());
+      fireEvent.click(getByLabelText('Remove missing track Missing Song'));
+
+      expect(setPlaylists).toHaveBeenCalled();
+      const updater = setPlaylists.mock.calls[0][0];
+      const result = updater(playlists);
+      expect(result[0].songs).toHaveLength(1);
+      expect(result[0].songs[0].path).toBe('/b.mp3');
+    });
+
+    it('persists the updated playlist to the database after removing a missing song', async () => {
+      mockInvoke.mockImplementation((cmd) => {
+        if (cmd === 'check_paths_exist') return Promise.resolve(['/a.mp3']);
+        return Promise.resolve([]);
+      });
+
+      const playlists: PlaylistType[] = [
+        {
+          id: '1',
+          name: 'Test',
+          songs: [
+            { path: '/a.mp3', title: 'Missing Song' },
+            { path: '/b.mp3', title: 'Present Song' },
+          ],
+        },
+      ];
+
+      const { getByLabelText } = renderDetail(playlists, { setPlaylists: vi.fn() });
+      await waitFor(() => expect(getByLabelText('Remove missing track Missing Song')).toBeInTheDocument());
+      fireEvent.click(getByLabelText('Remove missing track Missing Song'));
+
+      await waitFor(() =>
+        expect(mockInvoke).toHaveBeenCalledWith(
+          'db_upsert_playlist',
+          expect.objectContaining({
+            id: '1',
+            songs: expect.arrayContaining([expect.objectContaining({ path: '/b.mp3' })]),
+          }),
+        ),
+      );
+    });
   });
 });

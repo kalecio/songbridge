@@ -1,5 +1,5 @@
 import { styled } from 'styled-components';
-import { FaCirclePlay } from 'react-icons/fa6';
+import { FaCirclePlay, FaCircleExclamation, FaTrash } from 'react-icons/fa6';
 
 export const PlaylistContainer = styled.div`
   overflow-y: hidden;
@@ -80,21 +80,24 @@ export const SongList = styled.div`
   padding: 2rem 4rem 20rem 4rem;
 `;
 
-export const SongItem = styled.div<{ $active?: boolean }>`
+export const SongItem = styled.div<{ $active?: boolean; $missing?: boolean }>`
   display: flex;
   flex-direction: row;
   justify-content: flex-start;
   align-items: center;
   max-height: 4rem;
   gap: 0.5rem;
-  cursor: pointer;
+  cursor: ${(p) => (p.$missing ? 'default' : 'pointer')};
   border-radius: 0.75rem;
   padding: 0.75rem 0.5rem;
   background: ${(p) => (p.$active ? '#f49bab33' : 'transparent')};
-  transition: background 0.15s;
+  opacity: ${(p) => (p.$missing ? 0.45 : 1)};
+  transition:
+    background 0.15s,
+    opacity 0.15s;
 
   &:hover {
-    background: ${(p) => (p.$active ? '#f49bab55' : '#f7cdd4')};
+    background: ${(p) => (p.$active ? '#f49bab55' : p.$missing ? 'transparent' : '#f7cdd4')};
   }
 `;
 
@@ -103,6 +106,7 @@ export const SongInfo = styled.div`
   flex-direction: column;
   align-items: flex-start;
   justify-content: center;
+  text-wrap: nowrap;
 `;
 
 export const SongTitle = styled.span`
@@ -121,4 +125,34 @@ export const SongDuration = styled.span`
   color: gray;
   width: fit-content;
   height: fit-content;
+`;
+
+export const MissingIcon = styled(FaCircleExclamation)`
+  flex-shrink: 0;
+  color: #c0392b;
+  width: 1rem;
+  height: 1rem;
+`;
+
+export const RemoveMissingButton = styled.button`
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: #c0392b;
+  display: flex;
+  align-items: center;
+  padding: 0.2rem;
+  border-radius: 0.25rem;
+  flex-shrink: 0;
+  opacity: 0;
+  transition: opacity 0.15s;
+
+  ${SongItem}:hover & {
+    opacity: 1;
+  }
+`;
+
+export const RemoveMissingIcon = styled(FaTrash)`
+  width: 0.8rem;
+  height: 0.8rem;
 `;

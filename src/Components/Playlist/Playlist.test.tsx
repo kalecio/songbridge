@@ -1,12 +1,23 @@
-import { fireEvent } from '@testing-library/react';
+import { fireEvent, waitFor } from '@testing-library/react';
+import { invoke } from '@tauri-apps/api/core';
 import Playlist from './Playlist';
 import { renderWithContext } from '../../test/helpers';
 import { MetadataType } from '../../types';
+
+vi.mock('@tauri-apps/api/core', () => ({
+  invoke: vi.fn().mockResolvedValue([]),
+}));
+
+const mockInvoke = vi.mocked(invoke);
 
 const songs: MetadataType[] = [
   { title: 'Song A', artist: 'Artist 1', album: 'Album X', path: '/music/a.mp3' },
   { title: 'Song B', artist: 'Artist 2', album: 'Album X', path: '/music/b.mp3' },
 ];
+
+beforeEach(() => {
+  mockInvoke.mockResolvedValue([]);
+});
 
 describe('Playlist', () => {
   it('renders all song titles', () => {
@@ -60,5 +71,46 @@ describe('Playlist', () => {
     const { getByText } = renderWithContext(<Playlist songs={songs} name="Test" />);
     expect(getByText('Artist 1')).toBeInTheDocument();
     expect(getByText('Artist 2')).toBeInTheDocument();
+  });
+
+  describe('missing tracks', () => {
+    it('shows a warning icon for missing tracks', async () => {
+      mockInvoke.mockResolvedValue(['/music/a.mp3']);
+      const { getByTitle } = renderWithContext(<Playlist songs={songs} name="Test" />);
+      await waitFor(() => expect(getByTitle('File not found on disk')).toBeInTheDocument());
+    });
+
+    it('does not call onSongClick when a missing track is clicked', async () => {
+      mockInvoke.mockResolvedValue(['/music/a.mp3']);
+      const onSongClick = vi.fn();
+      const { getByText } = renderWithContext(<Playlist songs={songs} name="Test" onSongClick={onSongClick} />);
+      await waitFor(() => expect(mockInvoke).toHaveBeenCalledWith('check_paths_exist', expect.anything()));
+      fireEvent.click(getByText('Song A'));
+      expect(onSongClick).not.toHaveBeenCalled();
+    });
+
+    it('shows a remove button for missing tracks when onRemoveMissing is provided', async () => {
+      mockInvoke.mockResolvedValue(['/music/a.mp3']);
+      const { getByLabelText } = renderWithContext(<Playlist songs={songs} name="Test" onRemoveMissing={vi.fn()} />);
+      await waitFor(() => expect(getByLabelText('Remove missing track Song A')).toBeInTheDocument());
+    });
+
+    it('does not show a remove button when onRemoveMissing is not provided', async () => {
+      mockInvoke.mockResolvedValue(['/music/a.mp3']);
+      const { queryByLabelText } = renderWithContext(<Playlist songs={songs} name="Test" />);
+      await waitFor(() => expect(mockInvoke).toHaveBeenCalledWith('check_paths_exist', expect.anything()));
+      expect(queryByLabelText('Remove missing track Song A')).not.toBeInTheDocument();
+    });
+
+    it('calls onRemoveMissing with the song when the remove button is clicked', async () => {
+      mockInvoke.mockResolvedValue(['/music/a.mp3']);
+      const onRemoveMissing = vi.fn();
+      const { getByLabelText } = renderWithContext(
+        <Playlist songs={songs} name="Test" onRemoveMissing={onRemoveMissing} />,
+      );
+      await waitFor(() => expect(getByLabelText('Remove missing track Song A')).toBeInTheDocument());
+      fireEvent.click(getByLabelText('Remove missing track Song A'));
+      expect(onRemoveMissing).toHaveBeenCalledWith(songs[0]);
+    });
   });
 });

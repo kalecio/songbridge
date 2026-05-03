@@ -1,6 +1,7 @@
 use crate::metadata::commands::get_metadata;
 use crate::metadata::types::AudioMetadata;
 use crate::music_library::state::LibraryState;
+use std::path::Path;
 use std::sync::{Arc, Mutex};
 use tauri::State;
 use walkdir::WalkDir;
@@ -122,6 +123,14 @@ pub fn get_songs_by_artist(
                 .collect()
         })
         .unwrap_or_default()
+}
+
+#[tauri::command]
+pub fn check_paths_exist(paths: Vec<String>) -> Vec<String> {
+    paths
+        .into_iter()
+        .filter(|p| !Path::new(p).exists())
+        .collect()
 }
 
 #[cfg(test)]
