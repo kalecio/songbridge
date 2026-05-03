@@ -94,6 +94,13 @@ export const ArtistAvatar = styled.div`
   flex-shrink: 0;
 `;
 
+export const ArtistImage = styled.img`
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  border-radius: 50%;
+`;
+
 export const ArtistName = styled.span`
   font-size: 0.9rem;
   color: ${({ theme }) => theme.textPrimary};

@@ -21,6 +21,7 @@ import {
   AlbumTitle,
   AlbumArtist,
   NoResults,
+  ArtistImage,
 } from './styles';
 
 function normalize(s?: string) {
@@ -88,9 +89,11 @@ const Search = () => {
       {artists.length > 0 && (
         <ResultsSection>
           <SectionTitle>Artists</SectionTitle>
-          {artists.map(([name]) => (
+          {artists.map(([name, metadata]) => (
             <ArtistRow key={name} onClick={() => navigate(`/artists/${encodeURIComponent(name)}`)}>
-              <ArtistAvatar>{name.charAt(0).toUpperCase()}</ArtistAvatar>
+              <ArtistAvatar>
+                {metadata[0].image ? <ArtistImage src={metadata[0].image} alt={name} /> : name.charAt(0).toUpperCase()}
+              </ArtistAvatar>
               <ArtistName>{name}</ArtistName>
             </ArtistRow>
           ))}
