@@ -5,17 +5,20 @@ import { AlbumImage, AlbumImagePlaceholder } from '../../Components/Song/styles'
 const PlayerContainer = styled.div`
   background-color: ${({ theme }) => theme.playerBar};
   display: flex;
-  flex-direction: column;
-  justify-content: center;
   align-items: center;
+  justify-content: flex-start;
+  flex-direction: column;
   height: 120px;
+  position: relative;
+  gap: 1rem;
 `;
 
 const StyledPlayer = styled.div`
   display: flex;
-  justify-content: center;
+  justify-content: space-between;
   align-items: center;
   padding: 0 3rem;
+  width: 100%;
 `;
 
 const Container = styled.div`
@@ -24,6 +27,7 @@ const Container = styled.div`
   justify-content: stretch;
   align-items: stretch;
   overflow: hidden;
+  height: 100%;
   background-color: ${({ theme }) => theme.background};
 `;
 
@@ -42,7 +46,8 @@ const ContentContainer = styled.div`
   flex-direction: row;
   align-items: stretch;
   justify-content: flex-start;
-  max-height: calc(100vh - 120px);
+  flex: 1;
+  min-height: 0;
   position: relative;
 `;
 

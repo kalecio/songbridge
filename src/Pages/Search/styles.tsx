@@ -23,7 +23,6 @@ export const SectionTitle = styled.h2`
   letter-spacing: 0.08em;
   color: ${({ theme }) => theme.primary};
   margin: 0 0 0.5rem;
-  max-height: 1.5rem;
 `;
 
 export const SongRow = styled.div`
@@ -34,7 +33,6 @@ export const SongRow = styled.div`
   border-radius: 0.65rem;
   cursor: pointer;
   transition: background 0.15s;
-  max-height: 3rem;
 
   &:hover {
     background: ${({ theme }) => theme.hover};
@@ -62,6 +60,13 @@ export const SongArtist = styled.span`
   color: ${({ theme }) => theme.primary};
   display: flex;
   align-items: center;
+`;
+
+export const ArtistContainer = styled.div`
+  display: flex;
+  flex-direction: row;
+  gap: 1rem;
+  flex-wrap: wrap;
 `;
 
 export const ArtistRow = styled.div`
@@ -104,7 +109,6 @@ export const ArtistImage = styled.img`
 export const ArtistName = styled.span`
   font-size: 0.9rem;
   color: ${({ theme }) => theme.textPrimary};
-  max-height: 1.5rem;
   text-align: center;
 `;
 
@@ -116,7 +120,6 @@ export const AlbumRow = styled.div`
   border-radius: 0.65rem;
   cursor: pointer;
   transition: background 0.15s;
-  max-height: 3rem;
 
   &:hover {
     background: ${({ theme }) => theme.hover};

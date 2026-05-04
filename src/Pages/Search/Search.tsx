@@ -22,6 +22,7 @@ import {
   AlbumArtist,
   NoResults,
   ArtistImage,
+  ArtistContainer,
 } from './styles';
 
 function normalize(s?: string) {
@@ -71,32 +72,23 @@ const Search = () => {
 
   return (
     <SearchContainer>
-      {matchingSongs.length > 0 && (
-        <ResultsSection>
-          <SectionTitle>Songs</SectionTitle>
-          {matchingSongs.map((song, i) => (
-            <SongRow key={song.path ?? i} onClick={() => playSong(song)}>
-              <AlbumImage metadata={song} height="2.5rem" width="2.5rem" />
-              <SongInfo>
-                <SongTitle>{song.title}</SongTitle>
-                <SongArtist>{song.artist}</SongArtist>
-              </SongInfo>
-            </SongRow>
-          ))}
-        </ResultsSection>
-      )}
-
       {artists.length > 0 && (
         <ResultsSection>
           <SectionTitle>Artists</SectionTitle>
-          {artists.map(([name, metadata]) => (
-            <ArtistRow key={name} onClick={() => navigate(`/artists/${encodeURIComponent(name)}`)}>
-              <ArtistAvatar>
-                {metadata[0].image ? <ArtistImage src={metadata[0].image} alt={name} /> : name.charAt(0).toUpperCase()}
-              </ArtistAvatar>
-              <ArtistName>{name}</ArtistName>
-            </ArtistRow>
-          ))}
+          <ArtistContainer>
+            {artists.map(([name, metadata]) => (
+              <ArtistRow key={name} onClick={() => navigate(`/artists/${encodeURIComponent(name)}`)}>
+                <ArtistAvatar>
+                  {metadata[0].image ? (
+                    <ArtistImage src={metadata[0].image} alt={name} />
+                  ) : (
+                    name.charAt(0).toUpperCase()
+                  )}
+                </ArtistAvatar>
+                <ArtistName>{name}</ArtistName>
+              </ArtistRow>
+            ))}
+          </ArtistContainer>
         </ResultsSection>
       )}
 
@@ -113,6 +105,21 @@ const Search = () => {
                 <AlbumArtist>{song.artist}</AlbumArtist>
               </AlbumInfo>
             </AlbumRow>
+          ))}
+        </ResultsSection>
+      )}
+
+      {matchingSongs.length > 0 && (
+        <ResultsSection>
+          <SectionTitle>Songs</SectionTitle>
+          {matchingSongs.map((song, i) => (
+            <SongRow key={song.path ?? i} onClick={() => playSong(song)}>
+              <AlbumImage metadata={song} height="2.5rem" width="2.5rem" />
+              <SongInfo>
+                <SongTitle>{song.title}</SongTitle>
+                <SongArtist>{song.artist}</SongArtist>
+              </SongInfo>
+            </SongRow>
           ))}
         </ResultsSection>
       )}

@@ -14,6 +14,7 @@ const CustomProgressBar = styled.div`
   height: 20px;
   position: relative;
   display: flex;
+  width: 100%;
 `;
 
 const Slider = styled.input.attrs({ type: 'range' })<{ $height?: number }>`

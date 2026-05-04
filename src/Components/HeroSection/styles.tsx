@@ -61,7 +61,6 @@ export const HeroBottom = styled.div`
 export const HeroStats = styled.div`
   color: rgba(255, 255, 255, 0.75);
   font-size: 0.9rem;
-  max-height: 2rem;
 `;
 
 export const HeroContent = styled.div`
