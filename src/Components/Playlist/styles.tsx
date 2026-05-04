@@ -1,8 +1,9 @@
 import { styled } from 'styled-components';
 import { FaCirclePlay, FaCircleExclamation, FaTrash } from 'react-icons/fa6';
 
-export const PlaylistContainer = styled.div`
-  overflow-y: hidden;
+export const PlaylistContainer = styled.div<{ $scroll?: boolean }>`
+  overflow-y: ${({ $scroll = true }) => ($scroll ? 'hidden' : 'visible')};
+  height: ${({ $scroll = true }) => ($scroll ? '100%' : 'auto')};
   padding: 1rem;
   width: 100%;
 `;
@@ -71,13 +72,14 @@ export const Play = styled(FaCirclePlay)`
   color: ${({ theme }) => theme.accent};
 `;
 
-export const SongList = styled.div`
-  overflow-y: auto;
+export const SongList = styled.div<{ $scroll?: boolean }>`
+  overflow-y: ${({ $scroll = true }) => ($scroll ? 'auto' : 'visible')};
+  height: ${({ $scroll = true }) => ($scroll ? '100%' : 'auto')};
   display: flex;
   flex-direction: column;
   justify-content: flex-start;
   gap: 1rem;
-  padding: 2rem 4rem 20rem 4rem;
+  padding: ${({ $scroll = true }) => ($scroll ? '2rem 4rem 20rem 4rem' : '0.5rem 4rem')};
 `;
 
 export const SongItem = styled.div<{ $active?: boolean; $missing?: boolean }>`

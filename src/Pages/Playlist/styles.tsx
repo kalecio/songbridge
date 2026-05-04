@@ -47,7 +47,7 @@ export const PlaylistItem = styled.div<{ $active?: boolean }>`
   background: ${(p) => (p.$active ? p.theme.active : 'transparent')};
   border-left: 3px solid ${(p) => (p.$active ? p.theme.primary : 'transparent')};
   transition: background 0.15s;
-  max-height: 4rem;
+  width: 100%;
 
   &:hover {
     background: ${(p) => (p.$active ? p.theme.active : p.theme.hover)};
@@ -69,13 +69,11 @@ export const PlaylistItemName = styled.div`
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-height: 1.5rem;
 `;
 
 export const PlaylistItemCount = styled.div`
   font-size: 0.7rem;
   color: ${({ theme }) => theme.primary};
-  max-height: 1.5rem;
 `;
 
 export const DeleteBtn = styled.button`
@@ -90,7 +88,6 @@ export const DeleteBtn = styled.button`
   flex-shrink: 0;
   transition: color 0.15s;
   max-width: 1.5rem;
-  max-height: 1.5rem;
 
   &:hover {
     color: ${({ theme }) => theme.error};
@@ -117,7 +114,6 @@ export const EditorHeader = styled.div`
   align-items: baseline;
   gap: 0.5rem;
   flex-direction: column;
-  max-height: 4rem;
 `;
 
 export const NameInput = styled.input`
@@ -130,7 +126,6 @@ export const NameInput = styled.input`
   outline: none;
   padding: 0.1rem 0.2rem;
   transition: border-color 0.15s;
-  max-height: 2rem;
 
   &:focus {
     border-bottom-color: ${({ theme }) => theme.primary};
@@ -140,7 +135,6 @@ export const NameInput = styled.input`
 export const SongCount = styled.span`
   font-size: 0.8rem;
   color: ${({ theme }) => theme.primary};
-  max-height: 2rem;
 `;
 
 export const TwoColumn = styled.div`
@@ -165,7 +159,6 @@ export const ColumnTitle = styled.h3`
   letter-spacing: 0.05em;
   color: ${({ theme }) => theme.primaryDark};
   margin: 0 0 0.25rem;
-  max-height: 1.5rem;
 `;
 
 export const SearchInput = styled.input`
@@ -176,7 +169,6 @@ export const SearchInput = styled.input`
   outline: none;
   background: ${({ theme }) => theme.surface};
   color: ${({ theme }) => theme.textPrimary};
-  max-height: 2.5rem;
 
   &:focus {
     border-color: ${({ theme }) => theme.primary};
@@ -198,7 +190,6 @@ export const SongRow = styled.div`
   padding: 0.4rem 0.5rem;
   border-radius: 0.5rem;
   transition: background 0.1s;
-  max-height: 3rem;
 
   &:hover {
     background: ${({ theme }) => theme.hover};

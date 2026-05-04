@@ -6,12 +6,13 @@ import Count from '../../Components/Count/Count';
 import Page from '../../Components/Page/Page';
 import PageHeader from '../../Components/PageHeader/PageHeader';
 import StatusMessage from '../../Components/StatusMessage/StatusMessage';
-import { Grid, Card, Avatar, ArtistName, ArtistMeta } from './styles';
+import { Grid, Card, Avatar, ArtistName, ArtistMeta, AvatarImage } from './styles';
 
 interface ArtistEntry {
   name: string;
   songs: MetadataType[];
   albumCount: number;
+  albumArt?: string;
 }
 
 function groupByArtist(library: MetadataType[]): ArtistEntry[] {
@@ -26,6 +27,7 @@ function groupByArtist(library: MetadataType[]): ArtistEntry[] {
       name,
       songs,
       albumCount: new Set(songs.map((s) => s.album ?? 'Unknown Album')).size,
+      albumArt: songs.find((s) => s.image)?.image,
     }))
     .sort((a, b) => a.name.localeCompare(b.name));
 }
@@ -52,7 +54,13 @@ const Artists = () => {
       <Grid>
         {artists.map((artist) => (
           <Card key={artist.name} onClick={() => navigate(`/artists/${encodeURIComponent(artist.name)}`)}>
-            <Avatar>{artist.name.charAt(0).toUpperCase()}</Avatar>
+            <Avatar>
+              {artist.albumArt ? (
+                <AvatarImage src={artist.albumArt} alt={artist.name} />
+              ) : (
+                artist.name.charAt(0).toUpperCase()
+              )}
+            </Avatar>
             <ArtistName>{artist.name}</ArtistName>
             <ArtistMeta>
               {artist.albumCount} {artist.albumCount === 1 ? 'album' : 'albums'}

@@ -14,6 +14,7 @@ const AlbumImage = styled.img`
   width: 60px;
   height: 60px;
   border-radius: 10px;
+  object-fit: cover;
 `;
 
 const PlayerAlbumArt = styled(AlbumImage)<{ $height?: string; $width?: string }>`

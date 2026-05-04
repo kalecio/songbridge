@@ -12,6 +12,7 @@ const CustomProgressBar = styled.div<{ $height?: number }>`
   border-radius: 10px;
   padding: 0px;
   height: ${(props) => props.$height || '15px'};
+  width: 100%;
 `;
 
 const SliderContainer = styled.div`
@@ -19,7 +20,7 @@ const SliderContainer = styled.div`
   justify-content: center;
   align-items: center;
   position: relative;
-  max-width: 120px;
+  width: 120px;
   border-radius: 10px;
 `;
 

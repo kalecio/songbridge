@@ -64,6 +64,7 @@ const AlbumDetail = () => {
           songs={songs}
           name={albumName}
           type="Album"
+          scroll={false}
           activePath={currentPath}
           onSongClick={playSong}
           onPlayAll={() => songs[0] && playSong(songs[0])}

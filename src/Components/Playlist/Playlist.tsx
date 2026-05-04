@@ -28,12 +28,22 @@ interface Props {
   name: string;
   type?: string;
   activePath?: string;
+  scroll?: boolean;
   onSongClick?: (_song: MetadataType) => void;
   onPlayAll?: () => void;
   onRemoveMissing?: (_song: MetadataType) => void;
 }
 
-const Playlist = ({ songs, name, type = 'Playlist', activePath, onSongClick, onPlayAll, onRemoveMissing }: Props) => {
+const Playlist = ({
+  songs,
+  name,
+  type = 'Playlist',
+  activePath,
+  scroll = true,
+  onSongClick,
+  onPlayAll,
+  onRemoveMissing,
+}: Props) => {
   const [missingPaths, setMissingPaths] = useState<Set<string>>(new Set());
 
   useEffect(() => {
@@ -46,7 +56,7 @@ const Playlist = ({ songs, name, type = 'Playlist', activePath, onSongClick, onP
   }, [songs]);
 
   return (
-    <PlaylistContainer>
+    <PlaylistContainer $scroll={scroll}>
       <Header>
         <PlaylistInfo>
           {type !== 'Library' && <AlbumImage metadata={songs[0]} height="10rem" width="10rem" />}
@@ -60,7 +70,7 @@ const Playlist = ({ songs, name, type = 'Playlist', activePath, onSongClick, onP
           </PlaylistDetails>
         </PlaylistInfo>
       </Header>
-      <SongList>
+      <SongList $scroll={scroll}>
         {songs.map((song, index) => {
           const isMissing = Boolean(song.path && missingPaths.has(song.path));
           return (

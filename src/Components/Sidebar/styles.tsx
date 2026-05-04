@@ -18,7 +18,7 @@ const AppLogo = styled.div`
   align-items: center;
   gap: 0.6rem;
   padding: 0.25rem 0.5rem 1.5rem;
-  max-height: 8rem;
+  flex-shrink: 0;
 `;
 
 const AppName = styled.span`
@@ -37,7 +37,7 @@ const SectionLabel = styled.span`
   display: flex;
   align-items: center;
   justify-content: flex-start;
-  max-height: 1.5rem;
+  flex-shrink: 0;
 `;
 
 const PlaylistsRow = styled.div`
@@ -45,7 +45,7 @@ const PlaylistsRow = styled.div`
   align-items: center;
   justify-content: space-between;
   padding-right: 0.25rem;
-  max-height: 1.5rem;
+  flex-shrink: 0;
 `;
 
 const PlusButtonContainer = styled.button`
@@ -75,6 +75,7 @@ const Menu = styled.div`
   flex-direction: column;
   width: 100%;
   gap: 0.15rem;
+  flex-shrink: 0;
 `;
 
 const MenuItem = styled.div<{ $active?: boolean }>`
@@ -91,7 +92,7 @@ const MenuItem = styled.div<{ $active?: boolean }>`
   transition:
     background 0.15s,
     color 0.15s;
-  max-height: 3rem;
+  flex-shrink: 0;
 
   &:hover {
     background: ${(p) => (p.$active ? p.theme.hoverActive : p.theme.hover)};
@@ -116,7 +117,7 @@ const PlaylistItem = styled.div<{ $active?: boolean }>`
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-height: 3rem;
+  flex-shrink: 0;
 
   &:hover {
     background: ${(p) => (p.$active ? p.theme.hoverActive : p.theme.hover)};
@@ -141,7 +142,7 @@ const QueueHeader = styled.div`
   font-size: 0.9rem;
   cursor: pointer;
   padding: 0.5rem 0.75rem 1rem;
-  max-height: 2.5rem;
+  flex-shrink: 0;
 
   &:hover {
     color: ${({ theme }) => theme.primaryDark};
