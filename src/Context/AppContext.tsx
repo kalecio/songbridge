@@ -1,5 +1,6 @@
 import React, { createContext } from 'react';
 import { MetadataType, PlaylistType } from '../types';
+import { DEFAULT_SHORTCUTS, ShortcutBindings } from '../keyboard';
 
 export interface ScanProgress {
   current: number;
@@ -13,6 +14,7 @@ interface AppContext {
   isPlaying: boolean;
   isScanning: boolean;
   scanProgress: ScanProgress;
+  shortcuts: ShortcutBindings;
   library: MetadataType[];
   libraryPaths: string[];
   metadata?: MetadataType;
@@ -25,6 +27,7 @@ interface AppContext {
   setCurrentPlaylist?: (_playlist: string[]) => void;
   setCurrentTheme?: (_theme: string) => void;
   setIsScanning?: (_isScanning: boolean) => void;
+  setShortcuts?: (_shortcuts: ShortcutBindings) => void;
   setLibrary?: (_library: MetadataType[]) => void;
   setLibraryPaths?: (_paths: string[]) => void;
   scanLibrary?: (_paths: string[]) => Promise<void>;
@@ -43,6 +46,7 @@ export const AppContext = createContext<AppContext>({
   isPlaying: false,
   isScanning: false,
   scanProgress: { current: 0, total: 0 },
+  shortcuts: DEFAULT_SHORTCUTS,
   library: [],
   libraryPaths: [],
   progress: 0,

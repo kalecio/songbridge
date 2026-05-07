@@ -3,6 +3,7 @@ import { MemoryRouter, Route, Routes } from 'react-router';
 import { AppContext } from '../../Context/AppContext';
 import { MetadataType, PlaylistType } from '../../types';
 import { FAVOURITES_PLAYLIST_ID } from '../../hooks/useFavourites';
+import { DEFAULT_SHORTCUTS } from '../../keyboard';
 import Search from './Search';
 
 type AppContextValue = React.ComponentProps<typeof AppContext.Provider>['value'];
@@ -13,6 +14,7 @@ const defaultContext: AppContextValue = {
   isPlaying: false,
   isScanning: false,
   scanProgress: { current: 0, total: 0 },
+  shortcuts: DEFAULT_SHORTCUTS,
   library: [],
   libraryPaths: [],
   progress: 0,

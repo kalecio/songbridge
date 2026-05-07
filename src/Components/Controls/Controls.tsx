@@ -1,9 +1,10 @@
-import { useCallback, useContext, useEffect, useState } from 'react';
+import { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { Controls, Shuffle, Prev, Play, Next, Repeat, Pause } from './styles';
 import { invoke } from '@tauri-apps/api/core';
 import { AppContext } from '../../Context/AppContext';
 import { error as logError } from '../../logger';
 import { MetadataType } from '../../types';
+import { AUDIO_EVENTS } from '../../audioEvents';
 
 const Player = () => {
   const [isSongLoaded, setIsSongLoaded] = useState(false);
@@ -84,6 +85,54 @@ const Player = () => {
       logError(`Resume failed: ${error}`).catch(() => {});
     }
   };
+
+  const togglePlayPause = async () => {
+    if (isPlaying) {
+      await pause();
+    } else if (isSongLoaded) {
+      await resume();
+    } else if (path) {
+      await playNewSong();
+    }
+  };
+
+  // Bridge custom audio events (dispatched by the global keyboard-shortcut
+  // handler) to the existing playback handlers. Refs keep the listeners
+  // pointing at the latest closures without re-binding on every render.
+  const handlersRef = useRef({
+    togglePlayPause,
+    handleNextSong,
+    handlePreviousSong,
+    toggleShuffle: () => setOnShuffle?.(!onShuffle),
+    toggleRepeat: () => setOnRepeat?.(!onRepeat),
+  });
+  handlersRef.current = {
+    togglePlayPause,
+    handleNextSong,
+    handlePreviousSong,
+    toggleShuffle: () => setOnShuffle?.(!onShuffle),
+    toggleRepeat: () => setOnRepeat?.(!onRepeat),
+  };
+
+  useEffect(() => {
+    const onPlayPause = () => handlersRef.current.togglePlayPause();
+    const onNext = () => handlersRef.current.handleNextSong();
+    const onPrev = () => handlersRef.current.handlePreviousSong();
+    const onShuffleEvt = () => handlersRef.current.toggleShuffle();
+    const onRepeatEvt = () => handlersRef.current.toggleRepeat();
+    window.addEventListener(AUDIO_EVENTS.playPause, onPlayPause);
+    window.addEventListener(AUDIO_EVENTS.next, onNext);
+    window.addEventListener(AUDIO_EVENTS.previous, onPrev);
+    window.addEventListener(AUDIO_EVENTS.shuffle, onShuffleEvt);
+    window.addEventListener(AUDIO_EVENTS.repeat, onRepeatEvt);
+    return () => {
+      window.removeEventListener(AUDIO_EVENTS.playPause, onPlayPause);
+      window.removeEventListener(AUDIO_EVENTS.next, onNext);
+      window.removeEventListener(AUDIO_EVENTS.previous, onPrev);
+      window.removeEventListener(AUDIO_EVENTS.shuffle, onShuffleEvt);
+      window.removeEventListener(AUDIO_EVENTS.repeat, onRepeatEvt);
+    };
+  }, []);
 
   return (
     <Controls>

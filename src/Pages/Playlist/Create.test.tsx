@@ -4,6 +4,7 @@ import { MemoryRouter } from 'react-router';
 import { invoke } from '@tauri-apps/api/core';
 import { AppContext } from '../../Context/AppContext';
 import { MetadataType, PlaylistType } from '../../types';
+import { DEFAULT_SHORTCUTS } from '../../keyboard';
 import CreatePlaylist from './Create';
 
 vi.mock('@tauri-apps/api/core', () => ({ invoke: vi.fn().mockResolvedValue(undefined) }));
@@ -26,6 +27,7 @@ const Wrapper = ({
           isPlaying: false,
           isScanning: false,
           scanProgress: { current: 0, total: 0 },
+          shortcuts: DEFAULT_SHORTCUTS,
           library,
           libraryPaths: [],
           progress: 0,

@@ -7,6 +7,7 @@ import { MetadataType, PlaylistType } from './types';
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import { themes, defaultTheme } from './theme';
+import { ShortcutBindings, loadShortcuts, saveShortcuts } from './keyboard';
 
 const GlobalStyle = createGlobalStyle`
   body {
@@ -30,6 +31,12 @@ function App() {
   const [isScanning, setIsScanning] = useState<boolean>(false);
   const [scanProgress, setScanProgress] = useState<ScanProgress>({ current: 0, total: 0 });
   const [currentTheme, setCurrentTheme] = useState<string>(defaultTheme.name);
+  const [shortcuts, setShortcutsState] = useState<ShortcutBindings>(() => loadShortcuts());
+
+  const setShortcuts = (next: ShortcutBindings) => {
+    setShortcutsState(next);
+    saveShortcuts(next);
+  };
 
   const activeTheme = themes[currentTheme] ?? defaultTheme;
 
@@ -144,6 +151,8 @@ function App() {
         libraryPaths,
         isScanning,
         scanProgress,
+        shortcuts,
+        setShortcuts,
         setCurrentPath,
         setCurrentPlaylist,
         setCurrentTheme,
