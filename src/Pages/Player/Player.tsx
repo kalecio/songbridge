@@ -1,5 +1,5 @@
 import { useCallback, useContext, useEffect, useRef, useState } from 'react';
-import { useNavigate, Route, Routes } from 'react-router';
+import { useNavigate, useLocation, Route, Routes } from 'react-router';
 import { error as logError } from '../../logger';
 import { FaGear } from 'react-icons/fa6';
 import Controls from '../../Components/Controls/Controls';
@@ -40,6 +40,7 @@ import CreatePlaylist from '../Playlist/Create';
 
 const Player = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const context = useContext(AppContext);
   const {
     currentPath: path,
@@ -165,41 +166,34 @@ const Player = () => {
     endedRef.current = false;
   }, [path]);
 
-  // --- DEBOUNCE LOGIC START ---
-
-  const performSearch = useCallback(
-    (value: string) => {
-      navigate(`/search?q=${encodeURIComponent(value)}`);
-    },
-    [navigate],
-  );
-
-  // Debounce hook: executes performSearch only 300ms after 'searchTerm' stops changing.
+  // Sync the search input to the URL: shows the active query when on /search,
+  // clears the input when the user navigates anywhere else, and cancels any
+  // pending debounce so we don't snap them back to /search after they leave.
   useEffect(() => {
-    const trimmed = searchTerm.trim();
-    if (!trimmed) return;
-
+    const params = new URLSearchParams(location.search);
+    setSearchTerm(params.get('q') ?? '');
     if (debounceTimeoutRef.current !== null) {
       window.clearTimeout(debounceTimeoutRef.current);
+      debounceTimeoutRef.current = null;
     }
+  }, [location.pathname, location.search]);
 
-    debounceTimeoutRef.current = window.setTimeout(() => {
-      performSearch(trimmed);
-    }, 300);
+  const handleInputChange = useCallback(
+    (event: React.ChangeEvent<HTMLInputElement>) => {
+      const newValue = event.target.value;
+      setSearchTerm(newValue);
 
-    return () => {
       if (debounceTimeoutRef.current !== null) {
         window.clearTimeout(debounceTimeoutRef.current);
       }
-    };
-  }, [searchTerm, performSearch]);
-
-  const handleInputChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
-    const newValue = event.target.value;
-    setSearchTerm(newValue);
-  }, []);
-
-  // --- DEBOUNCE LOGIC END ---
+      const trimmed = newValue.trim();
+      if (!trimmed) return;
+      debounceTimeoutRef.current = window.setTimeout(() => {
+        navigate(`/search?q=${encodeURIComponent(trimmed)}`);
+      }, 300);
+    },
+    [navigate],
+  );
 
   return (
     <Container>
