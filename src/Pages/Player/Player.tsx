@@ -26,6 +26,9 @@ import {
   StyledPlayer,
 } from './styles';
 import { AppContext } from '../../Context/AppContext';
+import { AUDIO_EVENTS, emitAudioEvent } from '../../audioEvents';
+import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts';
+import { useMediaKeys } from '../../hooks/useMediaKeys';
 import Sidebar from '../../Components/Sidebar/Sidebar';
 import AlbumImage from '../../Components/AlbumImage/AlbumImage';
 import PlaylistRoute from '../Playlist/Detail';
@@ -48,6 +51,7 @@ const Player = () => {
     isPlaying,
     isScanning,
     scanProgress,
+    shortcuts,
     metadata,
     playlists,
     progress,
@@ -61,6 +65,7 @@ const Player = () => {
   const endedRef = useRef(false);
   const [searchTerm, setSearchTerm] = useState('');
   const debounceTimeoutRef = useRef<number | null>(null);
+  const searchInputRef = useRef<HTMLInputElement>(null);
 
   const handleSeek = useCallback(
     async (progressRatio: number) => {
@@ -89,6 +94,29 @@ const Player = () => {
     const filteredFiles = files.filter((file) => !currentPlaylist.includes(file));
     setCurrentPlaylist?.([...currentPlaylist, ...filteredFiles]);
   };
+
+  useKeyboardShortcuts(
+    {
+      playPause: () => emitAudioEvent(AUDIO_EVENTS.playPause),
+      next: () => emitAudioEvent(AUDIO_EVENTS.next),
+      previous: () => emitAudioEvent(AUDIO_EVENTS.previous),
+      shuffle: () => emitAudioEvent(AUDIO_EVENTS.shuffle),
+      repeat: () => emitAudioEvent(AUDIO_EVENTS.repeat),
+      mute: () => emitAudioEvent(AUDIO_EVENTS.mute),
+      openFiles: () => {
+        handleOpenFile();
+      },
+      search: () => searchInputRef.current?.focus(),
+    },
+    shortcuts,
+  );
+
+  useMediaKeys((seconds) => {
+    const total = metadata?.duration?.duration_seconds ?? 0;
+    if (total <= 0) return;
+    const ratio = Math.max(0, Math.min(1, seconds / total));
+    handleSeek(ratio);
+  });
 
   useEffect(() => {
     // Clear any existing interval
@@ -204,6 +232,7 @@ const Player = () => {
             <SearchWrapper>
               <SearchIcon />
               <SearchInput
+                ref={searchInputRef}
                 placeholder="Search songs, artists, albums…"
                 value={searchTerm}
                 onChange={handleInputChange}

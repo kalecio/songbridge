@@ -4,6 +4,7 @@ import Volume from './Volume';
 import { renderWithContext } from '../../test/helpers';
 import { PlaylistType } from '../../types';
 import { FAVOURITES_PLAYLIST_ID } from '../../hooks/useFavourites';
+import { AUDIO_EVENTS } from '../../audioEvents';
 
 vi.mock('@tauri-apps/api/core', () => ({
   invoke: vi.fn().mockResolvedValue(undefined),
@@ -56,6 +57,18 @@ describe('Volume', () => {
     await waitFor(() => expect(getByLabelText('volume-muted')).toBeInTheDocument());
     fireEvent.click(getByLabelText('volume-muted'));
     await waitFor(() => expect(getByLabelText('volume-high')).toBeInTheDocument());
+  });
+
+  it('toggles mute when the AUDIO_EVENTS.mute event is dispatched', async () => {
+    const { getByLabelText } = renderWithContext(<Volume />);
+    expect(getByLabelText('volume-high')).toBeInTheDocument();
+    act(() => {
+      window.dispatchEvent(new CustomEvent(AUDIO_EVENTS.mute));
+    });
+    await waitFor(() => {
+      expect(mockInvoke).toHaveBeenCalledWith('toggle_mute');
+      expect(getByLabelText('volume-muted')).toBeInTheDocument();
+    });
   });
 
   it('marks the heart as disabled when no song is playing', () => {

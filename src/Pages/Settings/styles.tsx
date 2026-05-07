@@ -186,6 +186,66 @@ export const ThemeLabel = styled.label`
   min-width: 4rem;
 `;
 
+export const ShortcutList = styled.ul`
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+`;
+
+export const ShortcutRow = styled.li`
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: ${({ theme }) => theme.surfaceRaised};
+  border: 1px solid ${({ theme }) => theme.borderLight};
+  border-radius: 0.5rem;
+  padding: 0.6rem 0.9rem;
+`;
+
+export const ShortcutLabel = styled.span`
+  flex: 1;
+  font-size: 0.85rem;
+  color: ${({ theme }) => theme.textPrimary};
+`;
+
+export const ShortcutKey = styled.button<{ $recording?: boolean }>`
+  font-family: inherit;
+  font-size: 0.8rem;
+  padding: 0.3rem 0.7rem;
+  border-radius: 0.4rem;
+  border: 1px solid ${({ theme, $recording }) => ($recording ? theme.primary : theme.borderLight)};
+  background: ${({ theme, $recording }) => ($recording ? theme.hoverActive : theme.surface)};
+  color: ${({ theme, $recording }) => ($recording ? theme.primaryDark : theme.textPrimary)};
+  cursor: pointer;
+  min-width: 5rem;
+  text-align: center;
+  transition:
+    border-color 0.15s,
+    background 0.15s;
+
+  &:hover {
+    border-color: ${({ theme }) => theme.primary};
+  }
+`;
+
+export const ResetShortcutsButton = styled.button`
+  align-self: flex-start;
+  background: none;
+  border: none;
+  color: ${({ theme }) => theme.primary};
+  font-size: 0.8rem;
+  cursor: pointer;
+  padding: 0.25rem 0;
+
+  &:hover {
+    color: ${({ theme }) => theme.primaryDark};
+    text-decoration: underline;
+  }
+`;
+
 export const ThemeSelect = styled.select`
   -webkit-appearance: none;
   appearance: none;

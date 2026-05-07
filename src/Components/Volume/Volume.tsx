@@ -1,9 +1,10 @@
-import { useContext, useState } from 'react';
+import { useContext, useEffect, useRef, useState } from 'react';
 import Slider from '../Slider/Slider';
 import { Heart, VolumeContainer, VolumeHigh, VolumeLow, VolumeOff, VolumeXmark } from './styles';
 import { invoke } from '@tauri-apps/api/core';
 import { AppContext } from '../../Context/AppContext';
 import { useFavourites } from '../../hooks/useFavourites';
+import { AUDIO_EVENTS } from '../../audioEvents';
 
 const Volume = () => {
   const [volume, setVolume] = useState(70);
@@ -34,6 +35,16 @@ const Volume = () => {
     await invoke('toggle_mute');
     setVolumeOff(!isVolumeOff);
   };
+
+  // Bridge the mute keyboard shortcut to the existing handler. Ref keeps the
+  // listener pointing at the latest closure without re-binding on every render.
+  const toggleMuteRef = useRef(handleToggleVolume);
+  toggleMuteRef.current = handleToggleVolume;
+  useEffect(() => {
+    const onMute = () => toggleMuteRef.current();
+    window.addEventListener(AUDIO_EVENTS.mute, onMute);
+    return () => window.removeEventListener(AUDIO_EVENTS.mute, onMute);
+  }, []);
 
   const handleToggleFavourite = () => {
     if (!currentPath) return;

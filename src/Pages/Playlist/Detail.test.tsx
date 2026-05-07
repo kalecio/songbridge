@@ -3,6 +3,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { AppContext } from '../../Context/AppContext';
 import { PlaylistType } from '../../types';
+import { DEFAULT_SHORTCUTS } from '../../keyboard';
 import Detail from './Detail';
 
 vi.mock('@tauri-apps/api/core', () => ({
@@ -19,6 +20,7 @@ const defaultContext: AppContextValue = {
   isPlaying: false,
   isScanning: false,
   scanProgress: { current: 0, total: 0 },
+  shortcuts: DEFAULT_SHORTCUTS,
   library: [],
   libraryPaths: [],
   progress: 0,

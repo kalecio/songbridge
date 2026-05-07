@@ -8,6 +8,7 @@ mod audio;
 mod db;
 mod metadata;
 mod music_library;
+mod now_playing;
 
 // Re-export a minimal API for integration tests and external callers.
 pub use audio::utils::{calculate_track_duration, get_audio_probe};
@@ -50,6 +51,7 @@ pub fn run() {
             let db_state = db::state::DbState::new(&db_path)
                 .map_err(|e| format!("Failed to open database: {e}"))?;
             app.manage(db_state);
+            now_playing::init(app.handle());
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
@@ -77,6 +79,8 @@ pub fn run() {
             db::commands::db_add_library_path,
             db::commands::db_remove_library_path,
             db::commands::db_load_tracks,
+            now_playing::set_now_playing,
+            now_playing::set_playback_state,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");
