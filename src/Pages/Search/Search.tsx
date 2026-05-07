@@ -1,10 +1,11 @@
 import { useContext } from 'react';
 import { useSearchParams, useNavigate } from 'react-router';
 import { AppContext } from '../../Context/AppContext';
-import { MetadataType } from '../../types';
+import { MetadataType, PlaylistType } from '../../types';
 import AlbumImage from '../../Components/AlbumImage/AlbumImage';
 import StatusMessage from '../../Components/StatusMessage/StatusMessage';
 import { useLazyAlbumArt } from '../../hooks/useLazyAlbumArt';
+import { isFavouritesPlaylist, sortFavouritesFirst } from '../../hooks/useFavourites';
 import {
   SearchContainer,
   ResultsSection,
@@ -21,6 +22,8 @@ import {
   AlbumInfo,
   AlbumTitle,
   AlbumArtist,
+  FavouriteThumb,
+  FavouriteHeart,
   NoResults,
   ArtistImage,
   ArtistContainer,
@@ -40,13 +43,17 @@ const SearchArtistAvatar = ({ name, songs }: { name: string; songs: MetadataType
 const Search = () => {
   const [searchParams] = useSearchParams();
   const query = searchParams.get('q') ?? '';
-  const { library, setCurrentPath, setCurrentPlaylist } = useContext(AppContext);
+  const { library, playlists = [], setCurrentPath, setCurrentPlaylist } = useContext(AppContext);
   const navigate = useNavigate();
 
   const q = normalize(query);
 
   const matchingSongs = library.filter(
     (s) => normalize(s.title).includes(q) || normalize(s.artist).includes(q) || normalize(s.album).includes(q),
+  );
+
+  const matchingPlaylists: PlaylistType[] = sortFavouritesFirst(
+    playlists.filter((pl) => normalize(pl.name).includes(q)),
   );
 
   const artistMap = new Map<string, MetadataType[]>();
@@ -72,7 +79,7 @@ const Search = () => {
 
   if (!q) return null;
 
-  const hasResults = matchingSongs.length > 0;
+  const hasResults = matchingSongs.length > 0 || matchingPlaylists.length > 0;
 
   if (!hasResults) {
     return <StatusMessage>No results for &ldquo;{query}&rdquo;</StatusMessage>;
@@ -111,6 +118,35 @@ const Search = () => {
         </ResultsSection>
       )}
 
+      {matchingPlaylists.length > 0 && (
+        <ResultsSection>
+          <SectionTitle>Playlists</SectionTitle>
+          {matchingPlaylists.map((pl) => {
+            const cover = library.find((l) => l.path === pl.songs[0]?.path) ?? pl.songs[0];
+            const fav = isFavouritesPlaylist(pl.id);
+            return (
+              <AlbumRow key={pl.id} onClick={() => navigate(`/playlist/${pl.id}`)}>
+                {fav ? (
+                  <FavouriteThumb>
+                    <FavouriteHeart />
+                  </FavouriteThumb>
+                ) : (
+                  <AlbumArt>
+                    <AlbumImage metadata={cover} height="100%" width="100%" />
+                  </AlbumArt>
+                )}
+                <AlbumInfo>
+                  <AlbumTitle>{pl.name}</AlbumTitle>
+                  <AlbumArtist>
+                    {pl.songs.length} {pl.songs.length === 1 ? 'song' : 'songs'}
+                  </AlbumArtist>
+                </AlbumInfo>
+              </AlbumRow>
+            );
+          })}
+        </ResultsSection>
+      )}
+
       {matchingSongs.length > 0 && (
         <ResultsSection>
           <SectionTitle>Songs</SectionTitle>
@@ -126,9 +162,11 @@ const Search = () => {
         </ResultsSection>
       )}
 
-      <NoResults>
-        {matchingSongs.length} {matchingSongs.length === 1 ? 'result' : 'results'} for &ldquo;{query}&rdquo;
-      </NoResults>
+      {matchingSongs.length > 0 && (
+        <NoResults>
+          {matchingSongs.length} {matchingSongs.length === 1 ? 'result' : 'results'} for &ldquo;{query}&rdquo;
+        </NoResults>
+      )}
     </SearchContainer>
   );
 };

@@ -1,7 +1,8 @@
 import { fireEvent, render, screen, within } from '@testing-library/react';
 import { MemoryRouter, Route, Routes } from 'react-router';
 import { AppContext } from '../../Context/AppContext';
-import { MetadataType } from '../../types';
+import { MetadataType, PlaylistType } from '../../types';
+import { FAVOURITES_PLAYLIST_ID } from '../../hooks/useFavourites';
 import Search from './Search';
 
 type AppContextValue = React.ComponentProps<typeof AppContext.Provider>['value'];
@@ -34,6 +35,7 @@ const renderSearch = (query: string, contextOverrides: Partial<AppContextValue> 
           <Route path="/search" element={<Search />} />
           <Route path="/artists/:id" element={<div>Artist page</div>} />
           <Route path="/albums/:id" element={<div>Album page</div>} />
+          <Route path="/playlist/:id" element={<div>Playlist page</div>} />
         </Routes>
       </AppContext.Provider>
     </MemoryRouter>,
@@ -140,6 +142,49 @@ describe('Search', () => {
     it('uses singular "result" when only one song matches', () => {
       renderSearch('neon');
       expect(screen.getByText(/1 result/i)).toBeInTheDocument();
+    });
+  });
+
+  describe('playlist results', () => {
+    const playlists: PlaylistType[] = [
+      { id: FAVOURITES_PLAYLIST_ID, name: 'Favourites', songs: [{ path: '/a.mp3', title: 'Neon Lights' }] },
+      { id: 'p1', name: 'Late Night', songs: [{ path: '/c.mp3' }] },
+      { id: 'p2', name: 'Morning Mix', songs: [] },
+    ];
+
+    const getPlaylistsSection = () => screen.getByText('Playlists').parentElement!;
+
+    it('shows a playlist whose name matches the query', () => {
+      renderSearch('late', { playlists });
+      expect(within(getPlaylistsSection()).getByText('Late Night')).toBeInTheDocument();
+    });
+
+    it('does not match playlists by song title or artist (name only)', () => {
+      renderSearch('neon', { playlists });
+      expect(screen.queryByText('Playlists')).not.toBeInTheDocument();
+    });
+
+    it('renders results when only a playlist matches and no songs do', () => {
+      renderSearch('favourites', { playlists });
+      expect(within(getPlaylistsSection()).getByText('Favourites')).toBeInTheDocument();
+      expect(screen.queryByText(/results for/i)).not.toBeInTheDocument();
+    });
+
+    it('navigates to the playlist when its row is clicked', () => {
+      renderSearch('late', { playlists });
+      fireEvent.click(within(getPlaylistsSection()).getByText('Late Night'));
+      expect(screen.getByText('Playlist page')).toBeInTheDocument();
+    });
+
+    it('pins Favourites to the top of the playlist list', () => {
+      const playlistsWithMatchingNames: PlaylistType[] = [
+        { id: 'p1', name: 'Mood', songs: [] },
+        { id: FAVOURITES_PLAYLIST_ID, name: 'Favourites Mood', songs: [] },
+        { id: 'p2', name: 'Mood Booster', songs: [] },
+      ];
+      renderSearch('mood', { playlists: playlistsWithMatchingNames });
+      const titles = within(getPlaylistsSection()).getAllByText(/Mood/);
+      expect(titles[0].textContent).toBe('Favourites Mood');
     });
   });
 });

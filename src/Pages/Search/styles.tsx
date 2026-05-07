@@ -1,4 +1,5 @@
 import { styled } from 'styled-components';
+import { FaHeart } from 'react-icons/fa6';
 
 export const SearchContainer = styled.div`
   display: flex;
@@ -157,4 +158,21 @@ export const NoResults = styled.p`
   font-size: 0.8rem;
   color: ${({ theme }) => theme.textMuted};
   margin: 0;
+`;
+
+export const FavouriteThumb = styled.div`
+  width: 2.5rem;
+  height: 2.5rem;
+  border-radius: 0.4rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: ${({ theme }) => theme.hoverActive};
+  color: ${({ theme }) => theme.accent};
+  flex-shrink: 0;
+`;
+
+export const FavouriteHeart = styled(FaHeart)`
+  width: 1.1rem;
+  height: 1.1rem;
 `;
