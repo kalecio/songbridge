@@ -2,6 +2,7 @@ import { useContext, useState } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { AppContext } from '../../Context/AppContext';
 import { MetadataType, PlaylistType } from '../../types';
+import { isFavouritesPlaylist, sortFavouritesFirst } from '../../hooks/useFavourites';
 import {
   AddIcon,
   Column,
@@ -11,6 +12,7 @@ import {
   EditorHeader,
   EmptyColumn,
   EmptyState,
+  FavouriteBadge,
   IconButton,
   LeftPanel,
   NameInput,
@@ -59,6 +61,7 @@ const CreatePlaylist = () => {
 
   const handleRename = () => {
     if (!selected) return;
+    if (isFavouritesPlaylist(selected.id)) return;
     const trimmed = editingName.trim();
     if (!trimmed || trimmed === selected.name) return;
     updatePlaylists({ ...selected, name: trimmed });
@@ -92,23 +95,31 @@ const CreatePlaylist = () => {
     <Container>
       <LeftPanel>
         <NewButton onClick={handleNew}>+ New Playlist</NewButton>
-        {playlists.map((pl) => (
-          <PlaylistItem key={pl.id} $active={pl.id === selectedId} onClick={() => select(pl)}>
-            <PlaylistItemInfo>
-              <PlaylistItemName>{pl.name}</PlaylistItemName>
-              <PlaylistItemCount>{pl.songs.length} songs</PlaylistItemCount>
-            </PlaylistItemInfo>
-            <DeleteBtn
-              aria-label={`Delete ${pl.name}`}
-              onClick={(e) => {
-                e.stopPropagation();
-                handleDelete(pl.id);
-              }}
-            >
-              <TrashIcon />
-            </DeleteBtn>
-          </PlaylistItem>
-        ))}
+        {sortFavouritesFirst(playlists).map((pl) => {
+          const fav = isFavouritesPlaylist(pl.id);
+          return (
+            <PlaylistItem key={pl.id} $active={pl.id === selectedId} onClick={() => select(pl)}>
+              <PlaylistItemInfo>
+                <PlaylistItemName>
+                  {fav && <FavouriteBadge aria-hidden="true" />}
+                  {pl.name}
+                </PlaylistItemName>
+                <PlaylistItemCount>{pl.songs.length} songs</PlaylistItemCount>
+              </PlaylistItemInfo>
+              {!fav && (
+                <DeleteBtn
+                  aria-label={`Delete ${pl.name}`}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleDelete(pl.id);
+                  }}
+                >
+                  <TrashIcon />
+                </DeleteBtn>
+              )}
+            </PlaylistItem>
+          );
+        })}
         {playlists.length === 0 && <EmptyColumn style={{ padding: '0 0.75rem' }}>No playlists yet</EmptyColumn>}
       </LeftPanel>
 
@@ -121,6 +132,7 @@ const CreatePlaylist = () => {
               <NameInput
                 aria-label="Playlist name"
                 value={editingName}
+                readOnly={isFavouritesPlaylist(selected.id)}
                 onChange={(e) => setEditingName(e.target.value)}
                 onBlur={handleRename}
                 onKeyDown={(e) => e.key === 'Enter' && handleRename()}

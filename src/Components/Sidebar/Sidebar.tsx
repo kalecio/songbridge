@@ -11,6 +11,8 @@ import {
   LogoImg,
   ArtistsIcon,
   BackIcon,
+  FavouriteThumb,
+  HeartIcon,
   HomeIcon,
   Menu,
   MenuItem,
@@ -24,6 +26,7 @@ import {
   SidebarContainer,
   SongsIcon,
 } from './styles';
+import { isFavouritesPlaylist, sortFavouritesFirst } from '../../hooks/useFavourites';
 
 const Sidebar = () => {
   const [songs, setSongs] = useState<MetadataType[]>([]);
@@ -85,19 +88,25 @@ const Sidebar = () => {
           </PlaylistsRow>
           <Menu>
             {songs.length > 0 && <MenuItem onClick={() => setShowQueue?.(true)}>Playing now</MenuItem>}
-            {playlists?.map((playlist) => (
+            {sortFavouritesFirst(playlists ?? []).map((playlist) => (
               <PlaylistItem
                 key={playlist.id}
                 $active={location.pathname === `/playlist/${playlist.id}`}
                 onClick={() => navigate(`/playlist/${playlist.id}`)}
               >
-                <PlaylistThumb>
-                  <AlbumImage
-                    metadata={library.find((l) => l.path === playlist.songs[0]?.path) ?? playlist.songs[0]}
-                    height="100%"
-                    width="100%"
-                  />
-                </PlaylistThumb>
+                {isFavouritesPlaylist(playlist.id) ? (
+                  <FavouriteThumb>
+                    <HeartIcon />
+                  </FavouriteThumb>
+                ) : (
+                  <PlaylistThumb>
+                    <AlbumImage
+                      metadata={library.find((l) => l.path === playlist.songs[0]?.path) ?? playlist.songs[0]}
+                      height="100%"
+                      width="100%"
+                    />
+                  </PlaylistThumb>
+                )}
                 {playlist.name}
               </PlaylistItem>
             ))}

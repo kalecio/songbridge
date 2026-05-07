@@ -1,12 +1,18 @@
-import { useState } from 'react';
+import { useContext, useState } from 'react';
 import Slider from '../Slider/Slider';
 import { Heart, VolumeContainer, VolumeHigh, VolumeLow, VolumeOff, VolumeXmark } from './styles';
 import { invoke } from '@tauri-apps/api/core';
+import { AppContext } from '../../Context/AppContext';
+import { useFavourites } from '../../hooks/useFavourites';
 
 const Volume = () => {
   const [volume, setVolume] = useState(70);
   const [isVolumeOff, setVolumeOff] = useState(false);
-  const [isFavorite, setFavorite] = useState(false);
+
+  const { currentPath, metadata, library } = useContext(AppContext);
+  const { isFavourite, toggleFavourite } = useFavourites();
+  const isFav = isFavourite(currentPath);
+  const canFavourite = Boolean(currentPath);
 
   const handleVolumeChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     const newValue = parseInt(event.target.value);
@@ -29,13 +35,21 @@ const Volume = () => {
     setVolumeOff(!isVolumeOff);
   };
 
+  const handleToggleFavourite = () => {
+    if (!currentPath) return;
+    const fromLibrary = library.find((l) => l.path === currentPath);
+    toggleFavourite(fromLibrary ?? { ...(metadata ?? {}), path: currentPath });
+  };
+
   return (
     <VolumeContainer>
       <Heart
-        aria-label="favorite"
-        aria-pressed={isFavorite}
-        $isFavorite={isFavorite}
-        onClick={() => setFavorite(!isFavorite)}
+        role="button"
+        aria-label={isFav ? 'remove from favourites' : 'add to favourites'}
+        aria-pressed={isFav}
+        aria-disabled={!canFavourite}
+        $isFavorite={isFav}
+        onClick={handleToggleFavourite}
       />
       {isVolumeOff ? (
         <VolumeXmark aria-label="volume-muted" onClick={handleToggleVolume} />
