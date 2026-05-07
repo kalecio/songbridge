@@ -15,7 +15,7 @@ export const GridItem = styled.div`
 `;
 
 export const Card = styled.div`
-  height: 250px;
+  height: 200px;
   width: 200px;
   display: flex;
   flex-direction: column;

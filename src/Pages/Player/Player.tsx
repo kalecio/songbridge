@@ -28,6 +28,7 @@ import {
 import { AppContext } from '../../Context/AppContext';
 import { AUDIO_EVENTS, emitAudioEvent } from '../../audioEvents';
 import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts';
+import { useMediaKeys } from '../../hooks/useMediaKeys';
 import Sidebar from '../../Components/Sidebar/Sidebar';
 import AlbumImage from '../../Components/AlbumImage/AlbumImage';
 import PlaylistRoute from '../Playlist/Detail';
@@ -109,6 +110,13 @@ const Player = () => {
     },
     shortcuts,
   );
+
+  useMediaKeys((seconds) => {
+    const total = metadata?.duration?.duration_seconds ?? 0;
+    if (total <= 0) return;
+    const ratio = Math.max(0, Math.min(1, seconds / total));
+    handleSeek(ratio);
+  });
 
   useEffect(() => {
     // Clear any existing interval

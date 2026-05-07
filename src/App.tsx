@@ -121,6 +121,37 @@ function App() {
     }).catch(() => {});
   }, [currentPath, currentPlaylist, onRepeat, onShuffle, currentTheme]);
 
+  // Push track metadata (title/artist/album/cover/duration) to the OS
+  // now-playing surface — Control Center on macOS, MPRIS on Linux, SMTC on
+  // Windows. Only re-fires when the track itself changes so we don't
+  // re-encode the cover art on every progress tick.
+  useEffect(() => {
+    invoke('set_now_playing', {
+      payload: {
+        title: metadata?.title ?? null,
+        artist: metadata?.artist ?? null,
+        album: metadata?.album ?? null,
+        duration_seconds: metadata?.duration?.duration_seconds ?? null,
+        cover_data_url: metadata?.image ?? null,
+      },
+    }).catch(() => {});
+  }, [metadata]);
+
+  // Push playback state + elapsed position whenever they change. Cheap call
+  // (no cover encoding) so it's safe to fire on every 1s `progress` update —
+  // this is what makes the OS scrubber slide as the song plays and stay put
+  // when paused.
+  useEffect(() => {
+    const total = metadata?.duration?.duration_seconds ?? 0;
+    const elapsed = total > 0 ? (progress / 100) * total : null;
+    invoke('set_playback_state', {
+      payload: {
+        is_playing: isPlaying,
+        elapsed_seconds: elapsed,
+      },
+    }).catch(() => {});
+  }, [isPlaying, progress, metadata]);
+
   // Persist playlists whenever they change
   useEffect(() => {
     playlists.forEach((pl) => {
