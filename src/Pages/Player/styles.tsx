@@ -148,6 +148,23 @@ const HomeCenter = styled.div`
   height: 100%;
 `;
 
+const ScanBanner = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.5rem 1rem 0.65rem;
+  background: ${({ theme }) => theme.surface};
+  border-bottom: 1px solid ${({ theme }) => theme.border};
+  flex-shrink: 0;
+`;
+
+const ScanBannerLabel = styled.div`
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.75rem;
+  color: ${({ theme }) => theme.textMuted};
+`;
+
 export {
   PlayerContainer,
   StyledPlayer,
@@ -163,4 +180,6 @@ export {
   PlayerAlbumArtPlaceholder,
   HomeCenter,
   SettingsButton,
+  ScanBanner,
+  ScanBannerLabel,
 };

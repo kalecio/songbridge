@@ -17,6 +17,8 @@ import {
   Main,
   MainWrapper,
   PlayerContainer,
+  ScanBanner,
+  ScanBannerLabel,
   SearchIcon,
   SearchInput,
   SearchWrapper,
@@ -43,6 +45,8 @@ const Player = () => {
     currentPath: path,
     currentPlaylist,
     isPlaying,
+    isScanning,
+    scanProgress,
     metadata,
     playlists,
     progress,
@@ -216,6 +220,20 @@ const Player = () => {
               <FaGear />
             </SettingsButton>
           </AppHeader>
+          {isScanning && (
+            <ScanBanner role="status" aria-live="polite">
+              <ScanBannerLabel>
+                <span>Scanning library…</span>
+                <span>
+                  {scanProgress.total > 0 ? `${scanProgress.current} / ${scanProgress.total}` : 'Counting tracks…'}
+                </span>
+              </ScanBannerLabel>
+              <ProgressBar
+                progress={scanProgress.total > 0 ? (scanProgress.current / scanProgress.total) * 100 : 0}
+                max={100}
+              />
+            </ScanBanner>
+          )}
           <Main>
             <Routes>
               <Route

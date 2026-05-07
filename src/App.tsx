@@ -2,9 +2,10 @@ import { useEffect, useState } from 'react';
 import { createGlobalStyle, ThemeProvider } from 'styled-components';
 import './App.css';
 import Player from './Pages/Player/Player';
-import { AppContext } from './Context/AppContext';
+import { AppContext, ScanProgress } from './Context/AppContext';
 import { MetadataType, PlaylistType } from './types';
 import { invoke } from '@tauri-apps/api/core';
+import { listen } from '@tauri-apps/api/event';
 import { themes, defaultTheme } from './theme';
 
 const GlobalStyle = createGlobalStyle`
@@ -27,12 +28,14 @@ function App() {
   const [library, setLibrary] = useState<MetadataType[]>([]);
   const [libraryPaths, setLibraryPaths] = useState<string[]>([]);
   const [isScanning, setIsScanning] = useState<boolean>(false);
+  const [scanProgress, setScanProgress] = useState<ScanProgress>({ current: 0, total: 0 });
   const [currentTheme, setCurrentTheme] = useState<string>(defaultTheme.name);
 
   const activeTheme = themes[currentTheme] ?? defaultTheme;
 
   const scanLibrary = async (paths: string[]) => {
     setIsScanning(true);
+    setScanProgress({ current: 0, total: 0 });
     try {
       const songs = await invoke<MetadataType[]>('scan_music_library', { paths });
       setLibrary(songs);
@@ -42,6 +45,15 @@ function App() {
       setIsScanning(false);
     }
   };
+
+  useEffect(() => {
+    const unlistenPromise = listen<ScanProgress>('scan-progress', (event) => {
+      setScanProgress(event.payload);
+    });
+    return () => {
+      unlistenPromise.then((unlisten) => unlisten()).catch(() => {});
+    };
+  }, []);
 
   // Load persisted state from SQLite on mount, then scan with configured paths
   useEffect(() => {
@@ -122,6 +134,7 @@ function App() {
         library,
         libraryPaths,
         isScanning,
+        scanProgress,
         setCurrentPath,
         setCurrentPlaylist,
         setCurrentTheme,

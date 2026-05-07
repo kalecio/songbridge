@@ -1,12 +1,18 @@
 import React, { createContext } from 'react';
 import { MetadataType, PlaylistType } from '../types';
 
+export interface ScanProgress {
+  current: number;
+  total: number;
+}
+
 interface AppContext {
   currentPath?: string;
   currentPlaylist: string[];
   currentTheme: string;
   isPlaying: boolean;
   isScanning: boolean;
+  scanProgress: ScanProgress;
   library: MetadataType[];
   libraryPaths: string[];
   metadata?: MetadataType;
@@ -36,6 +42,7 @@ export const AppContext = createContext<AppContext>({
   onShuffle: false,
   isPlaying: false,
   isScanning: false,
+  scanProgress: { current: 0, total: 0 },
   library: [],
   libraryPaths: [],
   progress: 0,

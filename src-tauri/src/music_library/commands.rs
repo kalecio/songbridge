@@ -1,9 +1,10 @@
 use crate::metadata::commands::get_metadata;
 use crate::metadata::types::AudioMetadata;
 use crate::music_library::state::LibraryState;
+use serde::Serialize;
 use std::path::Path;
 use std::sync::{Arc, Mutex};
-use tauri::State;
+use tauri::{AppHandle, Emitter, State};
 use walkdir::WalkDir;
 
 const AUDIO_EXTENSIONS: &[&str] = &[
@@ -28,21 +29,16 @@ pub(crate) fn build_scan_dirs(
     dirs
 }
 
-#[tauri::command]
-pub fn scan_music_library(
-    paths: Vec<String>,
-    library: State<Arc<Mutex<LibraryState>>>,
-) -> Result<Vec<AudioMetadata>, String> {
-    let dirs = build_scan_dirs(paths, default_music_dir());
+#[derive(Clone, Serialize)]
+pub struct ScanProgress {
+    pub current: usize,
+    pub total: usize,
+}
 
-    log::info!(
-        "Scanning {} director{}",
-        dirs.len(),
-        if dirs.len() == 1 { "y" } else { "ies" }
-    );
+const SCAN_PROGRESS_EVENT: &str = "scan-progress";
 
-    let songs: Vec<AudioMetadata> = dirs
-        .iter()
+fn collect_audio_files(dirs: &[std::path::PathBuf]) -> Vec<std::path::PathBuf> {
+    dirs.iter()
         .flat_map(|dir| {
             WalkDir::new(dir)
                 .follow_links(true)
@@ -62,18 +58,58 @@ pub fn scan_music_library(
                         .map(|ext| AUDIO_EXTENSIONS.contains(&ext.to_lowercase().as_str()))
                         .unwrap_or(false)
                 })
-                .filter_map(|e| {
-                    e.path().to_str().and_then(|p| match get_metadata(p) {
-                        Ok(meta) => Some(meta),
-                        Err(err) => {
-                            log::warn!("Failed to read metadata for '{}': {}", p, err);
-                            None
-                        }
-                    })
-                })
+                .map(|e| e.path().to_path_buf())
                 .collect::<Vec<_>>()
         })
-        .collect();
+        .collect()
+}
+
+#[tauri::command]
+pub async fn scan_music_library(
+    app: AppHandle,
+    paths: Vec<String>,
+    library: State<'_, Arc<Mutex<LibraryState>>>,
+) -> Result<Vec<AudioMetadata>, String> {
+    let dirs = build_scan_dirs(paths, default_music_dir());
+
+    log::info!(
+        "Scanning {} director{}",
+        dirs.len(),
+        if dirs.len() == 1 { "y" } else { "ies" }
+    );
+
+    let library = library.inner().clone();
+    let songs = tauri::async_runtime::spawn_blocking(move || {
+        let files = collect_audio_files(&dirs);
+        let total = files.len();
+
+        let _ = app.emit(SCAN_PROGRESS_EVENT, ScanProgress { current: 0, total });
+
+        // Throttle progress events: emit every N files (or on the last file)
+        // to avoid flooding the webview when libraries are large.
+        let emit_every = (total / 100).max(1);
+
+        let mut songs: Vec<AudioMetadata> = Vec::with_capacity(total);
+        for (idx, path) in files.iter().enumerate() {
+            if let Some(p) = path.to_str() {
+                match get_metadata(p) {
+                    Ok(meta) => songs.push(meta),
+                    Err(err) => log::warn!("Failed to read metadata for '{}': {}", p, err),
+                }
+            }
+            let current = idx + 1;
+            if current == total || current % emit_every == 0 {
+                let _ = app.emit(SCAN_PROGRESS_EVENT, ScanProgress { current, total });
+            }
+        }
+
+        songs
+    })
+    .await
+    .map_err(|e| {
+        log::error!("Scan task failed: {}", e);
+        e.to_string()
+    })?;
 
     log::info!("Scan complete: {} tracks found", songs.len());
 
