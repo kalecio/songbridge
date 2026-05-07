@@ -1,5 +1,5 @@
 import { styled } from 'styled-components';
-import { FaTrash, FaMinus, FaPlus } from 'react-icons/fa6';
+import { FaHeart, FaTrash, FaMinus, FaPlus } from 'react-icons/fa6';
 
 export const Container = styled.div`
   display: flex;
@@ -69,6 +69,16 @@ export const PlaylistItemName = styled.div`
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+`;
+
+export const FavouriteBadge = styled(FaHeart)`
+  width: 0.7rem;
+  height: 0.7rem;
+  color: ${({ theme }) => theme.accent};
+  flex-shrink: 0;
 `;
 
 export const PlaylistItemCount = styled.div`

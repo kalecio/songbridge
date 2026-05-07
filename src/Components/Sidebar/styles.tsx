@@ -1,4 +1,4 @@
-import { FaAngleLeft, FaCompactDisc, FaHouse, FaMicrophoneLines, FaMusic, FaPlus } from 'react-icons/fa6';
+import { FaAngleLeft, FaCompactDisc, FaHeart, FaHouse, FaMicrophoneLines, FaMusic, FaPlus } from 'react-icons/fa6';
 import { styled } from 'styled-components';
 
 const SidebarContainer = styled.div`
@@ -133,6 +133,23 @@ const PlaylistThumb = styled.div`
   flex-shrink: 0;
 `;
 
+const FavouriteThumb = styled.div`
+  width: 2.25rem;
+  height: 2.25rem;
+  border-radius: 0.5rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: ${({ theme }) => theme.hoverActive};
+  color: ${({ theme }) => theme.accent};
+  flex-shrink: 0;
+`;
+
+const HeartIcon = styled(FaHeart)`
+  width: 1rem;
+  height: 1rem;
+`;
+
 const QueueHeader = styled.div`
   display: flex;
   align-items: center;
@@ -199,6 +216,8 @@ export {
   MenuItem,
   PlaylistItem,
   PlaylistThumb,
+  FavouriteThumb,
+  HeartIcon,
   QueueHeader,
   HomeIcon,
   ArtistsIcon,
