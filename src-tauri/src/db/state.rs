@@ -1,9 +1,9 @@
 use rusqlite::{Connection, Result};
 use std::path::Path;
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 
 pub struct DbState {
-    pub conn: Mutex<Connection>,
+    pub conn: Arc<Mutex<Connection>>,
 }
 
 impl DbState {
@@ -46,6 +46,17 @@ impl DbState {
             CREATE TABLE IF NOT EXISTS library_paths (
                 path TEXT PRIMARY KEY
             );
+
+            CREATE TABLE IF NOT EXISTS tracks (
+                path               TEXT PRIMARY KEY,
+                mtime              INTEGER NOT NULL,
+                title              TEXT,
+                artist             TEXT,
+                album              TEXT,
+                year               TEXT,
+                duration_seconds   INTEGER,
+                duration_formatted TEXT
+            );
             ",
         )?;
         // Migrate existing DBs that predate these columns
@@ -56,7 +67,7 @@ impl DbState {
         let _ =
             conn.execute_batch("ALTER TABLE playlist_songs ADD COLUMN duration_formatted TEXT;");
         Ok(Self {
-            conn: Mutex::new(conn),
+            conn: Arc::new(Mutex::new(conn)),
         })
     }
 }
@@ -75,6 +86,7 @@ mod tests {
             "playlist_songs",
             "preferences",
             "library_paths",
+            "tracks",
         ] {
             let count: i64 = conn
                 .query_row(

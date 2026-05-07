@@ -4,6 +4,7 @@ import { AppContext } from '../../Context/AppContext';
 import { MetadataType } from '../../types';
 import AlbumImage from '../../Components/AlbumImage/AlbumImage';
 import StatusMessage from '../../Components/StatusMessage/StatusMessage';
+import { useLazyAlbumArt } from '../../hooks/useLazyAlbumArt';
 import {
   SearchContainer,
   ResultsSection,
@@ -28,6 +29,13 @@ import {
 function normalize(s?: string) {
   return (s ?? '').toLowerCase();
 }
+
+const SearchArtistAvatar = ({ name, songs }: { name: string; songs: MetadataType[] }) => {
+  const eager = songs.find((s) => s.image)?.image;
+  const coverPath = songs.find((s) => s.path)?.path;
+  const image = useLazyAlbumArt(coverPath, eager);
+  return <ArtistAvatar>{image ? <ArtistImage src={image} alt={name} /> : name.charAt(0).toUpperCase()}</ArtistAvatar>;
+};
 
 const Search = () => {
   const [searchParams] = useSearchParams();
@@ -78,13 +86,7 @@ const Search = () => {
           <ArtistContainer>
             {artists.map(([name, metadata]) => (
               <ArtistRow key={name} onClick={() => navigate(`/artists/${encodeURIComponent(name)}`)}>
-                <ArtistAvatar>
-                  {metadata[0].image ? (
-                    <ArtistImage src={metadata[0].image} alt={name} />
-                  ) : (
-                    name.charAt(0).toUpperCase()
-                  )}
-                </ArtistAvatar>
+                <SearchArtistAvatar name={name} songs={metadata} />
                 <ArtistName>{name}</ArtistName>
               </ArtistRow>
             ))}

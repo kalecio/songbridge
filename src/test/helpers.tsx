@@ -9,6 +9,7 @@ const defaultContext: AppContextValue = {
   onShuffle: false,
   isPlaying: false,
   isScanning: false,
+  scanProgress: { current: 0, total: 0 },
   library: [],
   libraryPaths: [],
   progress: 0,

@@ -1,5 +1,5 @@
-import { useCallback, useContext, useEffect, useRef } from 'react';
-import { useNavigate, useLocation, Route, Routes } from 'react-router';
+import { useCallback, useContext, useEffect, useRef, useState } from 'react';
+import { useNavigate, Route, Routes } from 'react-router';
 import { error as logError } from '../../logger';
 import { FaGear } from 'react-icons/fa6';
 import Controls from '../../Components/Controls/Controls';
@@ -17,6 +17,8 @@ import {
   Main,
   MainWrapper,
   PlayerContainer,
+  ScanBanner,
+  ScanBannerLabel,
   SearchIcon,
   SearchInput,
   SearchWrapper,
@@ -38,12 +40,13 @@ import CreatePlaylist from '../Playlist/Create';
 
 const Player = () => {
   const navigate = useNavigate();
-  const location = useLocation();
   const context = useContext(AppContext);
   const {
     currentPath: path,
     currentPlaylist,
     isPlaying,
+    isScanning,
+    scanProgress,
     metadata,
     playlists,
     progress,
@@ -55,6 +58,8 @@ const Player = () => {
   } = context;
   const intervalRef = useRef<number | null>(null);
   const endedRef = useRef(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const debounceTimeoutRef = useRef<number | null>(null);
 
   const handleSeek = useCallback(
     async (progressRatio: number) => {
@@ -79,6 +84,7 @@ const Player = () => {
     }
 
     setCurrentPath?.(files[0]);
+    // Filter out files already in the current playlist
     const filteredFiles = files.filter((file) => !currentPlaylist.includes(file));
     setCurrentPlaylist?.([...currentPlaylist, ...filteredFiles]);
   };
@@ -159,15 +165,41 @@ const Player = () => {
     endedRef.current = false;
   }, [path]);
 
-  const searchQuery = location.pathname === '/search' ? (new URLSearchParams(location.search).get('q') ?? '') : '';
+  // --- DEBOUNCE LOGIC START ---
 
-  const handleSearch = (value: string) => {
-    if (value.trim()) {
-      navigate(`/search?q=${encodeURIComponent(value.trim())}`);
-    } else {
-      navigate('/');
+  const performSearch = useCallback(
+    (value: string) => {
+      navigate(`/search?q=${encodeURIComponent(value)}`);
+    },
+    [navigate],
+  );
+
+  // Debounce hook: executes performSearch only 300ms after 'searchTerm' stops changing.
+  useEffect(() => {
+    const trimmed = searchTerm.trim();
+    if (!trimmed) return;
+
+    if (debounceTimeoutRef.current !== null) {
+      window.clearTimeout(debounceTimeoutRef.current);
     }
-  };
+
+    debounceTimeoutRef.current = window.setTimeout(() => {
+      performSearch(trimmed);
+    }, 300);
+
+    return () => {
+      if (debounceTimeoutRef.current !== null) {
+        window.clearTimeout(debounceTimeoutRef.current);
+      }
+    };
+  }, [searchTerm, performSearch]);
+
+  const handleInputChange = useCallback((event: React.ChangeEvent<HTMLInputElement>) => {
+    const newValue = event.target.value;
+    setSearchTerm(newValue);
+  }, []);
+
+  // --- DEBOUNCE LOGIC END ---
 
   return (
     <Container>
@@ -179,8 +211,8 @@ const Player = () => {
               <SearchIcon />
               <SearchInput
                 placeholder="Search songs, artists, albums…"
-                value={searchQuery}
-                onChange={(e) => handleSearch(e.target.value)}
+                value={searchTerm}
+                onChange={handleInputChange}
                 aria-label="Search library"
               />
             </SearchWrapper>
@@ -188,6 +220,20 @@ const Player = () => {
               <FaGear />
             </SettingsButton>
           </AppHeader>
+          {isScanning && (
+            <ScanBanner role="status" aria-live="polite">
+              <ScanBannerLabel>
+                <span>Scanning library…</span>
+                <span>
+                  {scanProgress.total > 0 ? `${scanProgress.current} / ${scanProgress.total}` : 'Counting tracks…'}
+                </span>
+              </ScanBannerLabel>
+              <ProgressBar
+                progress={scanProgress.total > 0 ? (scanProgress.current / scanProgress.total) * 100 : 0}
+                max={100}
+              />
+            </ScanBanner>
+          )}
           <Main>
             <Routes>
               <Route
@@ -207,6 +253,8 @@ const Player = () => {
               <Route path="/settings" element={<Settings />} />
               <Route path="/playlist/:id" element={<PlaylistRoute playlists={playlists} />} />
               <Route path="/playlist" element={<CreatePlaylist />} />
+              {/* CATCH-ALL ROUTE FOR 404 HANDLING */}
+              <Route path="*" element={<div>404 - Page Not Found</div>} />
             </Routes>
           </Main>
         </MainWrapper>

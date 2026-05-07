@@ -14,6 +14,7 @@ interface AlbumEntry {
   artist?: string;
   year?: string;
   image?: string;
+  coverPath?: string;
   songs: MetadataType[];
 }
 
@@ -22,11 +23,19 @@ function groupByAlbum(library: MetadataType[]): AlbumEntry[] {
   for (const song of library) {
     const key = song.album ?? 'Unknown Album';
     if (!map.has(key)) {
-      map.set(key, { name: key, artist: song.artist, year: song.year, image: song.image, songs: [] });
+      map.set(key, {
+        name: key,
+        artist: song.artist,
+        year: song.year,
+        image: song.image,
+        coverPath: song.path,
+        songs: [],
+      });
     }
     const entry = map.get(key)!;
     entry.songs.push(song);
     if (!entry.image && song.image) entry.image = song.image;
+    if (!entry.coverPath && song.path) entry.coverPath = song.path;
   }
   return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
 }
@@ -63,7 +72,11 @@ const Albums = () => {
           <GridItem key={album.name} onClick={() => navigate(`/albums/${encodeURIComponent(album.name)}`)}>
             <Card>
               <ArtWrapper>
-                <AlbumImage metadata={{ image: album.image, album: album.name }} height="100%" width="100%" />
+                <AlbumImage
+                  metadata={{ image: album.image, album: album.name, path: album.coverPath }}
+                  height="100%"
+                  width="100%"
+                />
               </ArtWrapper>
             </Card>
             <CardInfo>

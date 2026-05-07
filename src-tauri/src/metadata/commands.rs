@@ -6,6 +6,14 @@ use crate::metadata::utils::{
 };
 
 #[tauri::command]
+pub fn get_track_image(path: &str) -> Result<Option<String>, String> {
+    let mut probe = get_audio_probe(path)?;
+    let image = extract_album_art(probe.format.as_mut())
+        .or_else(|| extract_album_art_probed(&mut probe.metadata));
+    Ok(image)
+}
+
+#[tauri::command]
 pub fn get_metadata(path: &str) -> Result<AudioMetadata, String> {
     println!("Getting metadata for file: {}", path);
     let mut probe = get_audio_probe(path)?;

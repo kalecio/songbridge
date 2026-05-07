@@ -1,9 +1,15 @@
+use crate::db::commands::{
+    delete_tracks, get_cached_track_mtimes, get_cached_tracks, upsert_track,
+};
+use crate::db::state::DbState;
 use crate::metadata::commands::get_metadata;
 use crate::metadata::types::AudioMetadata;
 use crate::music_library::state::LibraryState;
+use serde::Serialize;
+use std::collections::HashMap;
 use std::path::Path;
 use std::sync::{Arc, Mutex};
-use tauri::State;
+use tauri::{AppHandle, Emitter, Manager, State};
 use walkdir::WalkDir;
 
 const AUDIO_EXTENSIONS: &[&str] = &[
@@ -28,21 +34,16 @@ pub(crate) fn build_scan_dirs(
     dirs
 }
 
-#[tauri::command]
-pub fn scan_music_library(
-    paths: Vec<String>,
-    library: State<Arc<Mutex<LibraryState>>>,
-) -> Result<Vec<AudioMetadata>, String> {
-    let dirs = build_scan_dirs(paths, default_music_dir());
+#[derive(Clone, Serialize)]
+pub struct ScanProgress {
+    pub current: usize,
+    pub total: usize,
+}
 
-    log::info!(
-        "Scanning {} director{}",
-        dirs.len(),
-        if dirs.len() == 1 { "y" } else { "ies" }
-    );
+const SCAN_PROGRESS_EVENT: &str = "scan-progress";
 
-    let songs: Vec<AudioMetadata> = dirs
-        .iter()
+fn collect_audio_files(dirs: &[std::path::PathBuf]) -> Vec<std::path::PathBuf> {
+    dirs.iter()
         .flat_map(|dir| {
             WalkDir::new(dir)
                 .follow_links(true)
@@ -62,18 +63,118 @@ pub fn scan_music_library(
                         .map(|ext| AUDIO_EXTENSIONS.contains(&ext.to_lowercase().as_str()))
                         .unwrap_or(false)
                 })
-                .filter_map(|e| {
-                    e.path().to_str().and_then(|p| match get_metadata(p) {
-                        Ok(meta) => Some(meta),
-                        Err(err) => {
-                            log::warn!("Failed to read metadata for '{}': {}", p, err);
-                            None
-                        }
-                    })
-                })
+                .map(|e| e.path().to_path_buf())
                 .collect::<Vec<_>>()
         })
-        .collect();
+        .collect()
+}
+
+fn file_mtime(path: &Path) -> Option<i64> {
+    let modified = std::fs::metadata(path).ok()?.modified().ok()?;
+    let duration = modified
+        .duration_since(std::time::UNIX_EPOCH)
+        .ok()?
+        .as_secs();
+    Some(duration as i64)
+}
+
+#[tauri::command]
+pub async fn scan_music_library(
+    app: AppHandle,
+    paths: Vec<String>,
+    library: State<'_, Arc<Mutex<LibraryState>>>,
+) -> Result<Vec<AudioMetadata>, String> {
+    let dirs = build_scan_dirs(paths, default_music_dir());
+
+    log::info!(
+        "Scanning {} director{}",
+        dirs.len(),
+        if dirs.len() == 1 { "y" } else { "ies" }
+    );
+
+    // Snapshot what's already cached, indexed by path. The cached entries have
+    // image: None — that's fine, the frontend lazy-loads art on demand.
+    let db_state = app.state::<DbState>();
+    let conn_arc = db_state.conn.clone();
+    let (cached_mtimes, mut cached_by_path) = {
+        let conn = conn_arc.lock().map_err(|e| e.to_string())?;
+        let mtimes = get_cached_track_mtimes(&conn)?;
+        let by_path: HashMap<String, AudioMetadata> = get_cached_tracks(&conn)?
+            .into_iter()
+            .filter_map(|m| m.path.clone().map(|p| (p, m)))
+            .collect();
+        (mtimes, by_path)
+    };
+
+    let songs =
+        tauri::async_runtime::spawn_blocking(move || -> Result<Vec<AudioMetadata>, String> {
+            let files = collect_audio_files(&dirs);
+            let total = files.len();
+            let _ = app.emit(SCAN_PROGRESS_EVENT, ScanProgress { current: 0, total });
+
+            let emit_every = (total / 100).max(1);
+            let mut seen_paths: std::collections::HashSet<String> =
+                std::collections::HashSet::with_capacity(total);
+            let mut songs: Vec<AudioMetadata> = Vec::with_capacity(total);
+
+            for (idx, path) in files.iter().enumerate() {
+                let path_str = match path.to_str() {
+                    Some(s) => s.to_string(),
+                    None => continue,
+                };
+                seen_paths.insert(path_str.clone());
+
+                let mtime = file_mtime(path).unwrap_or(0);
+                let cached_mtime = cached_mtimes.get(&path_str).copied();
+
+                // Unchanged file → reuse the cached metadata (no parse, no DB write).
+                if cached_mtime == Some(mtime) {
+                    if let Some(meta) = cached_by_path.remove(&path_str) {
+                        songs.push(meta);
+                    }
+                } else {
+                    // New or modified → parse and upsert.
+                    match get_metadata(&path_str) {
+                        Ok(meta) => {
+                            let conn = conn_arc.lock().map_err(|e| e.to_string())?;
+                            if let Err(e) = upsert_track(&conn, &meta, mtime) {
+                                log::warn!("Failed to cache '{}': {}", path_str, e);
+                            }
+                            drop(conn);
+                            songs.push(meta);
+                        }
+                        Err(err) => {
+                            log::warn!("Failed to read metadata for '{}': {}", path_str, err)
+                        }
+                    }
+                }
+
+                let current = idx + 1;
+                if current == total || current % emit_every == 0 {
+                    let _ = app.emit(SCAN_PROGRESS_EVENT, ScanProgress { current, total });
+                }
+            }
+
+            // Files that exist in the cache but not on disk → drop from DB.
+            let to_delete: Vec<String> = cached_mtimes
+                .keys()
+                .filter(|p| !seen_paths.contains(*p))
+                .cloned()
+                .collect();
+            if !to_delete.is_empty() {
+                let conn = conn_arc.lock().map_err(|e| e.to_string())?;
+                if let Err(e) = delete_tracks(&conn, &to_delete) {
+                    log::warn!("Failed to prune {} stale tracks: {}", to_delete.len(), e);
+                }
+            }
+
+            Ok(songs)
+        })
+        .await
+        .map_err(|e| {
+            log::error!("Scan task failed: {}", e);
+            e.to_string()
+        })??;
 
     log::info!("Scan complete: {} tracks found", songs.len());
 

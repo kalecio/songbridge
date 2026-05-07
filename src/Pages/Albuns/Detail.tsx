@@ -4,6 +4,7 @@ import { AppContext } from '../../Context/AppContext';
 import { MetadataType } from '../../types';
 import BackButton from '../../Components/BackButton/BackButton';
 import HeroTitle from '../../Components/HeroTitle/HeroTitle';
+import { useLazyAlbumArt } from '../../hooks/useLazyAlbumArt';
 import {
   HeroWrapper,
   Hero,
@@ -25,7 +26,9 @@ const AlbumDetail = () => {
 
   const albumName = decodeURIComponent(id ?? '');
   const songs = library.filter((s) => (s.album ?? 'Unknown Album') === albumName);
-  const heroImage = songs.find((s) => s.image)?.image;
+  const eagerImage = songs.find((s) => s.image)?.image;
+  const coverPath = songs.find((s) => s.path)?.path;
+  const heroImage = useLazyAlbumArt(coverPath, eagerImage);
   const artist = songs[0]?.artist;
   const year = songs[0]?.year;
 
