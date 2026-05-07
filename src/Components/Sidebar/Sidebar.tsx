@@ -27,6 +27,7 @@ import {
   SongsIcon,
 } from './styles';
 import { isFavouritesPlaylist, sortFavouritesFirst } from '../../hooks/useFavourites';
+import { displayTitle } from '../../songDisplay';
 
 const Sidebar = () => {
   const [songs, setSongs] = useState<MetadataType[]>([]);
@@ -125,9 +126,10 @@ const Sidebar = () => {
                 $active={song.path === currentPath}
                 key={song.path ?? `${song.title}-${song.artist}`}
                 onClick={() => setCurrentPath?.(song.path)}
+                title={displayTitle(song)}
               >
                 <AlbumImage metadata={song} height="2.25rem" width="2.25rem" />
-                {song.title}
+                {displayTitle(song)}
               </MenuItem>
             ))}
           </Menu>

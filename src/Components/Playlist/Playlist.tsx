@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import { MetadataType } from '../../types';
+import { displayTitle } from '../../songDisplay';
 import AlbumImage from '../AlbumImage/AlbumImage';
 import {
   PlaylistContainer,
@@ -66,6 +67,7 @@ const Playlist = ({
 
   const renderRow = (song: MetadataType, key: string | number) => {
     const isMissing = Boolean(song.path && missingPaths.has(song.path));
+    const title = displayTitle(song);
     return (
       <SongItem
         key={key}
@@ -75,7 +77,7 @@ const Playlist = ({
       >
         <AlbumImage metadata={song} height="3rem" width="3rem" />
         <SongInfo>
-          <SongTitle title={song.title}>{song.title}</SongTitle>
+          <SongTitle title={title}>{title}</SongTitle>
           <SongArtist title={song.artist}>{song.artist}</SongArtist>
         </SongInfo>
         {isMissing ? (
@@ -83,7 +85,7 @@ const Playlist = ({
             <MissingIcon title="File not found on disk" />
             {onRemoveMissing && (
               <RemoveMissingButton
-                aria-label={`Remove missing track ${song.title}`}
+                aria-label={`Remove missing track ${title}`}
                 onClick={(e) => {
                   e.stopPropagation();
                   onRemoveMissing(song);

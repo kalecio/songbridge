@@ -6,6 +6,7 @@ import AlbumImage from '../../Components/AlbumImage/AlbumImage';
 import StatusMessage from '../../Components/StatusMessage/StatusMessage';
 import { useLazyAlbumArt } from '../../hooks/useLazyAlbumArt';
 import { isFavouritesPlaylist, sortFavouritesFirst } from '../../hooks/useFavourites';
+import { displayTitle } from '../../songDisplay';
 import {
   SearchContainer,
   ResultsSection,
@@ -150,15 +151,18 @@ const Search = () => {
       {matchingSongs.length > 0 && (
         <ResultsSection>
           <SectionTitle>Songs</SectionTitle>
-          {matchingSongs.map((song, i) => (
-            <SongRow key={song.path ?? i} onClick={() => playSong(song)}>
-              <AlbumImage metadata={song} height="2.5rem" width="2.5rem" />
-              <SongInfo>
-                <SongTitle title={song.title}>{song.title}</SongTitle>
-                <SongArtist title={song.artist}>{song.artist}</SongArtist>
-              </SongInfo>
-            </SongRow>
-          ))}
+          {matchingSongs.map((song, i) => {
+            const title = displayTitle(song);
+            return (
+              <SongRow key={song.path ?? i} onClick={() => playSong(song)}>
+                <AlbumImage metadata={song} height="2.5rem" width="2.5rem" />
+                <SongInfo>
+                  <SongTitle title={title}>{title}</SongTitle>
+                  <SongArtist title={song.artist}>{song.artist}</SongArtist>
+                </SongInfo>
+              </SongRow>
+            );
+          })}
         </ResultsSection>
       )}
 
