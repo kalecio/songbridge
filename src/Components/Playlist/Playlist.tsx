@@ -75,8 +75,8 @@ const Playlist = ({
       >
         <AlbumImage metadata={song} height="3rem" width="3rem" />
         <SongInfo>
-          <SongTitle>{song.title}</SongTitle>
-          <SongArtist>{song.artist}</SongArtist>
+          <SongTitle title={song.title}>{song.title}</SongTitle>
+          <SongArtist title={song.artist}>{song.artist}</SongArtist>
         </SongInfo>
         {isMissing ? (
           <>

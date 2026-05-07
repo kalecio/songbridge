@@ -108,18 +108,24 @@ export const SongInfo = styled.div`
   flex-direction: column;
   align-items: flex-start;
   justify-content: center;
-  text-wrap: nowrap;
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
 `;
 
 export const SongTitle = styled.span`
-  width: fit-content;
-  height: fit-content;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 `;
 
 export const SongArtist = styled.span`
-  width: fit-content;
+  max-width: 100%;
   color: gray;
-  height: fit-content;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 `;
 
 export const SongDuration = styled.span`

@@ -47,8 +47,11 @@ export const CardInfo = styled.div`
   display: flex;
   flex-direction: column;
   justify-content: space-between;
-  align-items: flex-start;
+  align-items: stretch;
   gap: 0.25rem;
+  width: 200px;
+  min-width: 0;
+  box-sizing: border-box;
 `;
 
 export const CardTitle = styled.div`
@@ -58,6 +61,7 @@ export const CardTitle = styled.div`
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  max-width: 100%;
   margin-bottom: 0.2rem;
 `;
 
@@ -66,6 +70,7 @@ export const CardBottom = styled.div`
   justify-content: space-between;
   align-items: center;
   gap: 0.5rem;
+  min-width: 0;
 `;
 
 export const CardArtist = styled.div`
@@ -75,6 +80,7 @@ export const CardArtist = styled.div`
   overflow: hidden;
   text-overflow: ellipsis;
   flex: 1;
+  min-width: 0;
 `;
 
 export const CardCount = styled.div`

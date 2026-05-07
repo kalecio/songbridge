@@ -53,7 +53,7 @@ const AlbumDetail = () => {
           <BackButton onClick={() => navigate('/albums')}>Albums</BackButton>
         </HeroTop>
         <HeroBottom>
-          <HeroTitle>{albumName}</HeroTitle>
+          <HeroTitle title={albumName}>{albumName}</HeroTitle>
           <HeroStats>
             {artist && <>{artist} · </>}
             {year && <>{year} · </>}

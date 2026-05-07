@@ -80,9 +80,9 @@ const Albums = () => {
               </ArtWrapper>
             </Card>
             <CardInfo>
-              <CardTitle>{album.name}</CardTitle>
+              <CardTitle title={album.name}>{album.name}</CardTitle>
               <CardBottom>
-                <CardArtist>{album.artist ?? 'Unknown Artist'}</CardArtist>
+                <CardArtist title={album.artist ?? 'Unknown Artist'}>{album.artist ?? 'Unknown Artist'}</CardArtist>
                 <CardCount>
                   {album.songs.length} {album.songs.length === 1 ? 'song' : 'songs'}
                 </CardCount>

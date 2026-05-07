@@ -6,5 +6,8 @@ export const HeroTitle = styled.h1`
   font-weight: 700;
   margin: 0 0 0.35rem;
   text-shadow: 0 2px 12px rgba(0, 0, 0, 0.5);
-  max-height: 4rem;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 `;

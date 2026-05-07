@@ -6,6 +6,8 @@ const SongContainer = styled.div`
   justify-content: flex-start;
   align-items: center;
   gap: 0.65rem;
+  min-width: 0;
+  max-width: 22rem;
 `;
 
 const AlbumImagePlaceholder = styled(AlbumPlaceholder)`
@@ -35,21 +37,32 @@ const MusicInfo = styled.div`
   display: flex;
   flex-direction: column;
   color: ${({ theme }) => theme.textOnPlayer};
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
 `;
 
 const MusicName = styled.span`
   font-size: 1.25rem;
   font-weight: bolder;
-  display: flex;
-  justify-content: flex-start;
-  align-items: center;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 `;
 
-const ArtistName = styled.span`
+const ArtistName = styled.span<{ $clickable?: boolean }>`
   font-size: 0.8rem;
-  display: flex;
-  justify-content: flex-start;
-  align-items: center;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  ${(p) =>
+    p.$clickable &&
+    `
+    cursor: pointer;
+    &:hover { text-decoration: underline; }
+  `}
 `;
 
 export {
