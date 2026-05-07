@@ -17,6 +17,7 @@ import {
   HeroContent,
 } from '../../Components/HeroSection/HeroSection';
 import Playlist from '../../Components/Playlist/Playlist';
+import { useLazyAlbumArt } from '../../hooks/useLazyAlbumArt';
 
 interface AlbumGroup {
   name: string;
@@ -45,7 +46,9 @@ const ArtistDetail = () => {
   const artistName = decodeURIComponent(id ?? '');
   const artistSongs = library.filter((s) => (s.artist ?? 'Unknown Artist') === artistName);
   const albums = groupByAlbum(artistSongs);
-  const heroImage = artistSongs.find((s) => s.image)?.image;
+  const eagerImage = artistSongs.find((s) => s.image)?.image;
+  const coverPath = artistSongs.find((s) => s.path)?.path;
+  const heroImage = useLazyAlbumArt(coverPath, eagerImage);
 
   const playSong = (song: MetadataType, albumSongs: MetadataType[]) => {
     const paths = albumSongs.map((s) => s.path).filter((p): p is string => Boolean(p));

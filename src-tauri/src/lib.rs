@@ -62,6 +62,7 @@ pub fn run() {
             audio::commands::seek,
             audio::commands::get_progress,
             metadata::commands::get_metadata,
+            metadata::commands::get_track_image,
             music_library::commands::scan_music_library,
             music_library::commands::get_all_songs,
             music_library::commands::get_songs_by_album,
@@ -75,6 +76,7 @@ pub fn run() {
             db::commands::db_get_library_paths,
             db::commands::db_add_library_path,
             db::commands::db_remove_library_path,
+            db::commands::db_load_tracks,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

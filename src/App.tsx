@@ -85,10 +85,19 @@ function App() {
 
         const paths = await invoke<string[]>('db_get_library_paths');
         setLibraryPaths(paths);
-        await scanLibrary(paths);
+
+        // Hydrate the UI from cached metadata first, so the app is responsive
+        // immediately on launch. Then sync with disk in the background.
+        try {
+          const cached = await invoke<MetadataType[]>('db_load_tracks');
+          if (cached.length) setLibrary(cached);
+        } catch {
+          // No cache available — fall through to a fresh scan.
+        }
+        scanLibrary(paths);
       } catch {
         // DB not available — start fresh
-        await scanLibrary([]);
+        scanLibrary([]);
       }
     };
     load();

@@ -1,4 +1,5 @@
 import { MetadataType } from '../../types';
+import { useLazyAlbumArt } from '../../hooks/useLazyAlbumArt';
 import { PlayerAlbumArt, AlbumImagePlaceholderContainer, PlayerAlbumArtPlaceholder } from './styles';
 
 const AlbumImage = ({
@@ -12,10 +13,11 @@ const AlbumImage = ({
   height?: string;
   width?: string;
 }) => {
+  const image = useLazyAlbumArt(metadata?.path, metadata?.image);
   return (
     <>
-      {metadata?.image ? (
-        <PlayerAlbumArt $height={height} $width={width} src={metadata?.image} alt={metadata?.album} onClick={onClick} />
+      {image ? (
+        <PlayerAlbumArt $height={height} $width={width} src={image} alt={metadata?.album} onClick={onClick} />
       ) : (
         <AlbumImagePlaceholderContainer
           data-testid="album-placeholder-container"

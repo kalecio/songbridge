@@ -1,8 +1,10 @@
 use rusqlite::{params, Connection};
 use serde::{Deserialize, Serialize};
+use std::collections::HashMap;
 use tauri::State;
 
 use super::state::DbState;
+use crate::metadata::types::{AudioDuration, AudioMetadata};
 
 #[derive(Serialize, Deserialize)]
 pub struct DbSong {
@@ -188,6 +190,113 @@ pub(crate) fn remove_library_path(conn: &Connection, path: &str) -> Result<(), S
     Ok(())
 }
 
+// ── tracks (cached library metadata, no album art) ───────────────────────────
+
+pub(crate) fn get_cached_tracks(conn: &Connection) -> Result<Vec<AudioMetadata>, String> {
+    let mut stmt = conn
+        .prepare(
+            "SELECT path, title, artist, album, year, duration_seconds, duration_formatted \
+             FROM tracks ORDER BY path",
+        )
+        .map_err(|e| e.to_string())?;
+
+    let tracks: Vec<AudioMetadata> = stmt
+        .query_map([], |row| {
+            let path: String = row.get(0)?;
+            let title: Option<String> = row.get(1)?;
+            let artist: Option<String> = row.get(2)?;
+            let album: Option<String> = row.get(3)?;
+            let year: Option<String> = row.get(4)?;
+            let duration_seconds: Option<i64> = row.get(5)?;
+            let duration_formatted: Option<String> = row.get(6)?;
+            Ok(AudioMetadata::new(
+                title,
+                artist,
+                album,
+                year,
+                AudioDuration::new(duration_seconds.map(|n| n as u64), duration_formatted),
+                Some(path),
+                None, // image is lazy-loaded on demand
+            ))
+        })
+        .map_err(|e| e.to_string())?
+        .collect::<Result<_, _>>()
+        .map_err(|e| e.to_string())?;
+
+    Ok(tracks)
+}
+
+pub(crate) fn get_cached_track_mtimes(conn: &Connection) -> Result<HashMap<String, i64>, String> {
+    let mut stmt = conn
+        .prepare("SELECT path, mtime FROM tracks")
+        .map_err(|e| e.to_string())?;
+
+    let rows = stmt
+        .query_map([], |row| {
+            let path: String = row.get(0)?;
+            let mtime: i64 = row.get(1)?;
+            Ok((path, mtime))
+        })
+        .map_err(|e| e.to_string())?;
+
+    let mut map = HashMap::new();
+    for row in rows {
+        let (path, mtime) = row.map_err(|e| e.to_string())?;
+        map.insert(path, mtime);
+    }
+    Ok(map)
+}
+
+pub(crate) fn upsert_track(
+    conn: &Connection,
+    meta: &AudioMetadata,
+    mtime: i64,
+) -> Result<(), String> {
+    let path = meta.path.as_deref().ok_or("track missing path")?;
+    let duration_seconds = meta.duration.duration_seconds.map(|n| n as i64);
+    // Clone the formatted string out via serde since the field is private.
+    let duration_formatted = serde_json::to_value(&meta.duration).ok().and_then(|v| {
+        v.get("duration_formatted")
+            .and_then(|s| s.as_str().map(String::from))
+    });
+
+    conn.execute(
+        "INSERT INTO tracks
+            (path, mtime, title, artist, album, year, duration_seconds, duration_formatted)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)
+         ON CONFLICT(path) DO UPDATE SET
+            mtime              = excluded.mtime,
+            title              = excluded.title,
+            artist             = excluded.artist,
+            album              = excluded.album,
+            year               = excluded.year,
+            duration_seconds   = excluded.duration_seconds,
+            duration_formatted = excluded.duration_formatted",
+        params![
+            path,
+            mtime,
+            meta.title,
+            meta.artist,
+            meta.album,
+            meta.year,
+            duration_seconds,
+            duration_formatted,
+        ],
+    )
+    .map_err(|e| e.to_string())?;
+    Ok(())
+}
+
+pub(crate) fn delete_tracks(conn: &Connection, paths: &[String]) -> Result<(), String> {
+    let mut stmt = conn
+        .prepare("DELETE FROM tracks WHERE path = ?1")
+        .map_err(|e| e.to_string())?;
+    for path in paths {
+        stmt.execute(params![path]).map_err(|e| e.to_string())?;
+    }
+    Ok(())
+}
+
 // ── Tauri commands (thin wrappers) ────────────────────────────────────────────
 
 #[tauri::command]
@@ -255,6 +364,12 @@ pub fn db_add_library_path(state: State<DbState>, path: String) -> Result<(), St
 pub fn db_remove_library_path(state: State<DbState>, path: String) -> Result<(), String> {
     let conn = state.conn.lock().map_err(|e| e.to_string())?;
     remove_library_path(&conn, &path)
+}
+
+#[tauri::command]
+pub fn db_load_tracks(state: State<DbState>) -> Result<Vec<AudioMetadata>, String> {
+    let conn = state.conn.lock().map_err(|e| e.to_string())?;
+    get_cached_tracks(&conn)
 }
 
 // ── tests ─────────────────────────────────────────────────────────────────────
@@ -548,5 +663,82 @@ mod tests {
         let db = setup();
         let conn = db.conn.lock().unwrap();
         assert!(remove_library_path(&conn, "/does/not/exist").is_ok());
+    }
+
+    // ── tracks ────────────────────────────────────────────────────────────────
+
+    fn make_meta(path: &str, title: &str, mtime_marker_artist: &str) -> AudioMetadata {
+        AudioMetadata::new(
+            Some(title.into()),
+            Some(mtime_marker_artist.into()),
+            Some("Album".into()),
+            Some("2024".into()),
+            AudioDuration::new(Some(180), Some("03:00".into())),
+            Some(path.into()),
+            None,
+        )
+    }
+
+    #[test]
+    fn cached_tracks_are_empty_on_fresh_db() {
+        let db = setup();
+        let conn = db.conn.lock().unwrap();
+        assert!(get_cached_tracks(&conn).unwrap().is_empty());
+        assert!(get_cached_track_mtimes(&conn).unwrap().is_empty());
+    }
+
+    #[test]
+    fn upsert_and_get_cached_tracks_roundtrip() {
+        let db = setup();
+        let conn = db.conn.lock().unwrap();
+        let meta = make_meta("/music/a.mp3", "Track A", "Artist A");
+
+        upsert_track(&conn, &meta, 12345).unwrap();
+
+        let cached = get_cached_tracks(&conn).unwrap();
+        assert_eq!(cached.len(), 1);
+        assert_eq!(cached[0].path.as_deref(), Some("/music/a.mp3"));
+        assert_eq!(cached[0].title.as_deref(), Some("Track A"));
+        assert_eq!(cached[0].artist.as_deref(), Some("Artist A"));
+        assert_eq!(cached[0].duration.duration_seconds, Some(180));
+        assert!(cached[0].image.is_none());
+
+        let mtimes = get_cached_track_mtimes(&conn).unwrap();
+        assert_eq!(mtimes.get("/music/a.mp3"), Some(&12345));
+    }
+
+    #[test]
+    fn upsert_replaces_existing_row_on_conflict() {
+        let db = setup();
+        let conn = db.conn.lock().unwrap();
+
+        upsert_track(&conn, &make_meta("/p.mp3", "Old", "Artist"), 1).unwrap();
+        upsert_track(&conn, &make_meta("/p.mp3", "New", "Artist"), 2).unwrap();
+
+        let cached = get_cached_tracks(&conn).unwrap();
+        assert_eq!(cached.len(), 1);
+        assert_eq!(cached[0].title.as_deref(), Some("New"));
+
+        let mtimes = get_cached_track_mtimes(&conn).unwrap();
+        assert_eq!(mtimes.get("/p.mp3"), Some(&2));
+    }
+
+    #[test]
+    fn delete_tracks_removes_only_specified_paths() {
+        let db = setup();
+        let conn = db.conn.lock().unwrap();
+
+        upsert_track(&conn, &make_meta("/a.mp3", "A", "Artist"), 1).unwrap();
+        upsert_track(&conn, &make_meta("/b.mp3", "B", "Artist"), 1).unwrap();
+        upsert_track(&conn, &make_meta("/c.mp3", "C", "Artist"), 1).unwrap();
+
+        delete_tracks(&conn, &["/a.mp3".into(), "/c.mp3".into()]).unwrap();
+
+        let remaining: Vec<String> = get_cached_tracks(&conn)
+            .unwrap()
+            .into_iter()
+            .filter_map(|m| m.path)
+            .collect();
+        assert_eq!(remaining, vec!["/b.mp3".to_string()]);
     }
 }
