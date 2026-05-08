@@ -6,6 +6,7 @@ import AlbumImage from '../../Components/AlbumImage/AlbumImage';
 import StatusMessage from '../../Components/StatusMessage/StatusMessage';
 import { useLazyAlbumArt } from '../../hooks/useLazyAlbumArt';
 import { isFavouritesPlaylist, sortFavouritesFirst } from '../../hooks/useFavourites';
+import { displayTitle } from '../../songDisplay';
 import {
   SearchContainer,
   ResultsSection,
@@ -94,7 +95,7 @@ const Search = () => {
             {artists.map(([name, metadata]) => (
               <ArtistRow key={name} onClick={() => navigate(`/artists/${encodeURIComponent(name)}`)}>
                 <SearchArtistAvatar name={name} songs={metadata} />
-                <ArtistName>{name}</ArtistName>
+                <ArtistName title={name}>{name}</ArtistName>
               </ArtistRow>
             ))}
           </ArtistContainer>
@@ -110,8 +111,8 @@ const Search = () => {
                 <AlbumImage metadata={song} height="100%" width="100%" />
               </AlbumArt>
               <AlbumInfo>
-                <AlbumTitle>{name}</AlbumTitle>
-                <AlbumArtist>{song.artist}</AlbumArtist>
+                <AlbumTitle title={name}>{name}</AlbumTitle>
+                <AlbumArtist title={song.artist}>{song.artist}</AlbumArtist>
               </AlbumInfo>
             </AlbumRow>
           ))}
@@ -136,7 +137,7 @@ const Search = () => {
                   </AlbumArt>
                 )}
                 <AlbumInfo>
-                  <AlbumTitle>{pl.name}</AlbumTitle>
+                  <AlbumTitle title={pl.name}>{pl.name}</AlbumTitle>
                   <AlbumArtist>
                     {pl.songs.length} {pl.songs.length === 1 ? 'song' : 'songs'}
                   </AlbumArtist>
@@ -150,15 +151,18 @@ const Search = () => {
       {matchingSongs.length > 0 && (
         <ResultsSection>
           <SectionTitle>Songs</SectionTitle>
-          {matchingSongs.map((song, i) => (
-            <SongRow key={song.path ?? i} onClick={() => playSong(song)}>
-              <AlbumImage metadata={song} height="2.5rem" width="2.5rem" />
-              <SongInfo>
-                <SongTitle>{song.title}</SongTitle>
-                <SongArtist>{song.artist}</SongArtist>
-              </SongInfo>
-            </SongRow>
-          ))}
+          {matchingSongs.map((song, i) => {
+            const title = displayTitle(song);
+            return (
+              <SongRow key={song.path ?? i} onClick={() => playSong(song)}>
+                <AlbumImage metadata={song} height="2.5rem" width="2.5rem" />
+                <SongInfo>
+                  <SongTitle title={title}>{title}</SongTitle>
+                  <SongArtist title={song.artist}>{song.artist}</SongArtist>
+                </SongInfo>
+              </SongRow>
+            );
+          })}
         </ResultsSection>
       )}
 

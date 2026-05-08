@@ -3,6 +3,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { AppContext } from '../../Context/AppContext';
 import { MetadataType, PlaylistType } from '../../types';
 import { isFavouritesPlaylist, sortFavouritesFirst } from '../../hooks/useFavourites';
+import { displayTitle } from '../../songDisplay';
 import {
   AddIcon,
   Column,
@@ -147,20 +148,20 @@ const CreatePlaylist = () => {
                   {selected.songs.length === 0 ? (
                     <EmptyColumn>Add songs from your library →</EmptyColumn>
                   ) : (
-                    selected.songs.map((song) => (
-                      <SongRow key={song.path}>
-                        <SongMeta>
-                          <SongTitle title={song.title}>{song.title ?? song.path}</SongTitle>
-                          <SongArtist>{song.artist}</SongArtist>
-                        </SongMeta>
-                        <IconButton
-                          aria-label={`Remove ${song.title ?? song.path}`}
-                          onClick={() => handleRemoveSong(song.path!)}
-                        >
-                          <RemoveIcon />
-                        </IconButton>
-                      </SongRow>
-                    ))
+                    selected.songs.map((song) => {
+                      const title = displayTitle(song);
+                      return (
+                        <SongRow key={song.path}>
+                          <SongMeta>
+                            <SongTitle title={title}>{title}</SongTitle>
+                            <SongArtist>{song.artist}</SongArtist>
+                          </SongMeta>
+                          <IconButton aria-label={`Remove ${title}`} onClick={() => handleRemoveSong(song.path!)}>
+                            <RemoveIcon />
+                          </IconButton>
+                        </SongRow>
+                      );
+                    })
                   )}
                 </SongScroll>
               </Column>
@@ -172,17 +173,20 @@ const CreatePlaylist = () => {
                   {filtered.length === 0 ? (
                     <EmptyColumn>{search ? 'No matches' : 'All library songs are in this playlist'}</EmptyColumn>
                   ) : (
-                    filtered.map((song) => (
-                      <SongRow key={song.path} onClick={() => handleAddSong(song)} style={{ cursor: 'pointer' }}>
-                        <SongMeta>
-                          <SongTitle title={song.title}>{song.title ?? song.path}</SongTitle>
-                          <SongArtist>{song.artist}</SongArtist>
-                        </SongMeta>
-                        <IconButton as="span" aria-hidden>
-                          <AddIcon />
-                        </IconButton>
-                      </SongRow>
-                    ))
+                    filtered.map((song) => {
+                      const title = displayTitle(song);
+                      return (
+                        <SongRow key={song.path} onClick={() => handleAddSong(song)} style={{ cursor: 'pointer' }}>
+                          <SongMeta>
+                            <SongTitle title={title}>{title}</SongTitle>
+                            <SongArtist>{song.artist}</SongArtist>
+                          </SongMeta>
+                          <IconButton as="span" aria-hidden>
+                            <AddIcon />
+                          </IconButton>
+                        </SongRow>
+                      );
+                    })
                   )}
                 </SongScroll>
               </Column>

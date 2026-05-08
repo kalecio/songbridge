@@ -27,6 +27,7 @@ import {
 } from './styles';
 import { AppContext } from '../../Context/AppContext';
 import { AUDIO_EVENTS, emitAudioEvent } from '../../audioEvents';
+import { displayTitle } from '../../songDisplay';
 import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts';
 import { useMediaKeys } from '../../hooks/useMediaKeys';
 import Sidebar from '../../Components/Sidebar/Sidebar';
@@ -288,7 +289,7 @@ const Player = () => {
           <Song
             albumImage={metadata?.image}
             albumName={metadata?.album}
-            songName={metadata?.title ?? 'no name'}
+            songName={displayTitle({ title: metadata?.title, path: path }, 'no name')}
             artistName={metadata?.artist ?? 'no name'}
           />
           <Controls />

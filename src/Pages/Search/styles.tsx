@@ -34,6 +34,7 @@ export const SongRow = styled.div`
   border-radius: 0.65rem;
   cursor: pointer;
   transition: background 0.15s;
+  min-width: 0;
 
   &:hover {
     background: ${({ theme }) => theme.hover};
@@ -43,24 +44,27 @@ export const SongRow = styled.div`
 export const SongInfo = styled.div`
   display: flex;
   flex-direction: column;
+  flex: 1;
   min-width: 0;
+  overflow: hidden;
 `;
 
 export const SongTitle = styled.span`
   font-size: 0.9rem;
   color: ${({ theme }) => theme.textPrimary};
+  max-width: 100%;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  display: flex;
-  align-items: center;
 `;
 
 export const SongArtist = styled.span`
   font-size: 0.8rem;
   color: ${({ theme }) => theme.primary};
-  display: flex;
-  align-items: center;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 `;
 
 export const ArtistContainer = styled.div`
@@ -111,6 +115,10 @@ export const ArtistName = styled.span`
   font-size: 0.9rem;
   color: ${({ theme }) => theme.textPrimary};
   text-align: center;
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 `;
 
 export const AlbumRow = styled.div`
@@ -121,6 +129,7 @@ export const AlbumRow = styled.div`
   border-radius: 0.65rem;
   cursor: pointer;
   transition: background 0.15s;
+  min-width: 0;
 
   &:hover {
     background: ${({ theme }) => theme.hover};
@@ -138,12 +147,15 @@ export const AlbumArt = styled.div`
 export const AlbumInfo = styled.div`
   display: flex;
   flex-direction: column;
+  flex: 1;
   min-width: 0;
+  overflow: hidden;
 `;
 
 export const AlbumTitle = styled.span`
   font-size: 0.9rem;
   color: ${({ theme }) => theme.textPrimary};
+  max-width: 100%;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -152,6 +164,10 @@ export const AlbumTitle = styled.span`
 export const AlbumArtist = styled.span`
   font-size: 0.8rem;
   color: ${({ theme }) => theme.primary};
+  max-width: 100%;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
 `;
 
 export const NoResults = styled.p`

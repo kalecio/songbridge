@@ -63,7 +63,7 @@ const Artists = () => {
         {artists.map((artist) => (
           <Card key={artist.name} onClick={() => navigate(`/artists/${encodeURIComponent(artist.name)}`)}>
             <ArtistAvatar artist={artist} />
-            <ArtistName>{artist.name}</ArtistName>
+            <ArtistName title={artist.name}>{artist.name}</ArtistName>
             <ArtistMeta>
               {artist.albumCount} {artist.albumCount === 1 ? 'album' : 'albums'}
             </ArtistMeta>

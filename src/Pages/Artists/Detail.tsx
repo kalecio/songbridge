@@ -71,7 +71,7 @@ const ArtistDetail = () => {
           <BackButton onClick={() => navigate('/artists')}>Artists</BackButton>
         </HeroTop>
         <HeroBottom>
-          <HeroTitle>{artistName}</HeroTitle>
+          <HeroTitle title={artistName}>{artistName}</HeroTitle>
           <HeroStats>
             {albums.length} {albums.length === 1 ? 'album' : 'albums'} · {artistSongs.length}{' '}
             {artistSongs.length === 1 ? 'song' : 'songs'}
