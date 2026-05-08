@@ -115,9 +115,81 @@ export const midnightTheme: AppTheme = {
   playerBar: '#1A1D24',
 };
 
+// Inspired by Evangelion Unit-01: deep purple base with the iconic lime-green
+// accent. Palette: #3f6d4e, #8bd450, #1d1a2f, #965fd4, #734f9a.
+export const eva01Theme: AppTheme = {
+  name: 'Eva01',
+  primary: '#965fd4',
+  primaryDark: '#734f9a',
+  primaryDeep: '#5b3d7d',
+  background: '#1d1a2f',
+  surface: '#262338',
+  surfaceAlt: '#2c2944',
+  surfaceRaised: '#2c2944',
+  textPrimary: '#ffffff',
+  textSecondary: '#cdc2e6',
+  textMuted: '#8a7fae',
+  textOnPrimary: '#ffffff',
+  textOnPlayer: '#ffffff',
+  hover: '#262338',
+  hoverActive: '#332e4f',
+  active: '#3a3556',
+  border: '#3a3556',
+  borderLight: '#4a4373',
+  accent: '#8bd450',
+  accentBg: 'rgba(139, 212, 80, 0.14)',
+  accentBgHover: 'rgba(139, 212, 80, 0.24)',
+  accentHover: 'rgba(139, 212, 80, 0.08)',
+  mutedAccent: '#3f6d4e',
+  cardBackground: '#262338',
+  cardShadow: 'rgba(0, 0, 0, 0.35)',
+  cardShadowHover: 'rgba(0, 0, 0, 0.55)',
+  success: '#8bd450',
+  warning: '#F2C94C',
+  error: '#EB5757',
+  playerBar: '#1d1a2f',
+};
+
+// Inspired by the Car Seat Headrest "How to Leave Town" cover: a warm
+// sunset glow fading into a near-black starry sky, with pale cream text.
+export const headrestTheme: AppTheme = {
+  name: 'Headrest',
+  primary: '#d65a2a',
+  primaryDark: '#a83d1f',
+  primaryDeep: '#7a2a14',
+  background: '#100c0e',
+  surface: '#1a1417',
+  surfaceAlt: '#231a1d',
+  surfaceRaised: '#2b2024',
+  textPrimary: '#f5e9d3',
+  textSecondary: '#d6b88a',
+  textMuted: '#8a7558',
+  textOnPrimary: '#ffffff',
+  textOnPlayer: '#f5e9d3',
+  hover: '#1f1719',
+  hoverActive: '#2b2024',
+  active: '#36272b',
+  border: '#2b2024',
+  borderLight: '#3d2d31',
+  accent: '#f0d4a3',
+  accentBg: 'rgba(240, 212, 163, 0.12)',
+  accentBgHover: 'rgba(240, 212, 163, 0.22)',
+  accentHover: 'rgba(240, 212, 163, 0.07)',
+  mutedAccent: '#8a7558',
+  cardBackground: '#1a1417',
+  cardShadow: 'rgba(0, 0, 0, 0.45)',
+  cardShadowHover: 'rgba(214, 90, 42, 0.30)',
+  success: '#7da95c',
+  warning: '#e0a040',
+  error: '#c14820',
+  playerBar: '#0a0608',
+};
+
 export const themes: Record<string, AppTheme> = {
   Midnight: midnightTheme,
-  'Pastel Colors': pastelTheme,
+  Pastel: pastelTheme,
+  Eva01: eva01Theme,
+  Headrest: headrestTheme,
 };
 
 export const defaultTheme = midnightTheme;

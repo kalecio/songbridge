@@ -28,15 +28,15 @@ describe('Settings', () => {
     });
 
     it('shows the current theme as the selected option', () => {
-      const { getByRole } = renderWithContext(<Settings />, { currentTheme: 'Pastel Colors' });
-      expect(getByRole('combobox')).toHaveValue('Pastel Colors');
+      const { getByRole } = renderWithContext(<Settings />, { currentTheme: 'Pastel' });
+      expect(getByRole('combobox')).toHaveValue('Pastel');
     });
 
     it('calls setCurrentTheme when a different theme is selected', () => {
       const setCurrentTheme = vi.fn();
       const { getByRole } = renderWithContext(<Settings />, { currentTheme: 'Midnight', setCurrentTheme });
-      fireEvent.change(getByRole('combobox'), { target: { value: 'Pastel Colors' } });
-      expect(setCurrentTheme).toHaveBeenCalledWith('Pastel Colors');
+      fireEvent.change(getByRole('combobox'), { target: { value: 'Pastel' } });
+      expect(setCurrentTheme).toHaveBeenCalledWith('Pastel');
     });
   });
 
