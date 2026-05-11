@@ -1,6 +1,6 @@
 [package]
 name = "songbridge"
-version = "0.4.0"
+version = "0.4.1"
 description = "A desktop music player with library scanning, playlist management, and search"
 authors = ["Kalécio Santana <kalecio.santana@gmail.com>"]
 edition = "2021"

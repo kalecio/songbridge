@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.4.1] - 2026-05-11
+
+### Fixed
+- **Auto-advance to the next track works again for every track ending naturally.** When a song reached its end, rodio's sink would empty and `get_pos()` would reset to `0`, so the frontend's `progress >= duration` check silently failed and playback just stopped — most visible on short tracks. The audio thread now tracks a high-water mark on the playhead and emits a one-shot `ended` signal when the source runs out; `current_position` returns the track's known duration on that frame so the existing auto-advance logic fires exactly once per track (no cascading skips during the next-track hand-off).
+- **Windows Now Playing failure** (`HRESULT(0x800700A1) ERROR_BAD_PATHNAME`) when the cover-art file path contained spaces, accents, or any character that's illegal in a raw URI. Replaced the hand-rolled `format!("file:///{}", …)` with `Url::from_file_path`, which percent-encodes path components and produces a canonical three-slash file URL on every platform
+- **Stale cover art on Windows** — SMTC keys its thumbnail cache by URL, so reusing `songbridge-cover.jpg` across tracks left the OS showing the previous album's cover. Cover files are now keyed by a content hash; identical covers across an album share one file, distinct covers always get distinct URLs
+- **Corrupt embedded covers no longer break the OS Now Playing card.** Cover bytes are now sniffed against JPEG (`FF D8 FF`) and PNG (`89 50 4E 47`) magic before being written to disk; a malformed APIC frame is skipped instead of being handed to SMTC and surfaced as a generic `BAD_PATHNAME`
+- **Graceful fallback when SMTC still rejects the metadata** — if `set_metadata` fails with the cover URL attached, we retry without it, so title / artist / album / duration still appear on the OS now-playing surface even when the cover is the part that's tripping Windows
+
+### Changed
+- **Diagnostic logging around the OS Now Playing bridge** — `set_now_playing` logs metadata byte-lengths, the cover URL, and whether the cover file actually exists on disk; `set_playback_state` logs `is_playing` and `elapsed_seconds`; SMTC scrubber events are logged as `media-key:seek received from OS at <s>`. Helps narrow down platform-specific quirks without a debugger
+
+### Added
+- **`url` Rust dependency** for cross-platform file-URL formatting
+- A sweep of Rust unit tests (`audio::state`, `now_playing`) covering end-of-track detection, data-URL parsing, file-URL encoding on POSIX and Windows (spaces, non-ASCII, reserved characters), hash-based filename uniqueness and dedup, JPEG/PNG magic-byte validation, and URL round-tripping
+
 ## [0.4.0] - 2026-05-07
 
 ### Added
