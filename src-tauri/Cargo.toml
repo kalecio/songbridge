@@ -33,4 +33,5 @@ dirs = "5"
 walkdir = "2"
 rusqlite = { version = "0.31", features = ["bundled"] }
 souvlaki = "0.8"
+url = "2"
 

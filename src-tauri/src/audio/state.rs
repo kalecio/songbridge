@@ -1,5 +1,5 @@
 use super::utils::{calculate_track_duration, format_duration, get_audio_probe};
-use crate::audio::backend::{spawn_audio_thread, AudioCommand};
+use crate::audio::backend::{spawn_audio_thread, AudioCommand, PositionReport};
 use crate::metadata::types::AudioDuration;
 use crossbeam_channel::Sender;
 use std::{sync::mpsc, time::Duration};
@@ -85,7 +85,21 @@ impl AudioState {
     pub fn current_position(&self) -> Duration {
         let (tx, rx) = mpsc::channel();
         let _ = self.audio_tx.send(AudioCommand::GetPosition(tx));
-        rx.recv().unwrap_or_else(|_| Duration::from_secs(0))
+        let PositionReport { position, ended } = rx.recv().unwrap_or(PositionReport {
+            position: Duration::from_secs(0),
+            ended: false,
+        });
+        // When the rodio sink reports the source has finished, surface the
+        // track's known duration instead of the (often-zero) position. This
+        // is what makes the frontend's `progress >= duration` auto-advance
+        // check fire even though rodio's `get_pos()` resets when the queue
+        // empties.
+        if ended {
+            if let Some(d) = self.track_duration.duration_seconds {
+                return Duration::from_secs(d);
+            }
+        }
+        position
     }
 
     pub fn seek(&mut self, position: Duration) {
@@ -205,7 +219,10 @@ mod tests {
             if let Ok(cmd) = rx.recv() {
                 match cmd {
                     AudioCommand::GetPosition(resp) => {
-                        let _ = resp.send(StdDuration::from_secs(7));
+                        let _ = resp.send(PositionReport {
+                            position: StdDuration::from_secs(7),
+                            ended: false,
+                        });
                     }
                     other => panic!("expected GetPosition, got {:?}", other),
                 }
@@ -216,6 +233,65 @@ mod tests {
 
         let pos = state.current_position();
         assert_eq!(pos, StdDuration::from_secs(7));
+        responder.join().unwrap();
+    }
+
+    #[test]
+    fn current_position_returns_duration_when_track_has_ended() {
+        let (tx, rx) = unbounded::<AudioCommand>();
+        let state = AudioState {
+            path: String::new(),
+            audio_tx: tx.clone(),
+            original_volume: 1.0,
+            is_muted: false,
+            track_duration: crate::metadata::types::AudioDuration::new(Some(82), None),
+        };
+
+        let responder = thread::spawn(move || {
+            if let Ok(AudioCommand::GetPosition(resp)) = rx.recv() {
+                // Simulates rodio's behaviour when the source has finished:
+                // `get_pos()` returns 0 but the sink is empty. The backend
+                // then sets `ended: true`, and `current_position` must
+                // surface the track's duration so the frontend's
+                // `progress >= duration` auto-advance check fires.
+                let _ = resp.send(PositionReport {
+                    position: StdDuration::from_secs(0),
+                    ended: true,
+                });
+            } else {
+                panic!("did not receive GetPosition command");
+            }
+        });
+
+        let pos = state.current_position();
+        assert_eq!(pos, StdDuration::from_secs(82));
+        responder.join().unwrap();
+    }
+
+    #[test]
+    fn current_position_returns_zero_when_ended_but_duration_unknown() {
+        let (tx, rx) = unbounded::<AudioCommand>();
+        let state = AudioState {
+            path: String::new(),
+            audio_tx: tx.clone(),
+            original_volume: 1.0,
+            is_muted: false,
+            track_duration: crate::metadata::types::AudioDuration::default(),
+        };
+
+        let responder = thread::spawn(move || {
+            if let Ok(AudioCommand::GetPosition(resp)) = rx.recv() {
+                let _ = resp.send(PositionReport {
+                    position: StdDuration::from_secs(0),
+                    ended: true,
+                });
+            }
+        });
+
+        // Without a known duration we just return the position; the frontend
+        // will not auto-advance, which is the safe fallback.
+        let pos = state.current_position();
+        assert_eq!(pos, StdDuration::from_secs(0));
         responder.join().unwrap();
     }
 }
