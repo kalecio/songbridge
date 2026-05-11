@@ -7,6 +7,17 @@ use std::time::Duration;
 use crossbeam_channel::Sender;
 use rodio::{decoder::DecoderBuilder, OutputStreamBuilder, Sink};
 
+/// Reply from a `GetPosition` request: the current playhead position plus
+/// a one-shot "track just ended naturally" flag. The flag fires exactly
+/// once per Load (after the rodio sink has actually played at least a
+/// fraction of a second, so the in-between window during `Load` doesn't
+/// look like an ended track).
+#[derive(Debug)]
+pub struct PositionReport {
+    pub position: Duration,
+    pub ended: bool,
+}
+
 /// Commands that can be sent to the audio backend thread.
 #[derive(Debug)]
 pub enum AudioCommand {
@@ -16,7 +27,7 @@ pub enum AudioCommand {
     Resume,
     SetVolume(f32),
     Seek(Duration),
-    GetPosition(StdSender<Duration>),
+    GetPosition(StdSender<PositionReport>),
 }
 
 /// Spawn the audio thread and return a `Sender` to send `AudioCommand`s to it.
@@ -30,10 +41,22 @@ pub fn spawn_audio_thread() -> Sender<AudioCommand> {
             OutputStreamBuilder::open_default_stream().expect("open default audio stream");
         let sink = Sink::connect_new(_stream.mixer());
 
+        // Track end-of-track detection state. `max_pos` lets us tell apart
+        // "sink is empty because we haven't started yet" from "sink is empty
+        // because the source ran out". `ended_reported` makes the `ended`
+        // flag a one-shot per Load, so the frontend can't trigger
+        // auto-advance more than once for the same track if multiple polls
+        // race during the hand-off.
+        let mut max_pos: Duration = Duration::from_secs(0);
+        let mut ended_reported = false;
+        let started_threshold = Duration::from_millis(500);
+
         while let Ok(cmd) = rx.recv() {
             match cmd {
                 AudioCommand::Load(path) => {
                     sink.stop();
+                    max_pos = Duration::from_secs(0);
+                    ended_reported = false;
                     if let Ok(file) = File::open(&path) {
                         let byte_len = file.metadata().map(|m| m.len()).unwrap_or(0);
                         let source = DecoderBuilder::new()
@@ -55,7 +78,19 @@ pub fn spawn_audio_thread() -> Sender<AudioCommand> {
                     let _ = sink.try_seek(pos);
                 }
                 AudioCommand::GetPosition(resp) => {
-                    let _ = resp.send(sink.get_pos());
+                    let pos = sink.get_pos();
+                    if pos > max_pos {
+                        max_pos = pos;
+                    }
+                    let is_ended = sink.empty() && max_pos >= started_threshold;
+                    let report_ended = is_ended && !ended_reported;
+                    if report_ended {
+                        ended_reported = true;
+                    }
+                    let _ = resp.send(PositionReport {
+                        position: pos,
+                        ended: report_ended,
+                    });
                 }
             }
         }
@@ -111,7 +146,7 @@ mod tests {
         }
 
         // GetPosition contains a StdSender -- just ensure we can construct it
-        let (tx, _rx) = channel::<Duration>();
+        let (tx, _rx) = channel::<PositionReport>();
         match AudioCommand::GetPosition(tx) {
             AudioCommand::GetPosition(_) => {}
             _ => panic!("expected GetPosition"),
