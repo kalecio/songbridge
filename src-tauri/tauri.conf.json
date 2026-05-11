@@ -13,7 +13,7 @@
     "windows": [
       {
         "title": "songbridge",
-        "minWidth": 1280,
+        "minWidth": 900,
         "minHeight": 720,
         "maximized": true
       }
