@@ -5,6 +5,33 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.0] - 2026-05-15
+
+A right-click-everywhere release: a unified context-menu system, in-app modal dialogs, drag-to-reorder for playlists and the queue, smarter album ordering by track number, and a refreshed theme lineup.
+
+### Added
+- **Context menu wired across the app** — a new `ContextMenu` component (with submenu support and danger styling) is reachable via right-click on songs (Songs, Album / Artist detail, Search), playlists (Sidebar, Create-Playlist editor), and the active queue. Actions include Play, Play next, Add to queue, an **Add to playlist** submenu that lists every existing playlist plus a "New playlist..." entry, Rename, Delete, and Remove. Favourites is intentionally protected from rename / delete.
+- **Modal / `useModal` hook** — `window.prompt` and `window.confirm` are gone. A new `ModalProvider` exposes promise-based `prompt({ title, defaultValue, confirmLabel })` and `confirm({ title, message, danger })` APIs that render themed in-app dialogs. Playlist rename / delete and "New playlist…" flows now use it.
+- **Drag-to-reorder songs in playlists** — playlist rows in the detail page are now draggable. Drop indicators appear above or below the target row, untagged-as-missing rows stay clickable through the drag, and the new order is persisted to `playlist_songs.position` via the existing upsert path. Reordering is disabled on Album / Artist views (where row order is data-driven).
+- **Drag-to-reorder songs in the queue** — the sidebar's now-playing queue gains the same HTML5 drag-and-drop semantics. A new `reorderQueue` action on `useQueueActions` splices the path within `currentPlaylist`, and the active track stays selected through the move. Inner thumbnails on reorderable rows opt out of native image-drag so grabbing the album art doesn't hijack the row.
+- **Album songs sort by track number** — the Rust metadata reader now extracts `StandardTagKey::TrackNumber` (handling both `"4"` and `"4/12"` track/total formats, plus zero-padded `"04"`), threads it through `AudioMetadata`, and persists it in a new `track_number` column on the `tracks` SQLite table. The Album Detail page sorts ascending; songs without a tagged track number sink to the end so they don't reshuffle the tagged ordering. Existing cached rows are `NULL` after the schema migration and pick up their track number on the next library rescan.
+- **Dusk theme** — lavender twilight with fiery red-orange embers and a glowing amber pop for warnings (`#a78fcc`, `#5e4490`, `#d94a2c`, `#fcd450`, `#160f1d`).
+- **Voltage theme** — electric lime-green lightning against a pitch-black void (`#2dffa0`, `#5dff8f`, `#129158`, `#040805`, `#e8ffe8`); the Play Now button uses near-black text on the bright primary so it stays readable.
+- **Play history** — a new `usePlayHistory` hook + `play_history` SQLite table records `recordPlaylistPlay(id)` whenever a playlist (including Favourites and album-as-playlist plays) is started from the UI, ready for upcoming "recently played" surfaces.
+- **New hooks with full unit-test coverage** — `usePlaylistActions` (rename / delete / addSongToPlaylist / removeSongFromPlaylist / reorderSongsInPlaylist), `useQueueActions` (playSongs / addToQueue / playNext / removeFromQueue / reorderQueue), `useAddToPlaylistMenu` (builds the Add-to-playlist submenu), and `usePlayHistory`. Test suite now sits at 309 frontend + 68 Rust tests.
+
+### Changed
+- **Themes renamed to generic labels** — `Eva01` → **Reactor** (`reactorTheme`) and `Headrest` → **Sunset** (`sunsetTheme`). Inline "inspired by …" comments referencing third-party works were dropped from the palette definitions. Users with `Eva01` or `Headrest` saved in preferences fall back to **Midnight** on next launch and can re-pick the renamed theme from Settings → Appearance.
+- **Tauri webview drag-drop disabled** — `windows[0].dragDropEnabled` is now `false` in `tauri.conf.json`. Tauri 2's default OS-level drag handler swallows internal HTML5 `drop` events (most visible on Windows, but also affects WebKit on macOS in specific scenarios); disabling it is the documented requirement for in-app reorderable lists to fire `drop` reliably across platforms.
+- **`AlbumImage` forwards a `draggable` prop** — native `<img>` elements are draggable by default, which hijacks a parent row's reorder when the user grabs the thumbnail. Reorderable rows (playlist detail, sidebar queue) now pass `draggable={false}` to the inner image.
+- **Player album-art is now a clickable link** — clicking the album thumbnail in the player bar navigates to that album's detail page, matching the existing artist-name link behavior.
+- **Native-feel polish** — text selection is now opt-in via a `selectable` CSS mixin, applied only to titles and song / playlist names; UI chrome, buttons, and player surfaces are no longer accidentally selectable on drag.
+
+### Fixed
+- **Native OS context menu suppressed in production builds** — Tauri's default right-click menu (Reload, Inspect Element…) is now blocked outside dev, so it can't surface over or override the in-app context menu. Development still gets the OS menu so DevTools remains one click away.
+
+[0.5.0]: https://github.com/kalecio/songbridge/compare/songbridge-v0.4.1...songbridge-v0.5.0
+
 ## [0.4.1] - 2026-05-11
 
 ### Fixed
