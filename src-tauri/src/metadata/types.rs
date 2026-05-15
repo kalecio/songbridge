@@ -27,30 +27,6 @@ pub struct AudioMetadata {
     pub image: Option<String>,
 }
 
-impl AudioMetadata {
-    pub fn new(
-        title: Option<String>,
-        artist: Option<String>,
-        album: Option<String>,
-        year: Option<String>,
-        track: Option<u32>,
-        duration: AudioDuration,
-        path: Option<String>,
-        image: Option<String>,
-    ) -> Self {
-        AudioMetadata {
-            title,
-            artist,
-            album,
-            year,
-            track,
-            duration,
-            path,
-            image,
-        }
-    }
-}
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -70,16 +46,16 @@ mod tests {
     #[test]
     fn audio_metadata_new_and_serialize() {
         let dur = AudioDuration::new(Some(100), Some("01:40".to_string()));
-        let meta = AudioMetadata::new(
-            Some("Title".into()),
-            Some("Artist".into()),
-            Some("Album".into()),
-            Some("2020".into()),
-            Some(3),
-            dur,
-            Some("path.mp3".into()),
-            Some("imgdata".into()),
-        );
+        let meta = AudioMetadata {
+            title: Some("Title".into()),
+            artist: Some("Artist".into()),
+            album: Some("Album".into()),
+            year: Some("2020".into()),
+            track: Some(3),
+            duration: dur,
+            path: Some("path.mp3".into()),
+            image: Some("imgdata".into()),
+        };
 
         let s = serde_json::to_value(&meta).expect("serialize");
         assert_eq!(s["title"], json!("Title"));
