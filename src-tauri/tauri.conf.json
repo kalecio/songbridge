@@ -15,7 +15,8 @@
         "title": "songbridge",
         "minWidth": 900,
         "minHeight": 720,
-        "maximized": true
+        "maximized": true,
+        "dragDropEnabled": false
       }
     ],
     "security": {
