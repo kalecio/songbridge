@@ -29,6 +29,8 @@ import {
   SongsIcon,
 } from './styles';
 import { isFavouritesPlaylist, sortFavouritesFirst } from '../../hooks/useFavourites';
+import { useQueueActions } from '../../hooks/useQueueActions';
+import { usePlaylistActions } from '../../hooks/usePlaylistActions';
 import { displayTitle } from '../../songDisplay';
 
 type SidebarMenu =
@@ -43,6 +45,8 @@ const Sidebar = () => {
   const { showQueue, setShowQueue, setCurrentPath, currentPlaylist, playlists, currentPath, library } = context;
   const navigate = useNavigate();
   const location = useLocation();
+  const { playSongs, addToQueue, playNext, removeFromQueue } = useQueueActions();
+  const { renamePlaylist, deletePlaylist } = usePlaylistActions();
 
   useEffect(() => {
     if (currentPlaylist.length === 0) {
@@ -64,20 +68,27 @@ const Sidebar = () => {
 
   const isActive = (path: string) => (path === '/' ? location.pathname === '/' : location.pathname.startsWith(path));
 
-  const queueMenuItems = (): ContextMenuItem[] => [
-    { label: 'Play next', icon: <FaPlay />, onSelect: () => {} },
+  const queueMenuItems = (song: MetadataType): ContextMenuItem[] => [
+    { label: 'Play next', icon: <FaPlay />, onSelect: () => playNext(song) },
     { type: 'divider' },
-    { label: 'Remove from queue', icon: <FaTrash />, onSelect: () => {}, danger: true },
+    { label: 'Remove from queue', icon: <FaTrash />, onSelect: () => removeFromQueue(song.path), danger: true },
   ];
 
   const playlistMenuItems = (playlist: PlaylistType): ContextMenuItem[] => {
     const isFavourites = isFavouritesPlaylist(playlist.id);
+    const empty = playlist.songs.length === 0;
     return [
-      { label: 'Play', icon: <FaPlay />, onSelect: () => {}, disabled: playlist.songs.length === 0 },
-      { label: 'Add to queue', icon: <FaListUl />, onSelect: () => {}, disabled: playlist.songs.length === 0 },
+      { label: 'Play', icon: <FaPlay />, onSelect: () => playSongs(playlist.songs), disabled: empty },
+      { label: 'Add to queue', icon: <FaListUl />, onSelect: () => addToQueue(playlist.songs), disabled: empty },
       { type: 'divider' },
-      { label: 'Rename', icon: <FaPen />, onSelect: () => {}, disabled: isFavourites },
-      { label: 'Delete playlist', icon: <FaTrash />, onSelect: () => {}, disabled: isFavourites, danger: true },
+      { label: 'Rename', icon: <FaPen />, onSelect: () => renamePlaylist(playlist), disabled: isFavourites },
+      {
+        label: 'Delete playlist',
+        icon: <FaTrash />,
+        onSelect: () => deletePlaylist(playlist),
+        disabled: isFavourites,
+        danger: true,
+      },
     ];
   };
 
@@ -174,7 +185,7 @@ const Sidebar = () => {
         <ContextMenu
           x={menu.x}
           y={menu.y}
-          items={menu.kind === 'queue' ? queueMenuItems() : playlistMenuItems(menu.playlist)}
+          items={menu.kind === 'queue' ? queueMenuItems(menu.song) : playlistMenuItems(menu.playlist)}
           onClose={() => setMenu(null)}
         />
       )}

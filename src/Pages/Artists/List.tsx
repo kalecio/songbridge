@@ -9,6 +9,7 @@ import PageHeader from '../../Components/PageHeader/PageHeader';
 import StatusMessage from '../../Components/StatusMessage/StatusMessage';
 import ContextMenu, { ContextMenuItem } from '../../Components/ContextMenu/ContextMenu';
 import { useLazyAlbumArt } from '../../hooks/useLazyAlbumArt';
+import { useQueueActions } from '../../hooks/useQueueActions';
 import { Grid, Card, Avatar, ArtistName, ArtistMeta, AvatarImage } from './styles';
 
 interface ArtistEntry {
@@ -46,6 +47,7 @@ const Artists = () => {
   const { library, isScanning } = useContext(AppContext);
   const navigate = useNavigate();
   const [menu, setMenu] = useState<{ x: number; y: number; artist: ArtistEntry } | null>(null);
+  const { playSongs, addToQueue } = useQueueActions();
 
   if (isScanning) {
     return <StatusMessage>Scanning music library…</StatusMessage>;
@@ -57,10 +59,13 @@ const Artists = () => {
     return <StatusMessage>No artists found in your music library.</StatusMessage>;
   }
 
-  const artistMenuItems = (artist: ArtistEntry): ContextMenuItem[] => [
-    { label: 'Play', icon: <FaPlay />, onSelect: () => {}, disabled: artist.songs.length === 0 },
-    { label: 'Add to queue', icon: <FaListUl />, onSelect: () => {}, disabled: artist.songs.length === 0 },
-  ];
+  const artistMenuItems = (artist: ArtistEntry): ContextMenuItem[] => {
+    const empty = artist.songs.length === 0;
+    return [
+      { label: 'Play', icon: <FaPlay />, onSelect: () => playSongs(artist.songs), disabled: empty },
+      { label: 'Add to queue', icon: <FaListUl />, onSelect: () => addToQueue(artist.songs), disabled: empty },
+    ];
+  };
 
   return (
     <Page>

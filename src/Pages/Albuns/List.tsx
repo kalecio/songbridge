@@ -9,6 +9,7 @@ import Page from '../../Components/Page/Page';
 import PageHeader from '../../Components/PageHeader/PageHeader';
 import StatusMessage from '../../Components/StatusMessage/StatusMessage';
 import ContextMenu, { ContextMenuItem } from '../../Components/ContextMenu/ContextMenu';
+import { useQueueActions } from '../../hooks/useQueueActions';
 import { Grid, GridItem, Card, ArtWrapper, CardInfo, CardTitle, CardBottom, CardArtist, CardCount } from './styles';
 
 interface AlbumEntry {
@@ -46,6 +47,7 @@ const Albums = () => {
   const { library, isScanning } = useContext(AppContext);
   const navigate = useNavigate();
   const [menu, setMenu] = useState<{ x: number; y: number; album: AlbumEntry } | null>(null);
+  const { playSongs, addToQueue } = useQueueActions();
 
   if (isScanning) {
     return (
@@ -65,10 +67,13 @@ const Albums = () => {
     );
   }
 
-  const albumMenuItems = (album: AlbumEntry): ContextMenuItem[] => [
-    { label: 'Play', icon: <FaPlay />, onSelect: () => {}, disabled: album.songs.length === 0 },
-    { label: 'Add to queue', icon: <FaListUl />, onSelect: () => {}, disabled: album.songs.length === 0 },
-  ];
+  const albumMenuItems = (album: AlbumEntry): ContextMenuItem[] => {
+    const empty = album.songs.length === 0;
+    return [
+      { label: 'Play', icon: <FaPlay />, onSelect: () => playSongs(album.songs), disabled: empty },
+      { label: 'Add to queue', icon: <FaListUl />, onSelect: () => addToQueue(album.songs), disabled: empty },
+    ];
+  };
 
   return (
     <Page>

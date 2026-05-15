@@ -4,6 +4,7 @@ import { useVirtualizer } from '@tanstack/react-virtual';
 import { FaPlay, FaListUl, FaTrash } from 'react-icons/fa6';
 import { MetadataType } from '../../types';
 import { displayTitle } from '../../songDisplay';
+import { useQueueActions } from '../../hooks/useQueueActions';
 import AlbumImage from '../AlbumImage/AlbumImage';
 import ContextMenu, { ContextMenuItem } from '../ContextMenu/ContextMenu';
 import {
@@ -36,6 +37,7 @@ interface Props {
   onSongClick?: (_song: MetadataType) => void;
   onPlayAll?: () => void;
   onRemoveMissing?: (_song: MetadataType) => void;
+  onRemoveSong?: (_song: MetadataType) => void;
 }
 
 // Above this list size we switch to windowed rendering. Album / playlist
@@ -55,9 +57,11 @@ const Playlist = ({
   onSongClick,
   onPlayAll,
   onRemoveMissing,
+  onRemoveSong,
 }: Props) => {
   const [missingPaths, setMissingPaths] = useState<Set<string>>(new Set());
   const [menuState, setMenuState] = useState<{ x: number; y: number; song: MetadataType } | null>(null);
+  const { playNext, addToQueue } = useQueueActions();
 
   useEffect(() => {
     const paths = songs.map((s) => s.path).filter((p): p is string => Boolean(p));
@@ -113,12 +117,17 @@ const Playlist = ({
 
   const menuItems = (song: MetadataType): ContextMenuItem[] => {
     const isMissing = Boolean(song.path && missingPaths.has(song.path));
-    return [
-      { label: 'Play next', icon: <FaPlay />, onSelect: () => {}, disabled: isMissing },
-      { label: 'Add to queue', icon: <FaListUl />, onSelect: () => {}, disabled: isMissing },
-      { type: 'divider' },
-      { label: 'Remove from playlist', icon: <FaTrash />, onSelect: () => {}, danger: true },
+    const items: ContextMenuItem[] = [
+      { label: 'Play next', icon: <FaPlay />, onSelect: () => playNext(song), disabled: isMissing },
+      { label: 'Add to queue', icon: <FaListUl />, onSelect: () => addToQueue([song]), disabled: isMissing },
     ];
+    if (onRemoveSong) {
+      items.push(
+        { type: 'divider' },
+        { label: 'Remove from playlist', icon: <FaTrash />, onSelect: () => onRemoveSong(song), danger: true },
+      );
+    }
+    return items;
   };
 
   return (

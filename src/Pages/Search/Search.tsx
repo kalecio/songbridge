@@ -8,6 +8,8 @@ import StatusMessage from '../../Components/StatusMessage/StatusMessage';
 import ContextMenu, { ContextMenuItem } from '../../Components/ContextMenu/ContextMenu';
 import { useLazyAlbumArt } from '../../hooks/useLazyAlbumArt';
 import { isFavouritesPlaylist, sortFavouritesFirst } from '../../hooks/useFavourites';
+import { useQueueActions } from '../../hooks/useQueueActions';
+import { usePlaylistActions } from '../../hooks/usePlaylistActions';
 import { displayTitle } from '../../songDisplay';
 import {
   SearchContainer,
@@ -45,7 +47,7 @@ const SearchArtistAvatar = ({ name, songs }: { name: string; songs: MetadataType
 
 type SearchMenu =
   | { kind: 'artist'; x: number; y: number; songs: MetadataType[] }
-  | { kind: 'album'; x: number; y: number; song: MetadataType }
+  | { kind: 'album'; x: number; y: number; albumName: string }
   | { kind: 'playlist'; x: number; y: number; playlist: PlaylistType }
   | { kind: 'song'; x: number; y: number; song: MetadataType };
 
@@ -55,6 +57,10 @@ const Search = () => {
   const { library, playlists = [], setCurrentPath, setCurrentPlaylist } = useContext(AppContext);
   const navigate = useNavigate();
   const [menu, setMenu] = useState<SearchMenu | null>(null);
+  const { playSongs, addToQueue, playNext } = useQueueActions();
+  const { renamePlaylist, deletePlaylist } = usePlaylistActions();
+
+  const songsOfAlbum = (albumName: string) => library.filter((s) => (s.album ?? 'Unknown Album') === albumName);
 
   const q = normalize(query);
 
@@ -91,27 +97,39 @@ const Search = () => {
     switch (m.kind) {
       case 'song':
         return [
-          { label: 'Play next', icon: <FaPlay />, onSelect: () => {} },
-          { label: 'Add to queue', icon: <FaListUl />, onSelect: () => {} },
+          { label: 'Play next', icon: <FaPlay />, onSelect: () => playNext(m.song) },
+          { label: 'Add to queue', icon: <FaListUl />, onSelect: () => addToQueue([m.song]) },
         ];
-      case 'artist':
+      case 'artist': {
+        const empty = m.songs.length === 0;
         return [
-          { label: 'Play', icon: <FaPlay />, onSelect: () => {}, disabled: m.songs.length === 0 },
-          { label: 'Add to queue', icon: <FaListUl />, onSelect: () => {}, disabled: m.songs.length === 0 },
+          { label: 'Play', icon: <FaPlay />, onSelect: () => playSongs(m.songs), disabled: empty },
+          { label: 'Add to queue', icon: <FaListUl />, onSelect: () => addToQueue(m.songs), disabled: empty },
         ];
-      case 'album':
+      }
+      case 'album': {
+        const albumSongs = songsOfAlbum(m.albumName);
+        const empty = albumSongs.length === 0;
         return [
-          { label: 'Play', icon: <FaPlay />, onSelect: () => {} },
-          { label: 'Add to queue', icon: <FaListUl />, onSelect: () => {} },
+          { label: 'Play', icon: <FaPlay />, onSelect: () => playSongs(albumSongs), disabled: empty },
+          { label: 'Add to queue', icon: <FaListUl />, onSelect: () => addToQueue(albumSongs), disabled: empty },
         ];
+      }
       case 'playlist': {
         const isFavourites = isFavouritesPlaylist(m.playlist.id);
+        const empty = m.playlist.songs.length === 0;
         return [
-          { label: 'Play', icon: <FaPlay />, onSelect: () => {}, disabled: m.playlist.songs.length === 0 },
-          { label: 'Add to queue', icon: <FaListUl />, onSelect: () => {}, disabled: m.playlist.songs.length === 0 },
+          { label: 'Play', icon: <FaPlay />, onSelect: () => playSongs(m.playlist.songs), disabled: empty },
+          { label: 'Add to queue', icon: <FaListUl />, onSelect: () => addToQueue(m.playlist.songs), disabled: empty },
           { type: 'divider' },
-          { label: 'Rename', icon: <FaPen />, onSelect: () => {}, disabled: isFavourites },
-          { label: 'Delete playlist', icon: <FaTrash />, onSelect: () => {}, disabled: isFavourites, danger: true },
+          { label: 'Rename', icon: <FaPen />, onSelect: () => renamePlaylist(m.playlist), disabled: isFavourites },
+          {
+            label: 'Delete playlist',
+            icon: <FaTrash />,
+            onSelect: () => deletePlaylist(m.playlist),
+            disabled: isFavourites,
+            danger: true,
+          },
         ];
       }
     }
@@ -157,7 +175,7 @@ const Search = () => {
               onClick={() => navigate(`/albums/${encodeURIComponent(name)}`)}
               onContextMenu={(e) => {
                 e.preventDefault();
-                setMenu({ kind: 'album', x: e.clientX, y: e.clientY, song });
+                setMenu({ kind: 'album', x: e.clientX, y: e.clientY, albumName: name });
               }}
             >
               <AlbumArt>
