@@ -4,11 +4,13 @@ import { AppContext } from '../../Context/AppContext';
 import { MetadataType, PlaylistType } from '../../types';
 import Playlist from '../../Components/Playlist/Playlist';
 import { usePlaylistActions } from '../../hooks/usePlaylistActions';
+import { usePlayHistory } from '../../hooks/usePlayHistory';
 
 const Detail = ({ playlists }: { playlists?: PlaylistType[] }) => {
   const { id } = useParams<{ id: string }>();
   const { currentPath, setCurrentPath, setCurrentPlaylist, library } = useContext(AppContext);
   const { removeSongFromPlaylist } = usePlaylistActions();
+  const { recordPlaylistPlay } = usePlayHistory();
 
   const playlist = playlists?.find((p) => p.id === id);
   const songs = (playlist?.songs ?? []).map((song) => {
@@ -21,6 +23,7 @@ const Detail = ({ playlists }: { playlists?: PlaylistType[] }) => {
     const paths = songs.map((s) => s.path).filter((p): p is string => Boolean(p));
     setCurrentPlaylist?.(paths);
     setCurrentPath?.(song.path);
+    if (playlist) recordPlaylistPlay(playlist.id);
   };
 
   const handleRemove = (song: MetadataType) => {

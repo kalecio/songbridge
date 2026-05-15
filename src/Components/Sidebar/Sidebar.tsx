@@ -31,6 +31,8 @@ import {
 import { isFavouritesPlaylist, sortFavouritesFirst } from '../../hooks/useFavourites';
 import { useQueueActions } from '../../hooks/useQueueActions';
 import { usePlaylistActions } from '../../hooks/usePlaylistActions';
+import { usePlayHistory } from '../../hooks/usePlayHistory';
+import { useAddToPlaylistMenu } from '../../hooks/useAddToPlaylistMenu';
 import { displayTitle } from '../../songDisplay';
 
 type SidebarMenu =
@@ -47,6 +49,8 @@ const Sidebar = () => {
   const location = useLocation();
   const { playSongs, addToQueue, playNext, removeFromQueue } = useQueueActions();
   const { renamePlaylist, deletePlaylist } = usePlaylistActions();
+  const { recordPlaylistPlay } = usePlayHistory();
+  const buildAddToPlaylistItem = useAddToPlaylistMenu();
 
   useEffect(() => {
     if (currentPlaylist.length === 0) {
@@ -70,6 +74,7 @@ const Sidebar = () => {
 
   const queueMenuItems = (song: MetadataType): ContextMenuItem[] => [
     { label: 'Play next', icon: <FaPlay />, onSelect: () => playNext(song) },
+    buildAddToPlaylistItem(song),
     { type: 'divider' },
     { label: 'Remove from queue', icon: <FaTrash />, onSelect: () => removeFromQueue(song.path), danger: true },
   ];
@@ -78,7 +83,15 @@ const Sidebar = () => {
     const isFavourites = isFavouritesPlaylist(playlist.id);
     const empty = playlist.songs.length === 0;
     return [
-      { label: 'Play', icon: <FaPlay />, onSelect: () => playSongs(playlist.songs), disabled: empty },
+      {
+        label: 'Play',
+        icon: <FaPlay />,
+        onSelect: () => {
+          playSongs(playlist.songs);
+          recordPlaylistPlay(playlist.id);
+        },
+        disabled: empty,
+      },
       { label: 'Add to queue', icon: <FaListUl />, onSelect: () => addToQueue(playlist.songs), disabled: empty },
       { type: 'divider' },
       { label: 'Rename', icon: <FaPen />, onSelect: () => renamePlaylist(playlist), disabled: isFavourites },

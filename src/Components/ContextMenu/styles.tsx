@@ -54,6 +54,16 @@ export const ItemLabel = styled.span`
   text-overflow: ellipsis;
 `;
 
+export const SubmenuChevron = styled.span`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 0.75rem;
+  height: 0.75rem;
+  color: ${({ theme }) => theme.textSecondary};
+  flex-shrink: 0;
+`;
+
 export const Divider = styled.li`
   height: 1px;
   margin: 0.3rem 0.5rem;

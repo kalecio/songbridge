@@ -13,13 +13,15 @@ const mockInvoke = vi.mocked(invoke);
 const Wrapper = ({
   initialPlaylists = [],
   library = [],
+  initialEntries,
 }: {
   initialPlaylists?: PlaylistType[];
   library?: MetadataType[];
+  initialEntries?: Array<string | { pathname: string; state?: unknown }>;
 }) => {
   const [playlists, setPlaylists] = useState<PlaylistType[]>(initialPlaylists);
   return (
-    <MemoryRouter>
+    <MemoryRouter initialEntries={initialEntries}>
       <AppContext.Provider
         value={{
           onRepeat: false,
@@ -238,6 +240,28 @@ describe('CreatePlaylist', () => {
       fireEvent.click(getByText('My List'));
       fireEvent.change(getByPlaceholderText('Search songs…'), { target: { value: 'zzznomatch' } });
       expect(getByText('No matches')).toBeInTheDocument();
+    });
+  });
+
+  describe('pre-add via router state', () => {
+    it('creates a new playlist seeded with the song from location.state.addSong', () => {
+      const { getByLabelText, getByText, getAllByText } = render(
+        <Wrapper initialEntries={[{ pathname: '/playlist', state: { addSong: songA } }]} />,
+      );
+      expect(getByLabelText('Playlist name')).toHaveValue('New Playlist');
+      expect(getByText('Song Alpha')).toBeInTheDocument();
+      // "1 songs" appears in both the sidebar item count and the editor header
+      expect(getAllByText('1 songs').length).toBeGreaterThan(0);
+    });
+
+    it('does not pre-add when state.addSong has no path', () => {
+      const seed: MetadataType = { title: 'Floating', artist: 'X' };
+      const { getByLabelText, queryByText } = render(
+        <Wrapper initialEntries={[{ pathname: '/playlist', state: { addSong: seed } }]} />,
+      );
+      // Playlist is still created, but with no songs
+      expect(getByLabelText('Playlist name')).toHaveValue('New Playlist');
+      expect(queryByText('Floating')).not.toBeInTheDocument();
     });
   });
 });

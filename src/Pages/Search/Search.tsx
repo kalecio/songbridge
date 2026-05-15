@@ -10,6 +10,8 @@ import { useLazyAlbumArt } from '../../hooks/useLazyAlbumArt';
 import { isFavouritesPlaylist, sortFavouritesFirst } from '../../hooks/useFavourites';
 import { useQueueActions } from '../../hooks/useQueueActions';
 import { usePlaylistActions } from '../../hooks/usePlaylistActions';
+import { usePlayHistory } from '../../hooks/usePlayHistory';
+import { useAddToPlaylistMenu } from '../../hooks/useAddToPlaylistMenu';
 import { displayTitle } from '../../songDisplay';
 import {
   SearchContainer,
@@ -59,6 +61,8 @@ const Search = () => {
   const [menu, setMenu] = useState<SearchMenu | null>(null);
   const { playSongs, addToQueue, playNext } = useQueueActions();
   const { renamePlaylist, deletePlaylist } = usePlaylistActions();
+  const { recordPlaylistPlay } = usePlayHistory();
+  const buildAddToPlaylistItem = useAddToPlaylistMenu();
 
   const songsOfAlbum = (albumName: string) => library.filter((s) => (s.album ?? 'Unknown Album') === albumName);
 
@@ -99,6 +103,7 @@ const Search = () => {
         return [
           { label: 'Play next', icon: <FaPlay />, onSelect: () => playNext(m.song) },
           { label: 'Add to queue', icon: <FaListUl />, onSelect: () => addToQueue([m.song]) },
+          buildAddToPlaylistItem(m.song),
         ];
       case 'artist': {
         const empty = m.songs.length === 0;
@@ -119,7 +124,15 @@ const Search = () => {
         const isFavourites = isFavouritesPlaylist(m.playlist.id);
         const empty = m.playlist.songs.length === 0;
         return [
-          { label: 'Play', icon: <FaPlay />, onSelect: () => playSongs(m.playlist.songs), disabled: empty },
+          {
+            label: 'Play',
+            icon: <FaPlay />,
+            onSelect: () => {
+              playSongs(m.playlist.songs);
+              recordPlaylistPlay(m.playlist.id);
+            },
+            disabled: empty,
+          },
           { label: 'Add to queue', icon: <FaListUl />, onSelect: () => addToQueue(m.playlist.songs), disabled: empty },
           { type: 'divider' },
           { label: 'Rename', icon: <FaPen />, onSelect: () => renamePlaylist(m.playlist), disabled: isFavourites },

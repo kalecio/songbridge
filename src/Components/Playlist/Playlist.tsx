@@ -5,6 +5,7 @@ import { FaPlay, FaListUl, FaTrash } from 'react-icons/fa6';
 import { MetadataType } from '../../types';
 import { displayTitle } from '../../songDisplay';
 import { useQueueActions } from '../../hooks/useQueueActions';
+import { useAddToPlaylistMenu } from '../../hooks/useAddToPlaylistMenu';
 import AlbumImage from '../AlbumImage/AlbumImage';
 import ContextMenu, { ContextMenuItem } from '../ContextMenu/ContextMenu';
 import {
@@ -62,6 +63,7 @@ const Playlist = ({
   const [missingPaths, setMissingPaths] = useState<Set<string>>(new Set());
   const [menuState, setMenuState] = useState<{ x: number; y: number; song: MetadataType } | null>(null);
   const { playNext, addToQueue } = useQueueActions();
+  const buildAddToPlaylistItem = useAddToPlaylistMenu();
 
   useEffect(() => {
     const paths = songs.map((s) => s.path).filter((p): p is string => Boolean(p));
@@ -120,6 +122,7 @@ const Playlist = ({
     const items: ContextMenuItem[] = [
       { label: 'Play next', icon: <FaPlay />, onSelect: () => playNext(song), disabled: isMissing },
       { label: 'Add to queue', icon: <FaListUl />, onSelect: () => addToQueue([song]), disabled: isMissing },
+      buildAddToPlaylistItem(song),
     ];
     if (onRemoveSong) {
       items.push(

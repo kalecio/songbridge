@@ -53,5 +53,13 @@ export const usePlaylistActions = () => {
     persist(updated);
   };
 
-  return { renamePlaylist, deletePlaylist, removeSongFromPlaylist };
+  const addSongToPlaylist = (playlist: PlaylistType, song: MetadataType) => {
+    if (!song.path) return;
+    if (playlist.songs.some((s) => s.path === song.path)) return;
+    const updated: PlaylistType = { ...playlist, songs: [...playlist.songs, song] };
+    setPlaylists?.((prev) => prev.map((p) => (p.id === playlist.id ? updated : p)));
+    persist(updated);
+  };
+
+  return { renamePlaylist, deletePlaylist, removeSongFromPlaylist, addSongToPlaylist };
 };

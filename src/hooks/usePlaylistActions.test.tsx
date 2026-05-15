@@ -201,4 +201,40 @@ describe('usePlaylistActions', () => {
       expect(mockInvoke).not.toHaveBeenCalled();
     });
   });
+
+  describe('addSongToPlaylist', () => {
+    it('appends a new song and persists', () => {
+      const setPlaylists = vi.fn();
+      const { result } = renderWithContext({ setPlaylists });
+      const pl = samplePlaylist();
+      const newSong = { path: '/c.mp3', title: 'C', artist: 'Artist 3' };
+      act(() => result.current.addSongToPlaylist(pl, newSong));
+      const updater = setPlaylists.mock.calls[0][0];
+      const next = updater([pl]) as PlaylistType[];
+      expect(next[0].songs.map((s) => s.path)).toEqual(['/a.mp3', '/b.mp3', '/c.mp3']);
+      expect(mockInvoke).toHaveBeenCalledWith(
+        'db_upsert_playlist',
+        expect.objectContaining({
+          id: 'p1',
+          songs: expect.arrayContaining([expect.objectContaining({ path: '/c.mp3' })]),
+        }),
+      );
+    });
+
+    it('is a no-op when the song is already in the playlist', () => {
+      const setPlaylists = vi.fn();
+      const { result } = renderWithContext({ setPlaylists });
+      act(() => result.current.addSongToPlaylist(samplePlaylist(), { path: '/a.mp3' }));
+      expect(setPlaylists).not.toHaveBeenCalled();
+      expect(mockInvoke).not.toHaveBeenCalled();
+    });
+
+    it('is a no-op when the song has no path', () => {
+      const setPlaylists = vi.fn();
+      const { result } = renderWithContext({ setPlaylists });
+      act(() => result.current.addSongToPlaylist(samplePlaylist(), { title: 'No path' }));
+      expect(setPlaylists).not.toHaveBeenCalled();
+      expect(mockInvoke).not.toHaveBeenCalled();
+    });
+  });
 });
