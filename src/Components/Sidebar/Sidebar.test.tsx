@@ -93,5 +93,50 @@ describe('Sidebar', () => {
       fireEvent.click(getByLabelText('close queue'));
       expect(setShowQueue).toHaveBeenCalledWith(false);
     });
+
+    describe('drag to reorder', () => {
+      const queueRows = (container: HTMLElement) =>
+        Array.from(container.querySelectorAll<HTMLElement>('[draggable="true"]'));
+
+      it('makes each queue row draggable', async () => {
+        const { container, getAllByText } = renderWithContext(<Sidebar />, {
+          showQueue: true,
+          currentPlaylist: ['/a.mp3', '/b.mp3'],
+        });
+        await waitFor(() => getAllByText('Mock Song'));
+        expect(queueRows(container).length).toBe(2);
+      });
+
+      it('reorders the queue on drop', async () => {
+        const setCurrentPlaylist = vi.fn();
+        const { container, getAllByText } = renderWithContext(<Sidebar />, {
+          showQueue: true,
+          currentPlaylist: ['/a.mp3', '/b.mp3', '/c.mp3'],
+          setCurrentPlaylist,
+        });
+        await waitFor(() => getAllByText('Mock Song'));
+        const rows = queueRows(container);
+        expect(rows.length).toBe(3);
+        fireEvent.dragStart(rows[0]);
+        fireEvent.dragOver(rows[2]);
+        fireEvent.drop(rows[2]);
+        expect(setCurrentPlaylist).toHaveBeenCalledWith(['/b.mp3', '/c.mp3', '/a.mp3']);
+      });
+
+      it('does not reorder when dropping on the same row', async () => {
+        const setCurrentPlaylist = vi.fn();
+        const { container, getAllByText } = renderWithContext(<Sidebar />, {
+          showQueue: true,
+          currentPlaylist: ['/a.mp3', '/b.mp3'],
+          setCurrentPlaylist,
+        });
+        await waitFor(() => getAllByText('Mock Song'));
+        const rows = queueRows(container);
+        fireEvent.dragStart(rows[0]);
+        fireEvent.dragOver(rows[0]);
+        fireEvent.drop(rows[0]);
+        expect(setCurrentPlaylist).not.toHaveBeenCalled();
+      });
+    });
   });
 });

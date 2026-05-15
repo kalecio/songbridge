@@ -237,4 +237,64 @@ describe('usePlaylistActions', () => {
       expect(mockInvoke).not.toHaveBeenCalled();
     });
   });
+
+  describe('reorderSongsInPlaylist', () => {
+    const threeSongs = (): PlaylistType => ({
+      id: 'p1',
+      name: 'Mix',
+      songs: [
+        { path: '/a.mp3', title: 'A' },
+        { path: '/b.mp3', title: 'B' },
+        { path: '/c.mp3', title: 'C' },
+      ],
+    });
+
+    it('moves a song down and persists', () => {
+      const setPlaylists = vi.fn();
+      const { result } = renderWithContext({ setPlaylists });
+      const pl = threeSongs();
+      act(() => result.current.reorderSongsInPlaylist(pl, 0, 2));
+      const updater = setPlaylists.mock.calls[0][0];
+      const next = updater([pl]) as PlaylistType[];
+      expect(next[0].songs.map((s) => s.path)).toEqual(['/b.mp3', '/c.mp3', '/a.mp3']);
+      expect(mockInvoke).toHaveBeenCalledWith(
+        'db_upsert_playlist',
+        expect.objectContaining({
+          id: 'p1',
+          songs: [
+            expect.objectContaining({ path: '/b.mp3' }),
+            expect.objectContaining({ path: '/c.mp3' }),
+            expect.objectContaining({ path: '/a.mp3' }),
+          ],
+        }),
+      );
+    });
+
+    it('moves a song up', () => {
+      const setPlaylists = vi.fn();
+      const { result } = renderWithContext({ setPlaylists });
+      const pl = threeSongs();
+      act(() => result.current.reorderSongsInPlaylist(pl, 2, 0));
+      const updater = setPlaylists.mock.calls[0][0];
+      const next = updater([pl]) as PlaylistType[];
+      expect(next[0].songs.map((s) => s.path)).toEqual(['/c.mp3', '/a.mp3', '/b.mp3']);
+    });
+
+    it('is a no-op when from === to', () => {
+      const setPlaylists = vi.fn();
+      const { result } = renderWithContext({ setPlaylists });
+      act(() => result.current.reorderSongsInPlaylist(threeSongs(), 1, 1));
+      expect(setPlaylists).not.toHaveBeenCalled();
+      expect(mockInvoke).not.toHaveBeenCalled();
+    });
+
+    it('is a no-op when indices are out of range', () => {
+      const setPlaylists = vi.fn();
+      const { result } = renderWithContext({ setPlaylists });
+      act(() => result.current.reorderSongsInPlaylist(threeSongs(), 0, 99));
+      act(() => result.current.reorderSongsInPlaylist(threeSongs(), -1, 0));
+      expect(setPlaylists).not.toHaveBeenCalled();
+      expect(mockInvoke).not.toHaveBeenCalled();
+    });
+  });
 });

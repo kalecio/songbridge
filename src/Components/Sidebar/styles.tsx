@@ -78,7 +78,12 @@ const Menu = styled.div`
   flex-shrink: 0;
 `;
 
-const MenuItem = styled.div<{ $active?: boolean }>`
+const MenuItem = styled.div<{
+  $active?: boolean;
+  $dragging?: boolean;
+  $dropAbove?: boolean;
+  $dropBelow?: boolean;
+}>`
   display: flex;
   align-items: center;
   gap: 0.75rem;
@@ -89,10 +94,15 @@ const MenuItem = styled.div<{ $active?: boolean }>`
   font-size: 0.9rem;
   font-weight: ${(p) => (p.$active ? '600' : '400')};
   background: ${(p) => (p.$active ? p.theme.hoverActive : 'transparent')};
+  opacity: ${(p) => (p.$dragging ? 0.4 : 1)};
   transition:
     background 0.15s,
-    color 0.15s;
+    color 0.15s,
+    opacity 0.15s,
+    box-shadow 0.1s;
   flex-shrink: 0;
+  ${(p) => p.$dropAbove && `box-shadow: inset 0 2px 0 0 ${p.theme.accent};`}
+  ${(p) => p.$dropBelow && `box-shadow: inset 0 -2px 0 0 ${p.theme.accent};`}
 
   &:hover {
     background: ${(p) => (p.$active ? p.theme.hoverActive : p.theme.hover)};

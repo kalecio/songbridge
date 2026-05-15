@@ -115,10 +115,10 @@ export const midnightTheme: AppTheme = {
   playerBar: '#1A1D24',
 };
 
-// Inspired by Evangelion Unit-01: deep purple base with the iconic lime-green
-// accent. Palette: #3f6d4e, #8bd450, #1d1a2f, #965fd4, #734f9a.
-export const eva01Theme: AppTheme = {
-  name: 'Eva01',
+// Deep purple base with an electric lime-green accent — like a humming
+// reactor core. Palette: #3f6d4e, #8bd450, #1d1a2f, #965fd4, #734f9a.
+export const reactorTheme: AppTheme = {
+  name: 'Reactor',
   primary: '#965fd4',
   primaryDark: '#734f9a',
   primaryDeep: '#5b3d7d',
@@ -150,10 +150,9 @@ export const eva01Theme: AppTheme = {
   playerBar: '#1d1a2f',
 };
 
-// Inspired by the Car Seat Headrest "How to Leave Town" cover: a warm
-// sunset glow fading into a near-black starry sky, with pale cream text.
-export const headrestTheme: AppTheme = {
-  name: 'Headrest',
+// A warm sunset glow fading into a near-black starry sky, with pale cream text.
+export const sunsetTheme: AppTheme = {
+  name: 'Sunset',
   primary: '#d65a2a',
   primaryDark: '#a83d1f',
   primaryDeep: '#7a2a14',
@@ -185,11 +184,83 @@ export const headrestTheme: AppTheme = {
   playerBar: '#0a0608',
 };
 
+// Lavender twilight with fiery red-orange embers and a glowing amber pop
+// for warnings. Palette: #a78fcc, #5e4490, #d94a2c, #fcd450, #160f1d.
+export const duskTheme: AppTheme = {
+  name: 'Dusk',
+  primary: '#a78fcc',
+  primaryDark: '#8769b0',
+  primaryDeep: '#5e4490',
+  background: '#160f1d',
+  surface: '#1f1828',
+  surfaceAlt: '#28203a',
+  surfaceRaised: '#322a44',
+  textPrimary: '#f4ebd8',
+  textSecondary: '#c9b9dc',
+  textMuted: '#7e7393',
+  textOnPrimary: '#ffffff',
+  textOnPlayer: '#f4ebd8',
+  hover: '#241c33',
+  hoverActive: '#322a44',
+  active: '#3d3450',
+  border: '#322a44',
+  borderLight: '#4a3f63',
+  accent: '#d94a2c',
+  accentBg: 'rgba(217, 74, 44, 0.14)',
+  accentBgHover: 'rgba(217, 74, 44, 0.24)',
+  accentHover: 'rgba(217, 74, 44, 0.08)',
+  mutedAccent: '#7a3220',
+  cardBackground: '#1f1828',
+  cardShadow: 'rgba(0, 0, 0, 0.45)',
+  cardShadowHover: 'rgba(217, 74, 44, 0.30)',
+  success: '#7da95c',
+  warning: '#fcd450',
+  error: '#d94a2c',
+  playerBar: '#160f1d',
+};
+
+// Electric lime-green lightning against a pitch-black void.
+// Palette: #2dffa0, #5dff8f, #129158, #040805, #e8ffe8.
+export const voltageTheme: AppTheme = {
+  name: 'Voltage',
+  primary: '#2dffa0',
+  primaryDark: '#1ec77f',
+  primaryDeep: '#129158',
+  background: '#040805',
+  surface: '#0c1410',
+  surfaceAlt: '#121d17',
+  surfaceRaised: '#1a2820',
+  textPrimary: '#e8ffe8',
+  textSecondary: '#9ec5a8',
+  textMuted: '#5a7565',
+  textOnPrimary: '#04130b',
+  textOnPlayer: '#e8ffe8',
+  hover: '#0f1a14',
+  hoverActive: '#16261d',
+  active: '#1d3326',
+  border: '#1a2820',
+  borderLight: '#2a4032',
+  accent: '#5dff8f',
+  accentBg: 'rgba(93, 255, 143, 0.14)',
+  accentBgHover: 'rgba(93, 255, 143, 0.24)',
+  accentHover: 'rgba(93, 255, 143, 0.08)',
+  mutedAccent: '#2a6a45',
+  cardBackground: '#0c1410',
+  cardShadow: 'rgba(0, 0, 0, 0.55)',
+  cardShadowHover: 'rgba(93, 255, 143, 0.30)',
+  success: '#5dff8f',
+  warning: '#f2c94c',
+  error: '#ff4d4d',
+  playerBar: '#040805',
+};
+
 export const themes: Record<string, AppTheme> = {
   Midnight: midnightTheme,
   Pastel: pastelTheme,
-  Eva01: eva01Theme,
-  Headrest: headrestTheme,
+  Reactor: reactorTheme,
+  Sunset: sunsetTheme,
+  Dusk: duskTheme,
+  Voltage: voltageTheme,
 };
 
 export const defaultTheme = midnightTheme;

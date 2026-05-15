@@ -113,4 +113,49 @@ describe('Playlist', () => {
       expect(onRemoveMissing).toHaveBeenCalledWith(songs[0]);
     });
   });
+
+  describe('drag to reorder', () => {
+    const getRow = (container: HTMLElement, text: string) => {
+      const titleNode = container.querySelector(`[title="${text}"]`);
+      if (!titleNode) throw new Error(`row with title "${text}" not found`);
+      // Walk up to the draggable row (SongItem).
+      let el: HTMLElement | null = titleNode as HTMLElement;
+      while (el && el.getAttribute('draggable') !== 'true' && el.parentElement) {
+        el = el.parentElement;
+      }
+      if (!el) throw new Error(`draggable parent for "${text}" not found`);
+      return el;
+    };
+
+    it('does not make rows draggable when onReorder is omitted', () => {
+      const { container } = renderWithContext(<Playlist songs={songs} name="Test" />);
+      expect(container.querySelectorAll('[draggable="true"]').length).toBe(0);
+    });
+
+    it('makes rows draggable when onReorder is provided', () => {
+      const { container } = renderWithContext(<Playlist songs={songs} name="Test" onReorder={vi.fn()} />);
+      expect(container.querySelectorAll('[draggable="true"]').length).toBe(songs.length);
+    });
+
+    it('calls onReorder with the correct indices on drop', () => {
+      const onReorder = vi.fn();
+      const { container } = renderWithContext(<Playlist songs={songs} name="Test" onReorder={onReorder} />);
+      const source = getRow(container, 'Song A');
+      const target = getRow(container, 'Song B');
+      fireEvent.dragStart(source);
+      fireEvent.dragOver(target);
+      fireEvent.drop(target);
+      expect(onReorder).toHaveBeenCalledWith(0, 1);
+    });
+
+    it('does not call onReorder when dropping on the same row', () => {
+      const onReorder = vi.fn();
+      const { container } = renderWithContext(<Playlist songs={songs} name="Test" onReorder={onReorder} />);
+      const source = getRow(container, 'Song A');
+      fireEvent.dragStart(source);
+      fireEvent.dragOver(source);
+      fireEvent.drop(source);
+      expect(onReorder).not.toHaveBeenCalled();
+    });
+  });
 });

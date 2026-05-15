@@ -7,6 +7,7 @@ pub fn apply_tags_from_revision(
     artist: &mut Option<String>,
     album: &mut Option<String>,
     year: &mut Option<String>,
+    track: &mut Option<u32>,
 ) {
     for tag in revision.tags().iter() {
         println!("{:?}", tag);
@@ -19,9 +20,19 @@ pub fn apply_tags_from_revision(
             }
             Some(StandardTagKey::Album) if album.is_none() => *album = Some(tag.value.to_string()),
             Some(StandardTagKey::Date) if year.is_none() => *year = Some(tag.value.to_string()),
+            Some(StandardTagKey::TrackNumber) if track.is_none() => {
+                *track = parse_track_number(&tag.value.to_string());
+            }
             _ => {}
         }
     }
+}
+
+/// ID3 / Vorbis track tags often arrive as "4", "04", or "4/12" (track/total).
+/// Take the leading numeric portion and parse it; ignore unparseable values.
+fn parse_track_number(raw: &str) -> Option<u32> {
+    let head = raw.split('/').next()?.trim();
+    head.parse::<u32>().ok()
 }
 
 /// Extracts album art from the metadata and returns it as a base64-encoded string.

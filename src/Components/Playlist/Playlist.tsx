@@ -39,6 +39,9 @@ interface Props {
   onPlayAll?: () => void;
   onRemoveMissing?: (_song: MetadataType) => void;
   onRemoveSong?: (_song: MetadataType) => void;
+  /** When provided, song rows become draggable to reorder. `to` is the index
+   * the dragged item should end up at after the move. */
+  onReorder?: (_fromIndex: number, _toIndex: number) => void;
 }
 
 // Above this list size we switch to windowed rendering. Album / playlist
@@ -59,9 +62,12 @@ const Playlist = ({
   onPlayAll,
   onRemoveMissing,
   onRemoveSong,
+  onReorder,
 }: Props) => {
   const [missingPaths, setMissingPaths] = useState<Set<string>>(new Set());
   const [menuState, setMenuState] = useState<{ x: number; y: number; song: MetadataType } | null>(null);
+  const [dragFromIndex, setDragFromIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
   const { playNext, addToQueue } = useQueueActions();
   const buildAddToPlaylistItem = useAddToPlaylistMenu();
 
@@ -74,21 +80,70 @@ const Playlist = ({
       .catch(() => {});
   }, [songs]);
 
-  const renderRow = (song: MetadataType, key: string | number) => {
+  const resetDrag = () => {
+    setDragFromIndex(null);
+    setDragOverIndex(null);
+  };
+
+  const renderRow = (song: MetadataType, key: string | number, index: number) => {
     const isMissing = Boolean(song.path && missingPaths.has(song.path));
     const title = displayTitle(song);
+    const reorderable = Boolean(onReorder);
+    const isDragging = reorderable && dragFromIndex === index;
+    const showIndicator = reorderable && dragFromIndex !== null && dragOverIndex === index && dragFromIndex !== index;
+    const dropAbove = showIndicator && (dragFromIndex as number) > index;
+    const dropBelow = showIndicator && (dragFromIndex as number) < index;
+
     return (
       <SongItem
         key={key}
         $active={song.path === activePath}
         $missing={isMissing}
+        $dragging={isDragging}
+        $dropAbove={dropAbove}
+        $dropBelow={dropBelow}
+        draggable={reorderable || undefined}
         onClick={() => !isMissing && onSongClick?.(song)}
         onContextMenu={(e) => {
           e.preventDefault();
           setMenuState({ x: e.clientX, y: e.clientY, song });
         }}
+        onDragStart={
+          reorderable
+            ? (e) => {
+                setDragFromIndex(index);
+                if (e.dataTransfer) {
+                  e.dataTransfer.effectAllowed = 'move';
+                  // Firefox requires setData for the drag to actually start.
+                  e.dataTransfer.setData('text/plain', String(index));
+                }
+              }
+            : undefined
+        }
+        onDragOver={
+          reorderable
+            ? (e) => {
+                if (dragFromIndex === null) return;
+                e.preventDefault();
+                if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
+                if (dragOverIndex !== index) setDragOverIndex(index);
+              }
+            : undefined
+        }
+        onDrop={
+          reorderable
+            ? (e) => {
+                e.preventDefault();
+                if (dragFromIndex !== null && dragFromIndex !== index) {
+                  onReorder?.(dragFromIndex, index);
+                }
+                resetDrag();
+              }
+            : undefined
+        }
+        onDragEnd={reorderable ? resetDrag : undefined}
       >
-        <AlbumImage metadata={song} height="3rem" width="3rem" />
+        <AlbumImage metadata={song} height="3rem" width="3rem" draggable={reorderable ? false : undefined} />
         <SongInfo>
           <SongTitle title={title}>{title}</SongTitle>
           <SongArtist title={song.artist}>{song.artist}</SongArtist>
@@ -115,7 +170,9 @@ const Playlist = ({
     );
   };
 
-  const useVirtualization = scroll && songs.length > VIRTUALIZE_THRESHOLD;
+  // DnD relies on every drop target being mounted; virtualization can unmount
+  // rows the user is dragging toward, so we disable it when reorder is wired.
+  const useVirtualization = scroll && songs.length > VIRTUALIZE_THRESHOLD && !onReorder;
 
   const menuItems = (song: MetadataType): ContextMenuItem[] => {
     const isMissing = Boolean(song.path && missingPaths.has(song.path));
@@ -151,7 +208,7 @@ const Playlist = ({
       {useVirtualization ? (
         <VirtualSongList songs={songs} renderRow={renderRow} />
       ) : (
-        <SongList $scroll={scroll}>{songs.map((song, index) => renderRow(song, song.path ?? index))}</SongList>
+        <SongList $scroll={scroll}>{songs.map((song, index) => renderRow(song, song.path ?? index, index))}</SongList>
       )}
       {menuState && (
         <ContextMenu
@@ -170,7 +227,7 @@ const VirtualSongList = ({
   renderRow,
 }: {
   songs: MetadataType[];
-  renderRow: (_song: MetadataType, _key: string | number) => React.ReactNode;
+  renderRow: (_song: MetadataType, _key: string | number, _index: number) => React.ReactNode;
 }) => {
   const parentRef = useRef<HTMLDivElement>(null);
 
@@ -198,7 +255,7 @@ const VirtualSongList = ({
                 transform: `translateY(${virtualRow.start}px)`,
               }}
             >
-              {renderRow(song, String(virtualRow.key))}
+              {renderRow(song, String(virtualRow.key), virtualRow.index)}
             </div>
           );
         })}

@@ -9,7 +9,7 @@ import { usePlayHistory } from '../../hooks/usePlayHistory';
 const Detail = ({ playlists }: { playlists?: PlaylistType[] }) => {
   const { id } = useParams<{ id: string }>();
   const { currentPath, setCurrentPath, setCurrentPlaylist, library } = useContext(AppContext);
-  const { removeSongFromPlaylist } = usePlaylistActions();
+  const { removeSongFromPlaylist, reorderSongsInPlaylist } = usePlaylistActions();
   const { recordPlaylistPlay } = usePlayHistory();
 
   const playlist = playlists?.find((p) => p.id === id);
@@ -41,6 +41,7 @@ const Detail = ({ playlists }: { playlists?: PlaylistType[] }) => {
       onPlayAll={() => songs[0] && playSong(songs[0])}
       onRemoveMissing={handleRemove}
       onRemoveSong={playlist ? handleRemove : undefined}
+      onReorder={playlist ? (from, to) => reorderSongsInPlaylist(playlist, from, to) : undefined}
     />
   );
 };

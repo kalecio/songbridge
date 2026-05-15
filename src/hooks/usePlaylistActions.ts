@@ -61,5 +61,17 @@ export const usePlaylistActions = () => {
     persist(updated);
   };
 
-  return { renamePlaylist, deletePlaylist, removeSongFromPlaylist, addSongToPlaylist };
+  const reorderSongsInPlaylist = (playlist: PlaylistType, fromIndex: number, toIndex: number) => {
+    if (fromIndex === toIndex) return;
+    const max = playlist.songs.length - 1;
+    if (fromIndex < 0 || fromIndex > max || toIndex < 0 || toIndex > max) return;
+    const next = [...playlist.songs];
+    const [moved] = next.splice(fromIndex, 1);
+    next.splice(toIndex, 0, moved);
+    const updated: PlaylistType = { ...playlist, songs: next };
+    setPlaylists?.((prev) => prev.map((p) => (p.id === playlist.id ? updated : p)));
+    persist(updated);
+  };
+
+  return { renamePlaylist, deletePlaylist, removeSongFromPlaylist, addSongToPlaylist, reorderSongsInPlaylist };
 };
