@@ -7,6 +7,7 @@ export interface MetadataType {
   artist?: string;
   title?: string;
   year?: string;
+  track?: number;
   image?: string;
   path?: string;
   duration?: DurationType;

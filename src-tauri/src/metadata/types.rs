@@ -21,6 +21,7 @@ pub struct AudioMetadata {
     pub artist: Option<String>,
     pub album: Option<String>,
     pub year: Option<String>,
+    pub track: Option<u32>,
     pub duration: AudioDuration,
     pub path: Option<String>,
     pub image: Option<String>,
@@ -32,6 +33,7 @@ impl AudioMetadata {
         artist: Option<String>,
         album: Option<String>,
         year: Option<String>,
+        track: Option<u32>,
         duration: AudioDuration,
         path: Option<String>,
         image: Option<String>,
@@ -41,6 +43,7 @@ impl AudioMetadata {
             artist,
             album,
             year,
+            track,
             duration,
             path,
             image,
@@ -72,6 +75,7 @@ mod tests {
             Some("Artist".into()),
             Some("Album".into()),
             Some("2020".into()),
+            Some(3),
             dur,
             Some("path.mp3".into()),
             Some("imgdata".into()),
@@ -82,6 +86,7 @@ mod tests {
         assert_eq!(s["artist"], json!("Artist"));
         assert_eq!(s["album"], json!("Album"));
         assert_eq!(s["year"], json!("2020"));
+        assert_eq!(s["track"], json!(3));
         assert_eq!(s["duration"]["duration_seconds"], json!(100));
         assert_eq!(s["path"], json!("path.mp3"));
         assert_eq!(s["image"], json!("imgdata"));

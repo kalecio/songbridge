@@ -47,4 +47,31 @@ describe('AlbumDetail', () => {
     const { getByText } = renderWithContext(<AlbumDetail />, { library });
     expect(getByText('Albums')).toBeInTheDocument();
   });
+
+  describe('track ordering', () => {
+    const titleOrder = (container: HTMLElement) =>
+      Array.from(container.querySelectorAll<HTMLElement>('[title]'))
+        .map((el) => el.getAttribute('title'))
+        .filter((t): t is string => t !== null && t.startsWith('Song'));
+
+    it('sorts tagged songs by ascending track number', () => {
+      const tagged: MetadataType[] = [
+        { title: 'Song C', album: 'Great Album', track: 3, path: '/t/c.mp3' },
+        { title: 'Song A', album: 'Great Album', track: 1, path: '/t/a.mp3' },
+        { title: 'Song B', album: 'Great Album', track: 2, path: '/t/b.mp3' },
+      ];
+      const { container } = renderWithContext(<AlbumDetail />, { library: tagged });
+      expect(titleOrder(container)).toEqual(['Song A', 'Song B', 'Song C']);
+    });
+
+    it('sinks untagged songs to the end while keeping tagged order', () => {
+      const mixed: MetadataType[] = [
+        { title: 'Song Untagged', album: 'Great Album', path: '/t/u.mp3' },
+        { title: 'Song A', album: 'Great Album', track: 1, path: '/t/a.mp3' },
+        { title: 'Song B', album: 'Great Album', track: 2, path: '/t/b.mp3' },
+      ];
+      const { container } = renderWithContext(<AlbumDetail />, { library: mixed });
+      expect(titleOrder(container)).toEqual(['Song A', 'Song B', 'Song Untagged']);
+    });
+  });
 });

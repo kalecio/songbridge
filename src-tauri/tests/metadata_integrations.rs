@@ -50,8 +50,16 @@ fn apply_tags_does_not_overwrite_existing_values() {
             let mut artist = Some("Existing Artist".to_string());
             let mut album = Some("Existing Album".to_string());
             let mut year = Some("1999".to_string());
+            let mut track = Some(99u32);
 
-            apply_tags_from_revision(&revision, &mut title, &mut artist, &mut album, &mut year);
+            apply_tags_from_revision(
+                &revision,
+                &mut title,
+                &mut artist,
+                &mut album,
+                &mut year,
+                &mut track,
+            );
 
             // Values should remain unchanged because apply_tags_from_revision
             // only sets values when the destination is None.
@@ -59,6 +67,7 @@ fn apply_tags_does_not_overwrite_existing_values() {
             assert_eq!(artist.unwrap(), "Existing Artist");
             assert_eq!(album.unwrap(), "Existing Album");
             assert_eq!(year.unwrap(), "1999");
+            assert_eq!(track.unwrap(), 99);
         }
     }
 }
@@ -74,9 +83,17 @@ fn apply_tags_handles_none_inputs_without_panicking() {
             let mut artist: Option<String> = None;
             let mut album: Option<String> = None;
             let mut year: Option<String> = None;
+            let mut track: Option<u32> = None;
 
             // Should not panic regardless of whether the revision has tags.
-            apply_tags_from_revision(&revision, &mut title, &mut artist, &mut album, &mut year);
+            apply_tags_from_revision(
+                &revision,
+                &mut title,
+                &mut artist,
+                &mut album,
+                &mut year,
+                &mut track,
+            );
         }
     }
 }

@@ -195,7 +195,8 @@ pub(crate) fn remove_library_path(conn: &Connection, path: &str) -> Result<(), S
 pub(crate) fn get_cached_tracks(conn: &Connection) -> Result<Vec<AudioMetadata>, String> {
     let mut stmt = conn
         .prepare(
-            "SELECT path, title, artist, album, year, duration_seconds, duration_formatted \
+            "SELECT path, title, artist, album, year, track_number, \
+                    duration_seconds, duration_formatted \
              FROM tracks ORDER BY path",
         )
         .map_err(|e| e.to_string())?;
@@ -207,13 +208,15 @@ pub(crate) fn get_cached_tracks(conn: &Connection) -> Result<Vec<AudioMetadata>,
             let artist: Option<String> = row.get(2)?;
             let album: Option<String> = row.get(3)?;
             let year: Option<String> = row.get(4)?;
-            let duration_seconds: Option<i64> = row.get(5)?;
-            let duration_formatted: Option<String> = row.get(6)?;
+            let track: Option<i64> = row.get(5)?;
+            let duration_seconds: Option<i64> = row.get(6)?;
+            let duration_formatted: Option<String> = row.get(7)?;
             Ok(AudioMetadata::new(
                 title,
                 artist,
                 album,
                 year,
+                track.map(|n| n as u32),
                 AudioDuration::new(duration_seconds.map(|n| n as u64), duration_formatted),
                 Some(path),
                 None, // image is lazy-loaded on demand
@@ -262,14 +265,16 @@ pub(crate) fn upsert_track(
 
     conn.execute(
         "INSERT INTO tracks
-            (path, mtime, title, artist, album, year, duration_seconds, duration_formatted)
-         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8)
+            (path, mtime, title, artist, album, year, track_number,
+             duration_seconds, duration_formatted)
+         VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?7, ?8, ?9)
          ON CONFLICT(path) DO UPDATE SET
             mtime              = excluded.mtime,
             title              = excluded.title,
             artist             = excluded.artist,
             album              = excluded.album,
             year               = excluded.year,
+            track_number       = excluded.track_number,
             duration_seconds   = excluded.duration_seconds,
             duration_formatted = excluded.duration_formatted",
         params![
@@ -279,6 +284,7 @@ pub(crate) fn upsert_track(
             meta.artist,
             meta.album,
             meta.year,
+            meta.track.map(|n| n as i64),
             duration_seconds,
             duration_formatted,
         ],
@@ -673,6 +679,20 @@ mod tests {
             Some(mtime_marker_artist.into()),
             Some("Album".into()),
             Some("2024".into()),
+            None,
+            AudioDuration::new(Some(180), Some("03:00".into())),
+            Some(path.into()),
+            None,
+        )
+    }
+
+    fn make_meta_with_track(path: &str, title: &str, track: Option<u32>) -> AudioMetadata {
+        AudioMetadata::new(
+            Some(title.into()),
+            Some("Artist".into()),
+            Some("Album".into()),
+            Some("2024".into()),
+            track,
             AudioDuration::new(Some(180), Some("03:00".into())),
             Some(path.into()),
             None,
@@ -740,5 +760,25 @@ mod tests {
             .filter_map(|m| m.path)
             .collect();
         assert_eq!(remaining, vec!["/b.mp3".to_string()]);
+    }
+
+    #[test]
+    fn track_number_roundtrips_through_upsert_and_read() {
+        let db = setup();
+        let conn = db.conn.lock().unwrap();
+        upsert_track(&conn, &make_meta_with_track("/a.mp3", "A", Some(4)), 1).unwrap();
+        upsert_track(&conn, &make_meta_with_track("/b.mp3", "B", None), 1).unwrap();
+
+        let cached = get_cached_tracks(&conn).unwrap();
+        let a = cached
+            .iter()
+            .find(|m| m.path.as_deref() == Some("/a.mp3"))
+            .unwrap();
+        let b = cached
+            .iter()
+            .find(|m| m.path.as_deref() == Some("/b.mp3"))
+            .unwrap();
+        assert_eq!(a.track, Some(4));
+        assert_eq!(b.track, None);
     }
 }

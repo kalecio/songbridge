@@ -24,6 +24,7 @@ pub fn get_metadata(path: &str) -> Result<AudioMetadata, String> {
     let mut artist = None;
     let mut album = None;
     let mut year = None;
+    let mut track = None;
 
     // 1) Container metadata (works well for FLAC/OGG/etc).
     let mut meta = probe.format.metadata();
@@ -33,14 +34,28 @@ pub fn get_metadata(path: &str) -> Result<AudioMetadata, String> {
         meta.skip_to_latest()
     };
     if let Some(latest) = latest_opt {
-        apply_tags_from_revision(latest, &mut title, &mut artist, &mut album, &mut year);
+        apply_tags_from_revision(
+            latest,
+            &mut title,
+            &mut artist,
+            &mut album,
+            &mut year,
+            &mut track,
+        );
     }
 
     // 2) Probed metadata (common for MP3 ID3 tags).
-    if title.is_none() || artist.is_none() || album.is_none() || year.is_none() {
+    if title.is_none() || artist.is_none() || album.is_none() || year.is_none() || track.is_none() {
         if let Some(mut meta) = probe.metadata.get() {
             if let Some(latest) = meta.skip_to_latest() {
-                apply_tags_from_revision(latest, &mut title, &mut artist, &mut album, &mut year);
+                apply_tags_from_revision(
+                    latest,
+                    &mut title,
+                    &mut artist,
+                    &mut album,
+                    &mut year,
+                    &mut track,
+                );
             }
         }
     }
@@ -50,14 +65,15 @@ pub fn get_metadata(path: &str) -> Result<AudioMetadata, String> {
         .or_else(|| extract_album_art_probed(&mut probe.metadata));
 
     println!(
-        "Title: {:?}, Artist: {:?}, Album: {:?}, Year: {:?}, Duration: {:?}",
-        title, artist, album, year, duration
+        "Title: {:?}, Artist: {:?}, Album: {:?}, Year: {:?}, Track: {:?}, Duration: {:?}",
+        title, artist, album, year, track, duration
     );
     Ok(AudioMetadata::new(
         title,
         artist,
         album,
         year,
+        track,
         duration,
         Some(path.to_string()),
         image,

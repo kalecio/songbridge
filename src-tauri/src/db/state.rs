@@ -54,6 +54,7 @@ impl DbState {
                 artist             TEXT,
                 album              TEXT,
                 year               TEXT,
+                track_number       INTEGER,
                 duration_seconds   INTEGER,
                 duration_formatted TEXT
             );
@@ -66,6 +67,7 @@ impl DbState {
         let _ = conn.execute_batch("ALTER TABLE playlist_songs ADD COLUMN duration_seconds REAL;");
         let _ =
             conn.execute_batch("ALTER TABLE playlist_songs ADD COLUMN duration_formatted TEXT;");
+        let _ = conn.execute_batch("ALTER TABLE tracks ADD COLUMN track_number INTEGER;");
         Ok(Self {
             conn: Arc::new(Mutex::new(conn)),
         })

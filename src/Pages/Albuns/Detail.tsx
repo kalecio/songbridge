@@ -25,7 +25,17 @@ const AlbumDetail = () => {
   const { library, currentPath, setCurrentPath, setCurrentPlaylist } = useContext(AppContext);
 
   const albumName = decodeURIComponent(id ?? '');
-  const songs = library.filter((s) => (s.album ?? 'Unknown Album') === albumName);
+  const songs = library
+    .filter((s) => (s.album ?? 'Unknown Album') === albumName)
+    .slice()
+    .sort((a, b) => {
+      // Songs with a tagged track number win, in ascending order. Untagged
+      // songs sink to the end so they don't randomly reshuffle the tagged ones.
+      if (a.track != null && b.track != null) return a.track - b.track;
+      if (a.track != null) return -1;
+      if (b.track != null) return 1;
+      return 0;
+    });
   const eagerImage = songs.find((s) => s.image)?.image;
   const coverPath = songs.find((s) => s.path)?.path;
   const heroImage = useLazyAlbumArt(coverPath, eagerImage);
