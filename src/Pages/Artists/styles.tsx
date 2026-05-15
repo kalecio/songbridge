@@ -1,4 +1,5 @@
 import { styled } from 'styled-components';
+import { selectable } from '../../styles/mixins';
 
 export const Grid = styled.div`
   display: grid;
@@ -53,6 +54,7 @@ export const ArtistName = styled.div`
   overflow: hidden;
   text-overflow: ellipsis;
   width: 100%;
+  ${selectable}
 `;
 
 export const ArtistMeta = styled.div`

@@ -1,4 +1,5 @@
 import { styled } from 'styled-components';
+import { selectable } from '../../styles/mixins';
 
 export const Grid = styled.div`
   display: grid;
@@ -63,6 +64,7 @@ export const CardTitle = styled.div`
   text-overflow: ellipsis;
   max-width: 100%;
   margin-bottom: 0.2rem;
+  ${selectable}
 `;
 
 export const CardBottom = styled.div`
@@ -81,6 +83,7 @@ export const CardArtist = styled.div`
   text-overflow: ellipsis;
   flex: 1;
   min-width: 0;
+  ${selectable}
 `;
 
 export const CardCount = styled.div`

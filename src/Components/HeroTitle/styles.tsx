@@ -1,4 +1,5 @@
 import { styled } from 'styled-components';
+import { selectable } from '../../styles/mixins';
 
 export const HeroTitle = styled.h1`
   color: #fff;
@@ -10,4 +11,5 @@ export const HeroTitle = styled.h1`
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  ${selectable}
 `;

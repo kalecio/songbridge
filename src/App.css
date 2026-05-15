@@ -19,4 +19,14 @@ body,
 
 body {
   font-family: 'Inter', sans-serif;
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+/* Editable surfaces always allow selection so copy/paste stays accessible. */
+input,
+textarea,
+[contenteditable='true'] {
+  user-select: text;
+  -webkit-user-select: text;
 }
