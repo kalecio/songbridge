@@ -1,5 +1,6 @@
-import { useContext } from 'react';
+import { useContext, useState } from 'react';
 import { useNavigate } from 'react-router';
+import { FaPlay, FaListUl } from 'react-icons/fa6';
 import { AppContext } from '../../Context/AppContext';
 import { MetadataType } from '../../types';
 import AlbumImage from '../../Components/AlbumImage/AlbumImage';
@@ -7,6 +8,8 @@ import Count from '../../Components/Count/Count';
 import Page from '../../Components/Page/Page';
 import PageHeader from '../../Components/PageHeader/PageHeader';
 import StatusMessage from '../../Components/StatusMessage/StatusMessage';
+import ContextMenu, { ContextMenuItem } from '../../Components/ContextMenu/ContextMenu';
+import { useQueueActions } from '../../hooks/useQueueActions';
 import { Grid, GridItem, Card, ArtWrapper, CardInfo, CardTitle, CardBottom, CardArtist, CardCount } from './styles';
 
 interface AlbumEntry {
@@ -43,6 +46,8 @@ function groupByAlbum(library: MetadataType[]): AlbumEntry[] {
 const Albums = () => {
   const { library, isScanning } = useContext(AppContext);
   const navigate = useNavigate();
+  const [menu, setMenu] = useState<{ x: number; y: number; album: AlbumEntry } | null>(null);
+  const { playSongs, addToQueue } = useQueueActions();
 
   if (isScanning) {
     return (
@@ -62,6 +67,14 @@ const Albums = () => {
     );
   }
 
+  const albumMenuItems = (album: AlbumEntry): ContextMenuItem[] => {
+    const empty = album.songs.length === 0;
+    return [
+      { label: 'Play', icon: <FaPlay />, onSelect: () => playSongs(album.songs), disabled: empty },
+      { label: 'Add to queue', icon: <FaListUl />, onSelect: () => addToQueue(album.songs), disabled: empty },
+    ];
+  };
+
   return (
     <Page>
       <PageHeader>
@@ -69,7 +82,14 @@ const Albums = () => {
       </PageHeader>
       <Grid>
         {albums.map((album) => (
-          <GridItem key={album.name} onClick={() => navigate(`/albums/${encodeURIComponent(album.name)}`)}>
+          <GridItem
+            key={album.name}
+            onClick={() => navigate(`/albums/${encodeURIComponent(album.name)}`)}
+            onContextMenu={(e) => {
+              e.preventDefault();
+              setMenu({ x: e.clientX, y: e.clientY, album });
+            }}
+          >
             <Card>
               <ArtWrapper>
                 <AlbumImage
@@ -91,6 +111,7 @@ const Albums = () => {
           </GridItem>
         ))}
       </Grid>
+      {menu && <ContextMenu x={menu.x} y={menu.y} items={albumMenuItems(menu.album)} onClose={() => setMenu(null)} />}
     </Page>
   );
 };

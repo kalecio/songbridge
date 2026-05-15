@@ -1,5 +1,6 @@
 import { styled } from 'styled-components';
 import { FaCirclePlay, FaCircleExclamation, FaTrash } from 'react-icons/fa6';
+import { selectable } from '../../styles/mixins';
 
 export const PlaylistContainer = styled.div<{ $scroll?: boolean }>`
   overflow-y: ${({ $scroll = true }) => ($scroll ? 'hidden' : 'visible')};
@@ -58,6 +59,7 @@ export const Type = styled.span`
 export const PlaylistName = styled.h1`
   font-size: 2rem;
   margin: 0;
+  ${selectable}
 `;
 
 export const SongsQuantity = styled.span`
@@ -118,6 +120,7 @@ export const SongTitle = styled.span`
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  ${selectable}
 `;
 
 export const SongArtist = styled.span`
@@ -126,6 +129,7 @@ export const SongArtist = styled.span`
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  ${selectable}
 `;
 
 export const SongDuration = styled.span`

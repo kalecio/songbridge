@@ -1,9 +1,13 @@
 import { useEffect, useRef, useState } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { useVirtualizer } from '@tanstack/react-virtual';
+import { FaPlay, FaListUl, FaTrash } from 'react-icons/fa6';
 import { MetadataType } from '../../types';
 import { displayTitle } from '../../songDisplay';
+import { useQueueActions } from '../../hooks/useQueueActions';
+import { useAddToPlaylistMenu } from '../../hooks/useAddToPlaylistMenu';
 import AlbumImage from '../AlbumImage/AlbumImage';
+import ContextMenu, { ContextMenuItem } from '../ContextMenu/ContextMenu';
 import {
   PlaylistContainer,
   Header,
@@ -34,6 +38,7 @@ interface Props {
   onSongClick?: (_song: MetadataType) => void;
   onPlayAll?: () => void;
   onRemoveMissing?: (_song: MetadataType) => void;
+  onRemoveSong?: (_song: MetadataType) => void;
 }
 
 // Above this list size we switch to windowed rendering. Album / playlist
@@ -53,8 +58,12 @@ const Playlist = ({
   onSongClick,
   onPlayAll,
   onRemoveMissing,
+  onRemoveSong,
 }: Props) => {
   const [missingPaths, setMissingPaths] = useState<Set<string>>(new Set());
+  const [menuState, setMenuState] = useState<{ x: number; y: number; song: MetadataType } | null>(null);
+  const { playNext, addToQueue } = useQueueActions();
+  const buildAddToPlaylistItem = useAddToPlaylistMenu();
 
   useEffect(() => {
     const paths = songs.map((s) => s.path).filter((p): p is string => Boolean(p));
@@ -74,6 +83,10 @@ const Playlist = ({
         $active={song.path === activePath}
         $missing={isMissing}
         onClick={() => !isMissing && onSongClick?.(song)}
+        onContextMenu={(e) => {
+          e.preventDefault();
+          setMenuState({ x: e.clientX, y: e.clientY, song });
+        }}
       >
         <AlbumImage metadata={song} height="3rem" width="3rem" />
         <SongInfo>
@@ -104,6 +117,22 @@ const Playlist = ({
 
   const useVirtualization = scroll && songs.length > VIRTUALIZE_THRESHOLD;
 
+  const menuItems = (song: MetadataType): ContextMenuItem[] => {
+    const isMissing = Boolean(song.path && missingPaths.has(song.path));
+    const items: ContextMenuItem[] = [
+      { label: 'Play next', icon: <FaPlay />, onSelect: () => playNext(song), disabled: isMissing },
+      { label: 'Add to queue', icon: <FaListUl />, onSelect: () => addToQueue([song]), disabled: isMissing },
+      buildAddToPlaylistItem(song),
+    ];
+    if (onRemoveSong) {
+      items.push(
+        { type: 'divider' },
+        { label: 'Remove from playlist', icon: <FaTrash />, onSelect: () => onRemoveSong(song), danger: true },
+      );
+    }
+    return items;
+  };
+
   return (
     <PlaylistContainer $scroll={scroll}>
       <Header>
@@ -123,6 +152,14 @@ const Playlist = ({
         <VirtualSongList songs={songs} renderRow={renderRow} />
       ) : (
         <SongList $scroll={scroll}>{songs.map((song, index) => renderRow(song, song.path ?? index))}</SongList>
+      )}
+      {menuState && (
+        <ContextMenu
+          x={menuState.x}
+          y={menuState.y}
+          items={menuItems(menuState.song)}
+          onClose={() => setMenuState(null)}
+        />
       )}
     </PlaylistContainer>
   );

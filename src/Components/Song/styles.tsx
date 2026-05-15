@@ -1,5 +1,6 @@
 import { styled } from 'styled-components';
 import AlbumPlaceholder from '../../assets/images/album-placeholder.svg';
+import { selectable } from '../../styles/mixins';
 
 const SongContainer = styled.div`
   display: flex;
@@ -10,13 +11,21 @@ const SongContainer = styled.div`
   max-width: 22rem;
 `;
 
-const AlbumImagePlaceholder = styled(AlbumPlaceholder)`
+const AlbumImagePlaceholder = styled(AlbumPlaceholder)<{ $clickable?: boolean }>`
   width: 60px;
   height: 60px;
   border-radius: 10px;
   overflow: hidden;
   display: block;
   object-fit: cover;
+  ${(p) =>
+    p.$clickable &&
+    `
+    cursor: pointer;
+    transition: filter 0.15s, transform 0.15s;
+    &:hover { filter: brightness(1.1); }
+    &:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
+  `}
 `;
 
 const AlbumImagePlaceholderContainer = styled.div<{ $width?: string; $height?: string }>`
@@ -25,11 +34,19 @@ const AlbumImagePlaceholderContainer = styled.div<{ $width?: string; $height?: s
   cursor: pointer;
 `;
 
-const AlbumImage = styled.img`
+const AlbumImage = styled.img<{ $clickable?: boolean }>`
   width: 60px;
   height: 60px;
   object-fit: cover;
   border-radius: 10px;
+  ${(p) =>
+    p.$clickable &&
+    `
+    cursor: pointer;
+    transition: filter 0.15s, transform 0.15s;
+    &:hover { filter: brightness(1.1); }
+    &:focus-visible { outline: 2px solid currentColor; outline-offset: 2px; }
+  `}
 `;
 
 const MusicInfo = styled.div`
@@ -49,6 +66,7 @@ const MusicName = styled.span`
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  ${selectable}
 `;
 
 const ArtistName = styled.span<{ $clickable?: boolean }>`
@@ -57,6 +75,7 @@ const ArtistName = styled.span<{ $clickable?: boolean }>`
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  ${selectable}
   ${(p) =>
     p.$clickable &&
     `

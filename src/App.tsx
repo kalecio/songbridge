@@ -8,6 +8,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import { themes, defaultTheme } from './theme';
 import { ShortcutBindings, loadShortcuts, saveShortcuts } from './keyboard';
+import { ModalProvider } from './Context/ModalContext';
 
 const GlobalStyle = createGlobalStyle`
   body {
@@ -60,6 +61,20 @@ function App() {
     return () => {
       unlistenPromise.then((unlisten) => unlisten()).catch(() => {});
     };
+  }, []);
+
+  // Suppress the native right-click menu in production builds so only our
+  // custom ContextMenu shows. Allow it on text inputs/textareas so copy/paste
+  // stays accessible. In dev we keep it for "Inspect Element".
+  useEffect(() => {
+    if (!import.meta.env.PROD) return;
+    const block = (e: MouseEvent) => {
+      const target = e.target as Element | null;
+      if (target?.closest('input, textarea, [contenteditable="true"]')) return;
+      e.preventDefault();
+    };
+    document.addEventListener('contextmenu', block);
+    return () => document.removeEventListener('contextmenu', block);
   }, []);
 
   // Load persisted state from SQLite on mount, then scan with configured paths
@@ -202,7 +217,9 @@ function App() {
     >
       <ThemeProvider theme={activeTheme}>
         <GlobalStyle />
-        <Player />
+        <ModalProvider>
+          <Player />
+        </ModalProvider>
       </ThemeProvider>
     </AppContext.Provider>
   );

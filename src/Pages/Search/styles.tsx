@@ -1,5 +1,6 @@
 import { styled } from 'styled-components';
 import { FaHeart } from 'react-icons/fa6';
+import { selectable } from '../../styles/mixins';
 
 export const SearchContainer = styled.div`
   display: flex;
@@ -56,6 +57,7 @@ export const SongTitle = styled.span`
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  ${selectable}
 `;
 
 export const SongArtist = styled.span`
@@ -65,6 +67,7 @@ export const SongArtist = styled.span`
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  ${selectable}
 `;
 
 export const ArtistContainer = styled.div`
@@ -119,6 +122,7 @@ export const ArtistName = styled.span`
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  ${selectable}
 `;
 
 export const AlbumRow = styled.div`
@@ -159,6 +163,7 @@ export const AlbumTitle = styled.span`
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  ${selectable}
 `;
 
 export const AlbumArtist = styled.span`
@@ -168,12 +173,14 @@ export const AlbumArtist = styled.span`
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  ${selectable}
 `;
 
 export const NoResults = styled.p`
   font-size: 0.8rem;
   color: ${({ theme }) => theme.textMuted};
   margin: 0;
+  ${selectable}
 `;
 
 export const FavouriteThumb = styled.div`

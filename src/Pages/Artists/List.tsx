@@ -1,12 +1,15 @@
-import { useContext } from 'react';
+import { useContext, useState } from 'react';
 import { useNavigate } from 'react-router';
+import { FaPlay, FaListUl } from 'react-icons/fa6';
 import { AppContext } from '../../Context/AppContext';
 import { MetadataType } from '../../types';
 import Count from '../../Components/Count/Count';
 import Page from '../../Components/Page/Page';
 import PageHeader from '../../Components/PageHeader/PageHeader';
 import StatusMessage from '../../Components/StatusMessage/StatusMessage';
+import ContextMenu, { ContextMenuItem } from '../../Components/ContextMenu/ContextMenu';
 import { useLazyAlbumArt } from '../../hooks/useLazyAlbumArt';
+import { useQueueActions } from '../../hooks/useQueueActions';
 import { Grid, Card, Avatar, ArtistName, ArtistMeta, AvatarImage } from './styles';
 
 interface ArtistEntry {
@@ -43,6 +46,8 @@ const ArtistAvatar = ({ artist }: { artist: ArtistEntry }) => {
 const Artists = () => {
   const { library, isScanning } = useContext(AppContext);
   const navigate = useNavigate();
+  const [menu, setMenu] = useState<{ x: number; y: number; artist: ArtistEntry } | null>(null);
+  const { playSongs, addToQueue } = useQueueActions();
 
   if (isScanning) {
     return <StatusMessage>Scanning music library…</StatusMessage>;
@@ -54,6 +59,14 @@ const Artists = () => {
     return <StatusMessage>No artists found in your music library.</StatusMessage>;
   }
 
+  const artistMenuItems = (artist: ArtistEntry): ContextMenuItem[] => {
+    const empty = artist.songs.length === 0;
+    return [
+      { label: 'Play', icon: <FaPlay />, onSelect: () => playSongs(artist.songs), disabled: empty },
+      { label: 'Add to queue', icon: <FaListUl />, onSelect: () => addToQueue(artist.songs), disabled: empty },
+    ];
+  };
+
   return (
     <Page>
       <PageHeader>
@@ -61,7 +74,14 @@ const Artists = () => {
       </PageHeader>
       <Grid>
         {artists.map((artist) => (
-          <Card key={artist.name} onClick={() => navigate(`/artists/${encodeURIComponent(artist.name)}`)}>
+          <Card
+            key={artist.name}
+            onClick={() => navigate(`/artists/${encodeURIComponent(artist.name)}`)}
+            onContextMenu={(e) => {
+              e.preventDefault();
+              setMenu({ x: e.clientX, y: e.clientY, artist });
+            }}
+          >
             <ArtistAvatar artist={artist} />
             <ArtistName title={artist.name}>{artist.name}</ArtistName>
             <ArtistMeta>
@@ -70,6 +90,7 @@ const Artists = () => {
           </Card>
         ))}
       </Grid>
+      {menu && <ContextMenu x={menu.x} y={menu.y} items={artistMenuItems(menu.artist)} onClose={() => setMenu(null)} />}
     </Page>
   );
 };

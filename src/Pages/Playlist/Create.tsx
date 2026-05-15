@@ -1,4 +1,5 @@
-import { useContext, useState } from 'react';
+import { useContext, useEffect, useRef, useState } from 'react';
+import { useLocation, useNavigate } from 'react-router';
 import { invoke } from '@tauri-apps/api/core';
 import { AppContext } from '../../Context/AppContext';
 import { MetadataType, PlaylistType } from '../../types';
@@ -40,6 +41,25 @@ const CreatePlaylist = () => {
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState('');
   const [search, setSearch] = useState('');
+  const location = useLocation();
+  const navigate = useNavigate();
+  const preAddedRef = useRef(false);
+
+  // When arriving via "Add to playlist → Create new playlist", router state
+  // carries the song. Create a fresh playlist that already contains it, then
+  // clear the state so a reload doesn't re-create.
+  useEffect(() => {
+    const state = location.state as { addSong?: MetadataType } | null;
+    const seed = state?.addSong;
+    if (!seed || preAddedRef.current) return;
+    preAddedRef.current = true;
+    const id = crypto.randomUUID();
+    const pl: PlaylistType = { id, name: 'New Playlist', songs: seed.path ? [seed] : [] };
+    setPlaylists?.((prev) => [...prev, pl]);
+    setSelectedId(pl.id);
+    setEditingName(pl.name);
+    navigate(location.pathname, { replace: true });
+  }, [location.state, location.pathname, navigate, setPlaylists]);
 
   const selected = playlists.find((p) => p.id === selectedId) ?? null;
 
