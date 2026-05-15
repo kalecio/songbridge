@@ -42,12 +42,24 @@ type SidebarMenu =
 const Sidebar = () => {
   const [songs, setSongs] = useState<MetadataType[]>([]);
   const [menu, setMenu] = useState<SidebarMenu | null>(null);
+  const [dragFromIndex, setDragFromIndex] = useState<number | null>(null);
+  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  // `dragstart` and the first `dragover` can fire before React flushes the
+  // state update, leaving the closure with a stale `dragFromIndex === null`.
+  // If we skip `preventDefault()` then, the browser rejects the drop entirely.
+  // The ref always reflects the latest value synchronously.
+  const dragFromRef = useRef<number | null>(null);
   const metadataCache = useRef(new Map<string, MetadataType>());
   const context = useContext(AppContext);
   const { showQueue, setShowQueue, setCurrentPath, currentPlaylist, playlists, currentPath, library } = context;
   const navigate = useNavigate();
   const location = useLocation();
-  const { playSongs, addToQueue, playNext, removeFromQueue } = useQueueActions();
+  const { playSongs, addToQueue, playNext, removeFromQueue, reorderQueue } = useQueueActions();
+  const resetDrag = () => {
+    dragFromRef.current = null;
+    setDragFromIndex(null);
+    setDragOverIndex(null);
+  };
   const { renamePlaylist, deletePlaylist } = usePlaylistActions();
   const { recordPlaylistPlay } = usePlayHistory();
   const buildAddToPlaylistItem = useAddToPlaylistMenu();
@@ -176,21 +188,55 @@ const Sidebar = () => {
             <BackIcon /> Queue
           </QueueHeader>
           <Menu>
-            {songs.map((song) => (
-              <MenuItem
-                $active={song.path === currentPath}
-                key={song.path ?? `${song.title}-${song.artist}`}
-                onClick={() => setCurrentPath?.(song.path)}
-                onContextMenu={(e) => {
-                  e.preventDefault();
-                  setMenu({ kind: 'queue', x: e.clientX, y: e.clientY, song });
-                }}
-                title={displayTitle(song)}
-              >
-                <AlbumImage metadata={song} height="2.25rem" width="2.25rem" />
-                {displayTitle(song)}
-              </MenuItem>
-            ))}
+            {songs.map((song, index) => {
+              const isDragging = dragFromIndex === index;
+              const showIndicator = dragFromIndex !== null && dragOverIndex === index && dragFromIndex !== index;
+              const dropAbove = showIndicator && (dragFromIndex as number) > index;
+              const dropBelow = showIndicator && (dragFromIndex as number) < index;
+              return (
+                <MenuItem
+                  $active={song.path === currentPath}
+                  $dragging={isDragging}
+                  $dropAbove={dropAbove}
+                  $dropBelow={dropBelow}
+                  draggable
+                  key={song.path ?? `${song.title}-${song.artist}`}
+                  onClick={() => setCurrentPath?.(song.path)}
+                  onContextMenu={(e) => {
+                    e.preventDefault();
+                    setMenu({ kind: 'queue', x: e.clientX, y: e.clientY, song });
+                  }}
+                  onDragStart={(e) => {
+                    dragFromRef.current = index;
+                    setDragFromIndex(index);
+                    if (e.dataTransfer) {
+                      e.dataTransfer.effectAllowed = 'move';
+                      // Firefox requires setData for the drag to actually start.
+                      e.dataTransfer.setData('text/plain', String(index));
+                    }
+                  }}
+                  onDragOver={(e) => {
+                    if (dragFromRef.current === null) return;
+                    e.preventDefault();
+                    if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
+                    if (dragOverIndex !== index) setDragOverIndex(index);
+                  }}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    const from = dragFromRef.current;
+                    if (from !== null && from !== index) {
+                      reorderQueue(from, index);
+                    }
+                    resetDrag();
+                  }}
+                  onDragEnd={resetDrag}
+                  title={displayTitle(song)}
+                >
+                  <AlbumImage metadata={song} height="2.25rem" width="2.25rem" draggable={false} />
+                  {displayTitle(song)}
+                </MenuItem>
+              );
+            })}
           </Menu>
         </>
       )}

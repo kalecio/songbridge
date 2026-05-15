@@ -152,4 +152,47 @@ describe('useQueueActions', () => {
       expect(setCurrentPath).not.toHaveBeenCalled();
     });
   });
+
+  describe('reorderQueue', () => {
+    it('moves a queued path down', () => {
+      const setCurrentPlaylist = vi.fn();
+      const { result } = renderWithContext({
+        currentPlaylist: ['/a.mp3', '/b.mp3', '/c.mp3'],
+        setCurrentPlaylist,
+      });
+      act(() => result.current.reorderQueue(0, 2));
+      expect(setCurrentPlaylist).toHaveBeenCalledWith(['/b.mp3', '/c.mp3', '/a.mp3']);
+    });
+
+    it('moves a queued path up', () => {
+      const setCurrentPlaylist = vi.fn();
+      const { result } = renderWithContext({
+        currentPlaylist: ['/a.mp3', '/b.mp3', '/c.mp3'],
+        setCurrentPlaylist,
+      });
+      act(() => result.current.reorderQueue(2, 0));
+      expect(setCurrentPlaylist).toHaveBeenCalledWith(['/c.mp3', '/a.mp3', '/b.mp3']);
+    });
+
+    it('is a no-op when from === to', () => {
+      const setCurrentPlaylist = vi.fn();
+      const { result } = renderWithContext({
+        currentPlaylist: ['/a.mp3', '/b.mp3'],
+        setCurrentPlaylist,
+      });
+      act(() => result.current.reorderQueue(1, 1));
+      expect(setCurrentPlaylist).not.toHaveBeenCalled();
+    });
+
+    it('is a no-op when indices are out of range', () => {
+      const setCurrentPlaylist = vi.fn();
+      const { result } = renderWithContext({
+        currentPlaylist: ['/a.mp3', '/b.mp3'],
+        setCurrentPlaylist,
+      });
+      act(() => result.current.reorderQueue(0, 99));
+      act(() => result.current.reorderQueue(-1, 0));
+      expect(setCurrentPlaylist).not.toHaveBeenCalled();
+    });
+  });
 });

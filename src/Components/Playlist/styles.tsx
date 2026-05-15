@@ -84,7 +84,13 @@ export const SongList = styled.div<{ $scroll?: boolean }>`
   padding: ${({ $scroll = true }) => ($scroll ? '2rem 4rem 20rem 4rem' : '0.5rem 4rem')};
 `;
 
-export const SongItem = styled.div<{ $active?: boolean; $missing?: boolean }>`
+export const SongItem = styled.div<{
+  $active?: boolean;
+  $missing?: boolean;
+  $dragging?: boolean;
+  $dropAbove?: boolean;
+  $dropBelow?: boolean;
+}>`
   display: flex;
   flex-direction: row;
   justify-content: flex-start;
@@ -95,10 +101,13 @@ export const SongItem = styled.div<{ $active?: boolean; $missing?: boolean }>`
   border-radius: 0.75rem;
   padding: 0.75rem 0.5rem;
   background: ${(p) => (p.$active ? p.theme.accentBg : 'transparent')};
-  opacity: ${(p) => (p.$missing ? 0.45 : 1)};
+  opacity: ${(p) => (p.$dragging ? 0.4 : p.$missing ? 0.45 : 1)};
   transition:
     background 0.15s,
-    opacity 0.15s;
+    opacity 0.15s,
+    box-shadow 0.1s;
+  ${(p) => p.$dropAbove && `box-shadow: inset 0 2px 0 0 ${p.theme.accent};`}
+  ${(p) => p.$dropBelow && `box-shadow: inset 0 -2px 0 0 ${p.theme.accent};`}
 
   &:hover {
     background: ${(p) => (p.$active ? p.theme.accentBgHover : p.$missing ? 'transparent' : p.theme.accentHover)};

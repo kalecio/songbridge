@@ -35,5 +35,15 @@ export const useQueueActions = () => {
     if (currentPath === path) setCurrentPath?.(undefined);
   };
 
-  return { playSongs, addToQueue, playNext, removeFromQueue };
+  const reorderQueue = (fromIndex: number, toIndex: number) => {
+    if (fromIndex === toIndex) return;
+    const max = currentPlaylist.length - 1;
+    if (fromIndex < 0 || fromIndex > max || toIndex < 0 || toIndex > max) return;
+    const next = [...currentPlaylist];
+    const [moved] = next.splice(fromIndex, 1);
+    next.splice(toIndex, 0, moved);
+    setCurrentPlaylist?.(next);
+  };
+
+  return { playSongs, addToQueue, playNext, removeFromQueue, reorderQueue };
 };
