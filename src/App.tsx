@@ -8,6 +8,7 @@ import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import { themes, defaultTheme } from './theme';
 import { ShortcutBindings, loadShortcuts, saveShortcuts } from './keyboard';
+import { ModalProvider } from './Context/ModalContext';
 
 const GlobalStyle = createGlobalStyle`
   body {
@@ -202,7 +203,9 @@ function App() {
     >
       <ThemeProvider theme={activeTheme}>
         <GlobalStyle />
-        <Player />
+        <ModalProvider>
+          <Player />
+        </ModalProvider>
       </ThemeProvider>
     </AppContext.Provider>
   );

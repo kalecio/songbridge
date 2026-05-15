@@ -1,6 +1,7 @@
 import { renderHook, act } from '@testing-library/react';
 import { invoke } from '@tauri-apps/api/core';
 import { AppContext } from '../Context/AppContext';
+import { ModalProvider } from '../Context/ModalContext';
 import { DEFAULT_SHORTCUTS } from '../keyboard';
 import { PlaylistType } from '../types';
 import { FAVOURITES_PLAYLIST_ID } from './useFavourites';
@@ -28,10 +29,26 @@ const baseContext: AppContextValue = {
   currentTheme: 'Midnight',
 };
 
+// The hook now drives a ModalProvider-backed promise API rather than
+// window.prompt/window.confirm. We mock useModal at the module boundary so
+// tests stay deterministic and don't need to simulate UI interactions.
+const confirmMock = vi.fn();
+const promptMock = vi.fn();
+
+vi.mock('../Context/ModalContext', async () => {
+  const actual = await vi.importActual<typeof import('../Context/ModalContext')>('../Context/ModalContext');
+  return {
+    ...actual,
+    useModal: () => ({ confirm: confirmMock, prompt: promptMock }),
+  };
+});
+
 const renderWithContext = (overrides: Partial<AppContextValue> = {}) => {
   const value = { ...baseContext, ...overrides };
   const wrapper = ({ children }: { children: React.ReactNode }) => (
-    <AppContext.Provider value={value}>{children}</AppContext.Provider>
+    <AppContext.Provider value={value}>
+      <ModalProvider>{children}</ModalProvider>
+    </AppContext.Provider>
   );
   return renderHook(() => usePlaylistActions(), { wrapper });
 };
@@ -54,95 +71,104 @@ const favouritesPlaylist = (): PlaylistType => ({
 beforeEach(() => {
   mockInvoke.mockClear();
   mockInvoke.mockResolvedValue(undefined);
+  confirmMock.mockReset();
+  promptMock.mockReset();
 });
 
 describe('usePlaylistActions', () => {
   describe('renamePlaylist', () => {
-    it('renames via prompt, updates state, and persists', () => {
-      const promptSpy = vi.spyOn(window, 'prompt').mockReturnValue('  New Name  ');
+    it('renames via the modal prompt, updates state, and persists', async () => {
+      promptMock.mockResolvedValue('  New Name  ');
       const setPlaylists = vi.fn();
       const { result } = renderWithContext({ setPlaylists });
       const pl = samplePlaylist();
-      act(() => result.current.renamePlaylist(pl));
-      expect(promptSpy).toHaveBeenCalledWith('Rename playlist', 'Chill Mix');
+      await act(async () => {
+        await result.current.renamePlaylist(pl);
+      });
+      expect(promptMock).toHaveBeenCalledWith(
+        expect.objectContaining({ title: 'Rename playlist', defaultValue: 'Chill Mix' }),
+      );
       expect(setPlaylists).toHaveBeenCalledTimes(1);
       const updater = setPlaylists.mock.calls[0][0];
-      const result2 = updater([pl, { id: 'other', name: 'Other', songs: [] }]);
-      expect(result2[0].name).toBe('New Name');
-      expect(result2[1].name).toBe('Other');
+      const next = updater([pl, { id: 'other', name: 'Other', songs: [] }]) as PlaylistType[];
+      expect(next[0].name).toBe('New Name');
+      expect(next[1].name).toBe('Other');
       expect(mockInvoke).toHaveBeenCalledWith(
         'db_upsert_playlist',
         expect.objectContaining({ id: 'p1', name: 'New Name' }),
       );
-      promptSpy.mockRestore();
     });
 
-    it('does nothing when prompt is cancelled', () => {
-      const promptSpy = vi.spyOn(window, 'prompt').mockReturnValue(null);
+    it('does nothing when the prompt is cancelled', async () => {
+      promptMock.mockResolvedValue(null);
       const setPlaylists = vi.fn();
       const { result } = renderWithContext({ setPlaylists });
-      act(() => result.current.renamePlaylist(samplePlaylist()));
+      await act(async () => {
+        await result.current.renamePlaylist(samplePlaylist());
+      });
       expect(setPlaylists).not.toHaveBeenCalled();
       expect(mockInvoke).not.toHaveBeenCalled();
-      promptSpy.mockRestore();
     });
 
-    it('does nothing when the name is unchanged after trimming', () => {
-      const promptSpy = vi.spyOn(window, 'prompt').mockReturnValue('  Chill Mix  ');
+    it('does nothing when the trimmed name is unchanged', async () => {
+      promptMock.mockResolvedValue('  Chill Mix  ');
       const setPlaylists = vi.fn();
       const { result } = renderWithContext({ setPlaylists });
-      act(() => result.current.renamePlaylist(samplePlaylist()));
+      await act(async () => {
+        await result.current.renamePlaylist(samplePlaylist());
+      });
       expect(setPlaylists).not.toHaveBeenCalled();
       expect(mockInvoke).not.toHaveBeenCalled();
-      promptSpy.mockRestore();
     });
 
-    it('refuses to rename the Favourites playlist', () => {
-      const promptSpy = vi.spyOn(window, 'prompt');
+    it('refuses to rename the Favourites playlist', async () => {
       const setPlaylists = vi.fn();
       const { result } = renderWithContext({ setPlaylists });
-      act(() => result.current.renamePlaylist(favouritesPlaylist()));
-      expect(promptSpy).not.toHaveBeenCalled();
+      await act(async () => {
+        await result.current.renamePlaylist(favouritesPlaylist());
+      });
+      expect(promptMock).not.toHaveBeenCalled();
       expect(setPlaylists).not.toHaveBeenCalled();
-      promptSpy.mockRestore();
     });
   });
 
   describe('deletePlaylist', () => {
-    it('confirms, removes from state, and invokes db_delete_playlist', () => {
-      const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true);
+    it('confirms via the modal, removes from state, and invokes db_delete_playlist', async () => {
+      confirmMock.mockResolvedValue(true);
       const setPlaylists = vi.fn();
       const { result } = renderWithContext({ setPlaylists });
       const pl = samplePlaylist();
-      act(() => result.current.deletePlaylist(pl));
-      expect(confirmSpy).toHaveBeenCalledWith('Delete playlist "Chill Mix"?');
+      await act(async () => {
+        await result.current.deletePlaylist(pl);
+      });
+      expect(confirmMock).toHaveBeenCalledWith(expect.objectContaining({ title: 'Delete playlist', danger: true }));
       expect(setPlaylists).toHaveBeenCalledTimes(1);
       const updater = setPlaylists.mock.calls[0][0];
       expect(updater([pl, { id: 'other', name: 'Other', songs: [] }])).toEqual([
         { id: 'other', name: 'Other', songs: [] },
       ]);
       expect(mockInvoke).toHaveBeenCalledWith('db_delete_playlist', { id: 'p1' });
-      confirmSpy.mockRestore();
     });
 
-    it('does nothing when the confirm dialog is dismissed', () => {
-      const confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false);
+    it('does nothing when the confirm dialog is dismissed', async () => {
+      confirmMock.mockResolvedValue(false);
       const setPlaylists = vi.fn();
       const { result } = renderWithContext({ setPlaylists });
-      act(() => result.current.deletePlaylist(samplePlaylist()));
+      await act(async () => {
+        await result.current.deletePlaylist(samplePlaylist());
+      });
       expect(setPlaylists).not.toHaveBeenCalled();
       expect(mockInvoke).not.toHaveBeenCalled();
-      confirmSpy.mockRestore();
     });
 
-    it('refuses to delete the Favourites playlist', () => {
-      const confirmSpy = vi.spyOn(window, 'confirm');
+    it('refuses to delete the Favourites playlist', async () => {
       const setPlaylists = vi.fn();
       const { result } = renderWithContext({ setPlaylists });
-      act(() => result.current.deletePlaylist(favouritesPlaylist()));
-      expect(confirmSpy).not.toHaveBeenCalled();
+      await act(async () => {
+        await result.current.deletePlaylist(favouritesPlaylist());
+      });
+      expect(confirmMock).not.toHaveBeenCalled();
       expect(setPlaylists).not.toHaveBeenCalled();
-      confirmSpy.mockRestore();
     });
   });
 
