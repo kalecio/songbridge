@@ -1,9 +1,11 @@
 import { useEffect, useRef, useState } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { useVirtualizer } from '@tanstack/react-virtual';
+import { FaPlay, FaListUl, FaTrash } from 'react-icons/fa6';
 import { MetadataType } from '../../types';
 import { displayTitle } from '../../songDisplay';
 import AlbumImage from '../AlbumImage/AlbumImage';
+import ContextMenu, { ContextMenuItem } from '../ContextMenu/ContextMenu';
 import {
   PlaylistContainer,
   Header,
@@ -55,6 +57,7 @@ const Playlist = ({
   onRemoveMissing,
 }: Props) => {
   const [missingPaths, setMissingPaths] = useState<Set<string>>(new Set());
+  const [menuState, setMenuState] = useState<{ x: number; y: number; song: MetadataType } | null>(null);
 
   useEffect(() => {
     const paths = songs.map((s) => s.path).filter((p): p is string => Boolean(p));
@@ -74,6 +77,10 @@ const Playlist = ({
         $active={song.path === activePath}
         $missing={isMissing}
         onClick={() => !isMissing && onSongClick?.(song)}
+        onContextMenu={(e) => {
+          e.preventDefault();
+          setMenuState({ x: e.clientX, y: e.clientY, song });
+        }}
       >
         <AlbumImage metadata={song} height="3rem" width="3rem" />
         <SongInfo>
@@ -104,6 +111,16 @@ const Playlist = ({
 
   const useVirtualization = scroll && songs.length > VIRTUALIZE_THRESHOLD;
 
+  const menuItems = (song: MetadataType): ContextMenuItem[] => {
+    const isMissing = Boolean(song.path && missingPaths.has(song.path));
+    return [
+      { label: 'Play next', icon: <FaPlay />, onSelect: () => {}, disabled: isMissing },
+      { label: 'Add to queue', icon: <FaListUl />, onSelect: () => {}, disabled: isMissing },
+      { type: 'divider' },
+      { label: 'Remove from playlist', icon: <FaTrash />, onSelect: () => {}, danger: true },
+    ];
+  };
+
   return (
     <PlaylistContainer $scroll={scroll}>
       <Header>
@@ -123,6 +140,14 @@ const Playlist = ({
         <VirtualSongList songs={songs} renderRow={renderRow} />
       ) : (
         <SongList $scroll={scroll}>{songs.map((song, index) => renderRow(song, song.path ?? index))}</SongList>
+      )}
+      {menuState && (
+        <ContextMenu
+          x={menuState.x}
+          y={menuState.y}
+          items={menuItems(menuState.song)}
+          onClose={() => setMenuState(null)}
+        />
       )}
     </PlaylistContainer>
   );

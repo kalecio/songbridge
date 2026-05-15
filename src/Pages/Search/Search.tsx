@@ -1,9 +1,11 @@
-import { useContext } from 'react';
+import { useContext, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router';
+import { FaPlay, FaListUl, FaPen, FaTrash } from 'react-icons/fa6';
 import { AppContext } from '../../Context/AppContext';
 import { MetadataType, PlaylistType } from '../../types';
 import AlbumImage from '../../Components/AlbumImage/AlbumImage';
 import StatusMessage from '../../Components/StatusMessage/StatusMessage';
+import ContextMenu, { ContextMenuItem } from '../../Components/ContextMenu/ContextMenu';
 import { useLazyAlbumArt } from '../../hooks/useLazyAlbumArt';
 import { isFavouritesPlaylist, sortFavouritesFirst } from '../../hooks/useFavourites';
 import { displayTitle } from '../../songDisplay';
@@ -41,11 +43,18 @@ const SearchArtistAvatar = ({ name, songs }: { name: string; songs: MetadataType
   return <ArtistAvatar>{image ? <ArtistImage src={image} alt={name} /> : name.charAt(0).toUpperCase()}</ArtistAvatar>;
 };
 
+type SearchMenu =
+  | { kind: 'artist'; x: number; y: number; songs: MetadataType[] }
+  | { kind: 'album'; x: number; y: number; song: MetadataType }
+  | { kind: 'playlist'; x: number; y: number; playlist: PlaylistType }
+  | { kind: 'song'; x: number; y: number; song: MetadataType };
+
 const Search = () => {
   const [searchParams] = useSearchParams();
   const query = searchParams.get('q') ?? '';
   const { library, playlists = [], setCurrentPath, setCurrentPlaylist } = useContext(AppContext);
   const navigate = useNavigate();
+  const [menu, setMenu] = useState<SearchMenu | null>(null);
 
   const q = normalize(query);
 
@@ -78,6 +87,36 @@ const Search = () => {
     setCurrentPath?.(song.path);
   };
 
+  const menuItems = (m: SearchMenu): ContextMenuItem[] => {
+    switch (m.kind) {
+      case 'song':
+        return [
+          { label: 'Play next', icon: <FaPlay />, onSelect: () => {} },
+          { label: 'Add to queue', icon: <FaListUl />, onSelect: () => {} },
+        ];
+      case 'artist':
+        return [
+          { label: 'Play', icon: <FaPlay />, onSelect: () => {}, disabled: m.songs.length === 0 },
+          { label: 'Add to queue', icon: <FaListUl />, onSelect: () => {}, disabled: m.songs.length === 0 },
+        ];
+      case 'album':
+        return [
+          { label: 'Play', icon: <FaPlay />, onSelect: () => {} },
+          { label: 'Add to queue', icon: <FaListUl />, onSelect: () => {} },
+        ];
+      case 'playlist': {
+        const isFavourites = isFavouritesPlaylist(m.playlist.id);
+        return [
+          { label: 'Play', icon: <FaPlay />, onSelect: () => {}, disabled: m.playlist.songs.length === 0 },
+          { label: 'Add to queue', icon: <FaListUl />, onSelect: () => {}, disabled: m.playlist.songs.length === 0 },
+          { type: 'divider' },
+          { label: 'Rename', icon: <FaPen />, onSelect: () => {}, disabled: isFavourites },
+          { label: 'Delete playlist', icon: <FaTrash />, onSelect: () => {}, disabled: isFavourites, danger: true },
+        ];
+      }
+    }
+  };
+
   if (!q) return null;
 
   const hasResults = matchingSongs.length > 0 || matchingPlaylists.length > 0;
@@ -93,7 +132,14 @@ const Search = () => {
           <SectionTitle>Artists</SectionTitle>
           <ArtistContainer>
             {artists.map(([name, metadata]) => (
-              <ArtistRow key={name} onClick={() => navigate(`/artists/${encodeURIComponent(name)}`)}>
+              <ArtistRow
+                key={name}
+                onClick={() => navigate(`/artists/${encodeURIComponent(name)}`)}
+                onContextMenu={(e) => {
+                  e.preventDefault();
+                  setMenu({ kind: 'artist', x: e.clientX, y: e.clientY, songs: metadata });
+                }}
+              >
                 <SearchArtistAvatar name={name} songs={metadata} />
                 <ArtistName title={name}>{name}</ArtistName>
               </ArtistRow>
@@ -106,7 +152,14 @@ const Search = () => {
         <ResultsSection>
           <SectionTitle>Albums</SectionTitle>
           {albums.map(([name, song]) => (
-            <AlbumRow key={name} onClick={() => navigate(`/albums/${encodeURIComponent(name)}`)}>
+            <AlbumRow
+              key={name}
+              onClick={() => navigate(`/albums/${encodeURIComponent(name)}`)}
+              onContextMenu={(e) => {
+                e.preventDefault();
+                setMenu({ kind: 'album', x: e.clientX, y: e.clientY, song });
+              }}
+            >
               <AlbumArt>
                 <AlbumImage metadata={song} height="100%" width="100%" />
               </AlbumArt>
@@ -126,7 +179,14 @@ const Search = () => {
             const cover = library.find((l) => l.path === pl.songs[0]?.path) ?? pl.songs[0];
             const fav = isFavouritesPlaylist(pl.id);
             return (
-              <AlbumRow key={pl.id} onClick={() => navigate(`/playlist/${pl.id}`)}>
+              <AlbumRow
+                key={pl.id}
+                onClick={() => navigate(`/playlist/${pl.id}`)}
+                onContextMenu={(e) => {
+                  e.preventDefault();
+                  setMenu({ kind: 'playlist', x: e.clientX, y: e.clientY, playlist: pl });
+                }}
+              >
                 {fav ? (
                   <FavouriteThumb>
                     <FavouriteHeart />
@@ -154,7 +214,14 @@ const Search = () => {
           {matchingSongs.map((song, i) => {
             const title = displayTitle(song);
             return (
-              <SongRow key={song.path ?? i} onClick={() => playSong(song)}>
+              <SongRow
+                key={song.path ?? i}
+                onClick={() => playSong(song)}
+                onContextMenu={(e) => {
+                  e.preventDefault();
+                  setMenu({ kind: 'song', x: e.clientX, y: e.clientY, song });
+                }}
+              >
                 <AlbumImage metadata={song} height="2.5rem" width="2.5rem" />
                 <SongInfo>
                   <SongTitle title={title}>{title}</SongTitle>
@@ -171,6 +238,7 @@ const Search = () => {
           {matchingSongs.length} {matchingSongs.length === 1 ? 'result' : 'results'} for &ldquo;{query}&rdquo;
         </NoResults>
       )}
+      {menu && <ContextMenu x={menu.x} y={menu.y} items={menuItems(menu)} onClose={() => setMenu(null)} />}
     </SearchContainer>
   );
 };

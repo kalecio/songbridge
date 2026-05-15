@@ -1,10 +1,12 @@
 import { useContext, useEffect, useRef, useState } from 'react';
 import { useLocation, useNavigate } from 'react-router';
 import { invoke } from '@tauri-apps/api/core';
+import { FaPlay, FaListUl, FaPen, FaTrash } from 'react-icons/fa6';
 import appLogo from '../../../app-icon.png';
 import { AppContext } from '../../Context/AppContext';
-import { MetadataType } from '../../types';
+import { MetadataType, PlaylistType } from '../../types';
 import AlbumImage from '../AlbumImage/AlbumImage';
+import ContextMenu, { ContextMenuItem } from '../ContextMenu/ContextMenu';
 import {
   AlbumsIcon,
   AppLogo,
@@ -29,8 +31,13 @@ import {
 import { isFavouritesPlaylist, sortFavouritesFirst } from '../../hooks/useFavourites';
 import { displayTitle } from '../../songDisplay';
 
+type SidebarMenu =
+  | { kind: 'queue'; x: number; y: number; song: MetadataType }
+  | { kind: 'playlist'; x: number; y: number; playlist: PlaylistType };
+
 const Sidebar = () => {
   const [songs, setSongs] = useState<MetadataType[]>([]);
+  const [menu, setMenu] = useState<SidebarMenu | null>(null);
   const metadataCache = useRef(new Map<string, MetadataType>());
   const context = useContext(AppContext);
   const { showQueue, setShowQueue, setCurrentPath, currentPlaylist, playlists, currentPath, library } = context;
@@ -56,6 +63,23 @@ const Sidebar = () => {
   }, [currentPlaylist]);
 
   const isActive = (path: string) => (path === '/' ? location.pathname === '/' : location.pathname.startsWith(path));
+
+  const queueMenuItems = (): ContextMenuItem[] => [
+    { label: 'Play next', icon: <FaPlay />, onSelect: () => {} },
+    { type: 'divider' },
+    { label: 'Remove from queue', icon: <FaTrash />, onSelect: () => {}, danger: true },
+  ];
+
+  const playlistMenuItems = (playlist: PlaylistType): ContextMenuItem[] => {
+    const isFavourites = isFavouritesPlaylist(playlist.id);
+    return [
+      { label: 'Play', icon: <FaPlay />, onSelect: () => {}, disabled: playlist.songs.length === 0 },
+      { label: 'Add to queue', icon: <FaListUl />, onSelect: () => {}, disabled: playlist.songs.length === 0 },
+      { type: 'divider' },
+      { label: 'Rename', icon: <FaPen />, onSelect: () => {}, disabled: isFavourites },
+      { label: 'Delete playlist', icon: <FaTrash />, onSelect: () => {}, disabled: isFavourites, danger: true },
+    ];
+  };
 
   return (
     <SidebarContainer>
@@ -94,6 +118,13 @@ const Sidebar = () => {
                 key={playlist.id}
                 $active={location.pathname === `/playlist/${playlist.id}`}
                 onClick={() => navigate(`/playlist/${playlist.id}`)}
+                onContextMenu={(e) => {
+                  if (isFavouritesPlaylist(playlist.id)) {
+                    return null;
+                  }
+                  e.preventDefault();
+                  setMenu({ kind: 'playlist', x: e.clientX, y: e.clientY, playlist });
+                }}
               >
                 {isFavouritesPlaylist(playlist.id) ? (
                   <FavouriteThumb>
@@ -126,6 +157,10 @@ const Sidebar = () => {
                 $active={song.path === currentPath}
                 key={song.path ?? `${song.title}-${song.artist}`}
                 onClick={() => setCurrentPath?.(song.path)}
+                onContextMenu={(e) => {
+                  e.preventDefault();
+                  setMenu({ kind: 'queue', x: e.clientX, y: e.clientY, song });
+                }}
                 title={displayTitle(song)}
               >
                 <AlbumImage metadata={song} height="2.25rem" width="2.25rem" />
@@ -134,6 +169,14 @@ const Sidebar = () => {
             ))}
           </Menu>
         </>
+      )}
+      {menu && (
+        <ContextMenu
+          x={menu.x}
+          y={menu.y}
+          items={menu.kind === 'queue' ? queueMenuItems() : playlistMenuItems(menu.playlist)}
+          onClose={() => setMenu(null)}
+        />
       )}
     </SidebarContainer>
   );
