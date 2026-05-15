@@ -211,16 +211,19 @@ pub(crate) fn get_cached_tracks(conn: &Connection) -> Result<Vec<AudioMetadata>,
             let track: Option<i64> = row.get(5)?;
             let duration_seconds: Option<i64> = row.get(6)?;
             let duration_formatted: Option<String> = row.get(7)?;
-            Ok(AudioMetadata::new(
+            Ok(AudioMetadata {
                 title,
                 artist,
                 album,
                 year,
-                track.map(|n| n as u32),
-                AudioDuration::new(duration_seconds.map(|n| n as u64), duration_formatted),
-                Some(path),
-                None, // image is lazy-loaded on demand
-            ))
+                track: track.map(|n| n as u32),
+                duration: AudioDuration::new(
+                    duration_seconds.map(|n| n as u64),
+                    duration_formatted,
+                ),
+                path: Some(path),
+                image: None, // image is lazy-loaded on demand
+            })
         })
         .map_err(|e| e.to_string())?
         .collect::<Result<_, _>>()
@@ -674,29 +677,29 @@ mod tests {
     // ── tracks ────────────────────────────────────────────────────────────────
 
     fn make_meta(path: &str, title: &str, mtime_marker_artist: &str) -> AudioMetadata {
-        AudioMetadata::new(
-            Some(title.into()),
-            Some(mtime_marker_artist.into()),
-            Some("Album".into()),
-            Some("2024".into()),
-            None,
-            AudioDuration::new(Some(180), Some("03:00".into())),
-            Some(path.into()),
-            None,
-        )
+        AudioMetadata {
+            title: Some(title.into()),
+            artist: Some(mtime_marker_artist.into()),
+            album: Some("Album".into()),
+            year: Some("2024".into()),
+            track: None,
+            duration: AudioDuration::new(Some(180), Some("03:00".into())),
+            path: Some(path.into()),
+            image: None,
+        }
     }
 
     fn make_meta_with_track(path: &str, title: &str, track: Option<u32>) -> AudioMetadata {
-        AudioMetadata::new(
-            Some(title.into()),
-            Some("Artist".into()),
-            Some("Album".into()),
-            Some("2024".into()),
+        AudioMetadata {
+            title: Some(title.into()),
+            artist: Some("Artist".into()),
+            album: Some("Album".into()),
+            year: Some("2024".into()),
             track,
-            AudioDuration::new(Some(180), Some("03:00".into())),
-            Some(path.into()),
-            None,
-        )
+            duration: AudioDuration::new(Some(180), Some("03:00".into())),
+            path: Some(path.into()),
+            image: None,
+        }
     }
 
     #[test]
