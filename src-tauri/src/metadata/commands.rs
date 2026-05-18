@@ -172,6 +172,11 @@ pub fn update_track_metadata(
                 .ok_or("New path contains invalid UTF-8")?
                 .to_string();
             std::fs::rename(&path, &new_path_str).map_err(|e| e.to_string())?;
+            // Rename the sidecar .lrc file if one exists.
+            let old_lrc = old.with_extension("lrc");
+            if old_lrc.exists() {
+                let _ = std::fs::rename(&old_lrc, new_path.with_extension("lrc"));
+            }
             new_path_str
         } else {
             path.clone()
