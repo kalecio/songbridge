@@ -6,6 +6,7 @@ use lofty::file::{AudioFile, TaggedFileExt};
 use lofty::picture::{MimeType, Picture, PictureType};
 use lofty::prelude::Accessor;
 use lofty::probe::Probe;
+use lofty::tag::items::Timestamp;
 use lofty::tag::Tag;
 use symphonia::core::meta::{MetadataRevision, StandardTagKey};
 
@@ -158,14 +159,17 @@ pub fn write_metadata_to_file(
     }
     match year {
         Some(y) => {
-            if let Ok(n) = y.parse::<u32>() {
-                tag.set_year(n);
+            if let Ok(n) = y.parse::<u16>() {
+                tag.set_date(Timestamp {
+                    year: n,
+                    ..Default::default()
+                });
             } else {
-                tag.remove_year();
+                tag.remove_date();
             }
         }
         None => {
-            tag.remove_year();
+            tag.remove_date();
         }
     }
     match track {
@@ -182,12 +186,12 @@ pub fn write_metadata_to_file(
         }
         CoverArtUpdate::Replace(jpeg_bytes) => {
             tag.remove_picture_type(PictureType::CoverFront);
-            tag.push_picture(Picture::new_unchecked(
-                PictureType::CoverFront,
-                Some(MimeType::Jpeg),
-                None,
-                jpeg_bytes.into(),
-            ));
+            tag.push_picture(
+                Picture::unchecked(jpeg_bytes)
+                    .pic_type(PictureType::CoverFront)
+                    .mime_type(MimeType::Jpeg)
+                    .build(),
+            );
         }
     }
 

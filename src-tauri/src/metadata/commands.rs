@@ -180,15 +180,28 @@ pub fn update_track_metadata(
     };
 
     // ── Write metadata tags ───────────────────────────────────────────────────
-    write_metadata_to_file(
-        &final_path,
-        title.as_deref(),
-        artist.as_deref(),
-        album.as_deref(),
-        year.as_deref(),
-        track,
-        cover_art_update,
-    )?;
+    // Wrap in catch_unwind because lofty may panic on files whose existing
+    // tags contain multiply-encoded strings (e.g. UTF-8 bytes stored as
+    // Latin-1 and re-encoded multiple times). We convert that to a proper
+    // error so the frontend shows a message instead of the app crashing.
+    std::panic::catch_unwind(std::panic::AssertUnwindSafe(|| {
+        write_metadata_to_file(
+            &final_path,
+            title.as_deref(),
+            artist.as_deref(),
+            album.as_deref(),
+            year.as_deref(),
+            track,
+            cover_art_update,
+        )
+    }))
+    .unwrap_or_else(|_| {
+        Err(
+            "Could not write tags: the file may have corrupted tag data. \
+             Try editing the file with a dedicated tag editor first."
+                .to_string(),
+        )
+    })?;
 
     // ── mtime after write ─────────────────────────────────────────────────────
     let mtime = std::fs::metadata(&final_path)

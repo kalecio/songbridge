@@ -189,4 +189,26 @@ describe('Search', () => {
       expect(titles[0].textContent).toBe('Favourites Mood');
     });
   });
+
+  describe('diacritic handling', () => {
+    const accentedLibrary: MetadataType[] = [
+      { path: '/x.mp3', title: 'Águas de Março', artist: 'Elis Regina', album: 'Elis & Tom' },
+      { path: '/y.mp3', title: 'Garota de Ipanema', artist: 'João Gilberto', album: 'Chega de Saudade' },
+    ];
+
+    it('finds accented titles when searching without accents', () => {
+      renderSearch('aguas', { library: accentedLibrary });
+      expect(screen.getAllByText('Águas de Março').length).toBeGreaterThan(0);
+    });
+
+    it('finds accented artist names when searching without accents', () => {
+      renderSearch('joao', { library: accentedLibrary });
+      expect(screen.getAllByText('João Gilberto').length).toBeGreaterThan(0);
+    });
+
+    it('finds songs when searching with accented characters', () => {
+      renderSearch('João', { library: accentedLibrary });
+      expect(screen.getAllByText('João Gilberto').length).toBeGreaterThan(0);
+    });
+  });
 });

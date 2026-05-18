@@ -39,7 +39,10 @@ import {
 } from './styles';
 
 function normalize(s?: string) {
-  return (s ?? '').toLowerCase();
+  return (s ?? '')
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .toLowerCase();
 }
 
 const SearchArtistAvatar = ({ name, songs }: { name: string; songs: MetadataType[] }) => {
