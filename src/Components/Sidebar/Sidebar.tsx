@@ -21,8 +21,7 @@ import {
   PlaylistItem,
   PlaylistsRow,
   PlaylistThumb,
-  PlusButtonContainer,
-  PlusIcon,
+  PlusButton,
   QueueHeader,
   SectionLabel,
   SidebarContainer,
@@ -33,6 +32,7 @@ import { useQueueActions } from '../../hooks/useQueueActions';
 import { usePlaylistActions } from '../../hooks/usePlaylistActions';
 import { usePlayHistory } from '../../hooks/usePlayHistory';
 import { useAddToPlaylistMenu } from '../../hooks/useAddToPlaylistMenu';
+import { useLyricsMenu } from '../../hooks/useLyricsMenu';
 import { displayTitle } from '../../songDisplay';
 
 type SidebarMenu =
@@ -63,6 +63,7 @@ const Sidebar = () => {
   const { renamePlaylist, deletePlaylist } = usePlaylistActions();
   const { recordPlaylistPlay } = usePlayHistory();
   const buildAddToPlaylistItem = useAddToPlaylistMenu();
+  const buildLyricsMenuItem = useLyricsMenu();
 
   useEffect(() => {
     if (currentPlaylist.length === 0) {
@@ -88,6 +89,7 @@ const Sidebar = () => {
   const queueMenuItems = (song: MetadataType): ContextMenuItem[] => [
     { label: 'Play next', icon: <FaPlay />, onSelect: () => playNext(song) },
     buildAddToPlaylistItem(song),
+    buildLyricsMenuItem(song),
     { type: 'divider' },
     { label: 'Remove from queue', icon: <FaTrash />, onSelect: () => removeFromQueue(song.path), danger: true },
   ];
@@ -144,9 +146,7 @@ const Sidebar = () => {
 
           <PlaylistsRow>
             <SectionLabel>Playlists</SectionLabel>
-            <PlusButtonContainer aria-label="manage playlists" onClick={() => navigate('/playlist')}>
-              <PlusIcon />
-            </PlusButtonContainer>
+            <PlusButton aria-label="manage playlists" onClick={() => navigate('/playlist')} />
           </PlaylistsRow>
           <Menu>
             {songs.length > 0 && <MenuItem onClick={() => setShowQueue?.(true)}>Playing now</MenuItem>}

@@ -1,4 +1,4 @@
-import { FaVolumeXmark, FaVolumeOff, FaVolumeLow, FaVolumeHigh, FaHeart } from 'react-icons/fa6';
+import { FaVolumeXmark, FaVolumeOff, FaVolumeLow, FaVolumeHigh, FaHeart, FaMicrophone } from 'react-icons/fa6';
 import { styled } from 'styled-components';
 
 const VolumeXmark = styled(FaVolumeXmark)`
@@ -36,6 +36,13 @@ const Heart = styled(FaHeart)<{ $isFavorite: boolean }>`
   cursor: pointer;
 `;
 
+const LyricsIcon = styled(FaMicrophone)<{ $active: boolean }>`
+  width: 25px;
+  height: 25px;
+  color: ${({ $active, theme }) => ($active ? theme.accent : theme.primaryDark)};
+  cursor: pointer;
+`;
+
 const VolumeContainer = styled.div`
   display: flex;
   justify-content: flex-end;
@@ -43,4 +50,4 @@ const VolumeContainer = styled.div`
   gap: 1rem;
 `;
 
-export { VolumeContainer, VolumeXmark, VolumeOff, VolumeLow, VolumeHigh, Heart };
+export { VolumeContainer, VolumeXmark, VolumeOff, VolumeLow, VolumeHigh, Heart, LyricsIcon };

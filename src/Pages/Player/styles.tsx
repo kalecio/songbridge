@@ -1,5 +1,5 @@
 import { styled } from 'styled-components';
-import { FaMagnifyingGlass } from 'react-icons/fa6';
+import { FaMagnifyingGlass, FaGear } from 'react-icons/fa6';
 import { AlbumImage, AlbumImagePlaceholder } from '../../Components/Song/styles';
 
 const PlayerContainer = styled.div`
@@ -106,24 +106,13 @@ const SearchInput = styled.input`
   }
 `;
 
-const SettingsButton = styled.button`
-  background: none;
-  border: none;
-  border-radius: 50%;
-  width: 2.25rem;
-  height: 2.25rem;
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
+const SettingsButton = styled(FaGear)`
+  width: 25px;
+  height: 25px;
   color: ${({ theme }) => theme.primaryDark};
-  transition:
-    background 0.15s,
-    color 0.15s;
+  cursor: pointer;
 
   &:hover {
-    background: ${({ theme }) => theme.hover};
     color: ${({ theme }) => theme.textPrimary};
   }
 `;

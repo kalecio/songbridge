@@ -1,7 +1,6 @@
 import { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { useNavigate, useLocation, Route, Routes } from 'react-router';
 import { error as logError } from '../../logger';
-import { FaGear } from 'react-icons/fa6';
 import Controls from '../../Components/Controls/Controls';
 import ProgressBar from '../../Components/ProgressBar/ProgressBar';
 import Song from '../../Components/Song/Song';
@@ -41,6 +40,7 @@ import Artists from '../Artists/List';
 import ArtistDetail from '../Artists/Detail';
 import Settings from '../Settings/Settings';
 import Search from '../Search/Search';
+import Lyrics from '../Lyrics/Lyrics';
 import CreatePlaylist from '../Playlist/Create';
 
 const Player = () => {
@@ -241,9 +241,7 @@ const Player = () => {
                 aria-label="Search library"
               />
             </SearchWrapper>
-            <SettingsButton aria-label="Settings" onClick={() => navigate('/settings')}>
-              <FaGear />
-            </SettingsButton>
+            <SettingsButton aria-label="Settings" onClick={() => navigate('/settings')} />
           </AppHeader>
           {isScanning && (
             <ScanBanner role="status" aria-live="polite">
@@ -275,6 +273,7 @@ const Player = () => {
               <Route path="/albums/:id" element={<AlbumDetail />} />
               <Route path="/songs" element={<Songs />} />
               <Route path="/search" element={<Search />} />
+              <Route path="/lyrics" element={<Lyrics />} />
               <Route path="/settings" element={<Settings />} />
               <Route path="/playlist/:id" element={<PlaylistRoute playlists={playlists} />} />
               <Route path="/playlist" element={<CreatePlaylist />} />

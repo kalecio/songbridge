@@ -67,6 +67,8 @@ pub fn run() {
             metadata::commands::get_track_image,
             metadata::commands::get_image_preview,
             metadata::commands::update_track_metadata,
+            metadata::commands::read_lrc_file,
+            metadata::commands::import_lrc_file,
             music_library::commands::scan_music_library,
             music_library::commands::get_all_songs,
             music_library::commands::get_songs_by_album,

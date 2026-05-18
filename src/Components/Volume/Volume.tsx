@@ -1,6 +1,7 @@
 import { useContext, useEffect, useRef, useState } from 'react';
+import { useNavigate, useLocation } from 'react-router';
 import Slider from '../Slider/Slider';
-import { Heart, VolumeContainer, VolumeHigh, VolumeLow, VolumeOff, VolumeXmark } from './styles';
+import { Heart, LyricsIcon, VolumeContainer, VolumeHigh, VolumeLow, VolumeOff, VolumeXmark } from './styles';
 import { invoke } from '@tauri-apps/api/core';
 import { AppContext } from '../../Context/AppContext';
 import { useFavourites } from '../../hooks/useFavourites';
@@ -12,6 +13,9 @@ const Volume = () => {
 
   const { currentPath, metadata, library } = useContext(AppContext);
   const { isFavourite, toggleFavourite } = useFavourites();
+  const navigate = useNavigate();
+  const location = useLocation();
+  const isLyricsActive = location.pathname === '/lyrics';
   const isFav = isFavourite(currentPath);
   const canFavourite = Boolean(currentPath);
 
@@ -54,6 +58,11 @@ const Volume = () => {
 
   return (
     <VolumeContainer>
+      <LyricsIcon
+        aria-label="Lyrics"
+        $active={isLyricsActive}
+        onClick={() => navigate(isLyricsActive ? '/' : '/lyrics')}
+      />
       <Heart
         role="button"
         aria-label={isFav ? 'remove from favourites' : 'add to favourites'}

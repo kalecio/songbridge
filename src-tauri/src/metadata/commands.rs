@@ -172,6 +172,11 @@ pub fn update_track_metadata(
                 .ok_or("New path contains invalid UTF-8")?
                 .to_string();
             std::fs::rename(&path, &new_path_str).map_err(|e| e.to_string())?;
+            // Rename the sidecar .lrc file if one exists.
+            let old_lrc = old.with_extension("lrc");
+            if old_lrc.exists() {
+                let _ = std::fs::rename(&old_lrc, new_path.with_extension("lrc"));
+            }
             new_path_str
         } else {
             path.clone()
@@ -233,6 +238,32 @@ pub fn update_track_metadata(
     crate::db::commands::upsert_track(&conn, &updated, mtime)?;
 
     Ok(updated)
+}
+
+#[tauri::command]
+pub fn import_lrc_file(song_path: &str, lrc_source_path: &str) -> Result<(), String> {
+    let dest = std::path::Path::new(song_path).with_extension("lrc");
+    std::fs::copy(lrc_source_path, &dest)
+        .map(|_| ())
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn read_lrc_file(path: &str) -> Result<Option<String>, String> {
+    let audio_path = std::path::Path::new(path);
+    let lrc_path = audio_path.with_extension("lrc");
+    if lrc_path.exists() {
+        return std::fs::read_to_string(&lrc_path)
+            .map(Some)
+            .map_err(|e| e.to_string());
+    }
+    let lrc_upper = audio_path.with_extension("LRC");
+    if lrc_upper.exists() {
+        return std::fs::read_to_string(&lrc_upper)
+            .map(Some)
+            .map_err(|e| e.to_string());
+    }
+    Ok(None)
 }
 
 // ── tests ─────────────────────────────────────────────────────────────────────
