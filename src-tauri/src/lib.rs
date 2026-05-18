@@ -65,6 +65,8 @@ pub fn run() {
             audio::commands::get_progress,
             metadata::commands::get_metadata,
             metadata::commands::get_track_image,
+            metadata::commands::get_image_preview,
+            metadata::commands::update_track_metadata,
             music_library::commands::scan_music_library,
             music_library::commands::get_all_songs,
             music_library::commands::get_songs_by_album,
