@@ -48,25 +48,14 @@ const PlaylistsRow = styled.div`
   flex-shrink: 0;
 `;
 
-const PlusButtonContainer = styled.button`
-  background: none;
-  border: none;
-  cursor: pointer;
+const PlusButton = styled(FaPlus)`
+  width: 14px;
+  height: 14px;
   color: ${({ theme }) => theme.primary};
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 0.25rem;
-  border-radius: 0.4rem;
-  transition:
-    color 0.15s,
-    background 0.15s;
-  max-width: 2rem;
-  max-height: 2rem;
+  cursor: pointer;
 
   &:hover {
     color: ${({ theme }) => theme.primaryDark};
-    background: ${({ theme }) => theme.hoverActive};
   }
 `;
 
@@ -208,11 +197,6 @@ const BackIcon = styled(FaAngleLeft)`
   max-height: 16px;
 `;
 
-const PlusIcon = styled(FaPlus)`
-  max-width: 11px;
-  max-height: 11px;
-`;
-
 export {
   SidebarContainer,
   AppLogo,
@@ -220,8 +204,7 @@ export {
   LogoImg,
   SectionLabel,
   PlaylistsRow,
-  PlusButtonContainer,
-  PlusIcon,
+  PlusButton,
   Menu,
   MenuItem,
   PlaylistItem,

@@ -13,6 +13,7 @@ import { usePlaylistActions } from '../../hooks/usePlaylistActions';
 import { usePlayHistory } from '../../hooks/usePlayHistory';
 import { useAddToPlaylistMenu } from '../../hooks/useAddToPlaylistMenu';
 import { useMetadataActions } from '../../hooks/useMetadataActions';
+import { useLyricsMenu } from '../../hooks/useLyricsMenu';
 import EditMetadataModal from '../../Components/EditMetadataModal/EditMetadataModal';
 import { displayTitle } from '../../songDisplay';
 import {
@@ -70,6 +71,7 @@ const Search = () => {
   const { recordPlaylistPlay } = usePlayHistory();
   const buildAddToPlaylistItem = useAddToPlaylistMenu();
   const { updateSongMetadata } = useMetadataActions();
+  const buildLyricsMenuItem = useLyricsMenu();
 
   const songsOfAlbum = (albumName: string) => library.filter((s) => (s.album ?? 'Unknown Album') === albumName);
 
@@ -113,6 +115,7 @@ const Search = () => {
           buildAddToPlaylistItem(m.song),
           { type: 'divider' as const },
           { label: 'Edit metadata', icon: <FaPenToSquare />, onSelect: () => setEditSong(m.song) },
+          buildLyricsMenuItem(m.song),
         ];
       case 'artist': {
         const empty = m.songs.length === 0;

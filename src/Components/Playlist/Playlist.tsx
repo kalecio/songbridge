@@ -7,6 +7,7 @@ import { displayTitle } from '../../songDisplay';
 import { useQueueActions } from '../../hooks/useQueueActions';
 import { useAddToPlaylistMenu } from '../../hooks/useAddToPlaylistMenu';
 import { useMetadataActions } from '../../hooks/useMetadataActions';
+import { useLyricsMenu } from '../../hooks/useLyricsMenu';
 import EditMetadataModal from '../EditMetadataModal/EditMetadataModal';
 import AlbumImage from '../AlbumImage/AlbumImage';
 import ContextMenu, { ContextMenuItem } from '../ContextMenu/ContextMenu';
@@ -74,6 +75,7 @@ const Playlist = ({
   const { playNext, addToQueue } = useQueueActions();
   const buildAddToPlaylistItem = useAddToPlaylistMenu();
   const { updateSongMetadata } = useMetadataActions();
+  const buildLyricsMenuItem = useLyricsMenu();
 
   useEffect(() => {
     const paths = songs.map((s) => s.path).filter((p): p is string => Boolean(p));
@@ -191,6 +193,7 @@ const Playlist = ({
         onSelect: () => setEditSong(song),
         disabled: isMissing,
       },
+      buildLyricsMenuItem(song),
     ];
     if (onRemoveSong) {
       items.push(

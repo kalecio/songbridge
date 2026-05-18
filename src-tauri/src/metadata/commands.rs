@@ -235,6 +235,32 @@ pub fn update_track_metadata(
     Ok(updated)
 }
 
+#[tauri::command]
+pub fn import_lrc_file(song_path: &str, lrc_source_path: &str) -> Result<(), String> {
+    let dest = std::path::Path::new(song_path).with_extension("lrc");
+    std::fs::copy(lrc_source_path, &dest)
+        .map(|_| ())
+        .map_err(|e| e.to_string())
+}
+
+#[tauri::command]
+pub fn read_lrc_file(path: &str) -> Result<Option<String>, String> {
+    let audio_path = std::path::Path::new(path);
+    let lrc_path = audio_path.with_extension("lrc");
+    if lrc_path.exists() {
+        return std::fs::read_to_string(&lrc_path)
+            .map(Some)
+            .map_err(|e| e.to_string());
+    }
+    let lrc_upper = audio_path.with_extension("LRC");
+    if lrc_upper.exists() {
+        return std::fs::read_to_string(&lrc_upper)
+            .map(Some)
+            .map_err(|e| e.to_string());
+    }
+    Ok(None)
+}
+
 // ── tests ─────────────────────────────────────────────────────────────────────
 
 #[cfg(test)]
