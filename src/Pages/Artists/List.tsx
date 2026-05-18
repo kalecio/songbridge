@@ -1,6 +1,6 @@
-import { useContext, useState } from 'react';
+import { useCallback, useContext, useState } from 'react';
 import { useNavigate } from 'react-router';
-import { FaPlay, FaListUl } from 'react-icons/fa6';
+import { FaPlay, FaListUl, FaPenToSquare } from 'react-icons/fa6';
 import { AppContext } from '../../Context/AppContext';
 import { MetadataType } from '../../types';
 import Count from '../../Components/Count/Count';
@@ -8,8 +8,13 @@ import Page from '../../Components/Page/Page';
 import PageHeader from '../../Components/PageHeader/PageHeader';
 import StatusMessage from '../../Components/StatusMessage/StatusMessage';
 import ContextMenu, { ContextMenuItem } from '../../Components/ContextMenu/ContextMenu';
+import EditGroupMetadataModal, {
+  GroupEditFields,
+} from '../../Components/EditGroupMetadataModal/EditGroupMetadataModal';
 import { useLazyAlbumArt } from '../../hooks/useLazyAlbumArt';
 import { useQueueActions } from '../../hooks/useQueueActions';
+import { useMetadataActions } from '../../hooks/useMetadataActions';
+import { splitArtists } from '../../utils/artistUtils';
 import { Grid, Card, Avatar, ArtistName, ArtistMeta, AvatarImage } from './styles';
 
 interface ArtistEntry {
@@ -23,9 +28,11 @@ interface ArtistEntry {
 function groupByArtist(library: MetadataType[]): ArtistEntry[] {
   const map = new Map<string, MetadataType[]>();
   for (const song of library) {
-    const key = song.artist ?? 'Unknown Artist';
-    if (!map.has(key)) map.set(key, []);
-    map.get(key)!.push(song);
+    const artists = splitArtists(song.artist ?? 'Unknown Artist');
+    for (const artist of artists) {
+      if (!map.has(artist)) map.set(artist, []);
+      map.get(artist)!.push(song);
+    }
   }
   return Array.from(map.entries())
     .map(([name, songs]) => ({
@@ -47,7 +54,18 @@ const Artists = () => {
   const { library, isScanning } = useContext(AppContext);
   const navigate = useNavigate();
   const [menu, setMenu] = useState<{ x: number; y: number; artist: ArtistEntry } | null>(null);
+  const [editArtist, setEditArtist] = useState<ArtistEntry | null>(null);
   const { playSongs, addToQueue } = useQueueActions();
+  const { batchUpdateSongsMetadata } = useMetadataActions();
+
+  const handleSaveArtist = useCallback(
+    async (fields: GroupEditFields) => {
+      if (!editArtist) return;
+      const paths = editArtist.songs.map((s) => s.path).filter((p): p is string => Boolean(p));
+      await batchUpdateSongsMetadata(paths, { artist: fields.artist });
+    },
+    [editArtist, batchUpdateSongsMetadata],
+  );
 
   if (isScanning) {
     return <StatusMessage>Scanning music library…</StatusMessage>;
@@ -64,6 +82,16 @@ const Artists = () => {
     return [
       { label: 'Play', icon: <FaPlay />, onSelect: () => playSongs(artist.songs), disabled: empty },
       { label: 'Add to queue', icon: <FaListUl />, onSelect: () => addToQueue(artist.songs), disabled: empty },
+      { type: 'divider' },
+      {
+        label: 'Edit metadata',
+        icon: <FaPenToSquare />,
+        onSelect: () => {
+          setMenu(null);
+          setEditArtist(artist);
+        },
+        disabled: empty,
+      },
     ];
   };
 
@@ -91,6 +119,12 @@ const Artists = () => {
         ))}
       </Grid>
       {menu && <ContextMenu x={menu.x} y={menu.y} items={artistMenuItems(menu.artist)} onClose={() => setMenu(null)} />}
+      <EditGroupMetadataModal
+        groupType="artist"
+        songs={editArtist?.songs ?? null}
+        onClose={() => setEditArtist(null)}
+        onSave={handleSaveArtist}
+      />
     </Page>
   );
 };

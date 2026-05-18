@@ -1,7 +1,9 @@
-import { fireEvent } from '@testing-library/react';
+import { fireEvent, screen } from '@testing-library/react';
 import { renderWithContext } from '../../test/helpers';
 import Artists from './List';
 import { MetadataType } from '../../types';
+
+vi.mock('@tauri-apps/api/core', () => ({ invoke: vi.fn().mockResolvedValue(undefined) }));
 
 const library: MetadataType[] = [
   { title: 'Song 1', artist: 'Arctic Monkeys', album: 'AM', path: '/music/1.mp3' },
@@ -56,5 +58,27 @@ describe('Artists', () => {
     const names = getAllByText(/Arctic Monkeys|Radiohead/).map((el) => el.textContent);
     expect(names[0]).toBe('Arctic Monkeys');
     expect(names[1]).toBe('Radiohead');
+  });
+
+  describe('context menu — Edit metadata', () => {
+    it('shows an "Edit metadata" option in the artist context menu', () => {
+      renderWithContext(<Artists />, { library });
+      fireEvent.contextMenu(screen.getByText('Radiohead').closest('div[class]')!);
+      expect(screen.getByText('Edit metadata')).toBeInTheDocument();
+    });
+
+    it('opens the edit modal for the right-clicked artist', () => {
+      renderWithContext(<Artists />, { library });
+      fireEvent.contextMenu(screen.getByText('Radiohead').closest('div[class]')!);
+      fireEvent.click(screen.getByText('Edit metadata'));
+      expect(screen.getByText(/Edit artist — Radiohead/)).toBeInTheDocument();
+    });
+
+    it('pre-fills the artist name from the artist songs', () => {
+      renderWithContext(<Artists />, { library });
+      fireEvent.contextMenu(screen.getByText('Radiohead').closest('div[class]')!);
+      fireEvent.click(screen.getByText('Edit metadata'));
+      expect(screen.getByLabelText('Artist')).toHaveValue('Radiohead');
+    });
   });
 });

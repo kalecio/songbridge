@@ -1,6 +1,6 @@
 import { useContext, useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router';
-import { FaPlay, FaListUl, FaPen, FaTrash } from 'react-icons/fa6';
+import { FaPlay, FaListUl, FaPen, FaTrash, FaPenToSquare } from 'react-icons/fa6';
 import { AppContext } from '../../Context/AppContext';
 import { MetadataType, PlaylistType } from '../../types';
 import AlbumImage from '../../Components/AlbumImage/AlbumImage';
@@ -12,6 +12,8 @@ import { useQueueActions } from '../../hooks/useQueueActions';
 import { usePlaylistActions } from '../../hooks/usePlaylistActions';
 import { usePlayHistory } from '../../hooks/usePlayHistory';
 import { useAddToPlaylistMenu } from '../../hooks/useAddToPlaylistMenu';
+import { useMetadataActions } from '../../hooks/useMetadataActions';
+import EditMetadataModal from '../../Components/EditMetadataModal/EditMetadataModal';
 import { displayTitle } from '../../songDisplay';
 import {
   SearchContainer,
@@ -37,7 +39,10 @@ import {
 } from './styles';
 
 function normalize(s?: string) {
-  return (s ?? '').toLowerCase();
+  return (s ?? '')
+    .normalize('NFD')
+    .replace(/\p{Diacritic}/gu, '')
+    .toLowerCase();
 }
 
 const SearchArtistAvatar = ({ name, songs }: { name: string; songs: MetadataType[] }) => {
@@ -59,10 +64,12 @@ const Search = () => {
   const { library, playlists = [], setCurrentPath, setCurrentPlaylist } = useContext(AppContext);
   const navigate = useNavigate();
   const [menu, setMenu] = useState<SearchMenu | null>(null);
+  const [editSong, setEditSong] = useState<MetadataType | null>(null);
   const { playSongs, addToQueue, playNext } = useQueueActions();
   const { renamePlaylist, deletePlaylist } = usePlaylistActions();
   const { recordPlaylistPlay } = usePlayHistory();
   const buildAddToPlaylistItem = useAddToPlaylistMenu();
+  const { updateSongMetadata } = useMetadataActions();
 
   const songsOfAlbum = (albumName: string) => library.filter((s) => (s.album ?? 'Unknown Album') === albumName);
 
@@ -104,6 +111,8 @@ const Search = () => {
           { label: 'Play next', icon: <FaPlay />, onSelect: () => playNext(m.song) },
           { label: 'Add to queue', icon: <FaListUl />, onSelect: () => addToQueue([m.song]) },
           buildAddToPlaylistItem(m.song),
+          { type: 'divider' as const },
+          { label: 'Edit metadata', icon: <FaPenToSquare />, onSelect: () => setEditSong(m.song) },
         ];
       case 'artist': {
         const empty = m.songs.length === 0;
@@ -270,6 +279,7 @@ const Search = () => {
         </NoResults>
       )}
       {menu && <ContextMenu x={menu.x} y={menu.y} items={menuItems(menu)} onClose={() => setMenu(null)} />}
+      <EditMetadataModal song={editSong} onClose={() => setEditSong(null)} onSave={updateSongMetadata} />
     </SearchContainer>
   );
 };

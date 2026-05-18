@@ -18,6 +18,7 @@ import {
 } from '../../Components/HeroSection/HeroSection';
 import Playlist from '../../Components/Playlist/Playlist';
 import { useLazyAlbumArt } from '../../hooks/useLazyAlbumArt';
+import { splitArtists } from '../../utils/artistUtils';
 
 interface AlbumGroup {
   name: string;
@@ -44,7 +45,7 @@ const ArtistDetail = () => {
   const { library, currentPath, setCurrentPath, setCurrentPlaylist } = useContext(AppContext);
 
   const artistName = decodeURIComponent(id ?? '');
-  const artistSongs = library.filter((s) => (s.artist ?? 'Unknown Artist') === artistName);
+  const artistSongs = library.filter((s) => splitArtists(s.artist ?? 'Unknown Artist').includes(artistName));
   const albums = groupByAlbum(artistSongs);
   const eagerImage = artistSongs.find((s) => s.image)?.image;
   const coverPath = artistSongs.find((s) => s.path)?.path;

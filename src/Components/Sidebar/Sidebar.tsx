@@ -69,18 +69,19 @@ const Sidebar = () => {
       setSongs([]);
       return;
     }
+    const libraryMap = new Map(library.map((s) => [s.path, s]));
     const getSongs = async () => {
-      const uncached = currentPlaylist.filter((p) => !metadataCache.current.has(p));
+      const uncached = currentPlaylist.filter((p) => !libraryMap.has(p) && !metadataCache.current.has(p));
       await Promise.all(
         uncached.map(async (path) => {
           const metadata = await invoke<MetadataType>('get_metadata', { path });
           metadataCache.current.set(path, { ...metadata, path });
         }),
       );
-      setSongs(currentPlaylist.map((p) => metadataCache.current.get(p)!));
+      setSongs(currentPlaylist.map((p) => libraryMap.get(p) ?? metadataCache.current.get(p)!));
     };
     getSongs();
-  }, [currentPlaylist]);
+  }, [currentPlaylist, library]);
 
   const isActive = (path: string) => (path === '/' ? location.pathname === '/' : location.pathname.startsWith(path));
 

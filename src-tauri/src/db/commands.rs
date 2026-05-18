@@ -296,6 +296,61 @@ pub(crate) fn upsert_track(
     Ok(())
 }
 
+/// Updates the `path` primary key for a track and all playlist_songs that reference it.
+/// Called after a file rename so every reference stays consistent.
+pub(crate) fn rename_track_path(
+    conn: &Connection,
+    old_path: &str,
+    new_path: &str,
+) -> Result<(), String> {
+    conn.execute(
+        "UPDATE tracks SET path = ?1 WHERE path = ?2",
+        params![new_path, old_path],
+    )
+    .map_err(|e| e.to_string())?;
+
+    conn.execute(
+        "UPDATE playlist_songs SET song_path = ?1 WHERE song_path = ?2",
+        params![new_path, old_path],
+    )
+    .map_err(|e| e.to_string())?;
+
+    Ok(())
+}
+
+pub(crate) fn get_track_by_path(
+    conn: &Connection,
+    path: &str,
+) -> Result<Option<AudioMetadata>, String> {
+    let result = conn.query_row(
+        "SELECT path, title, artist, album, year, track_number, duration_seconds, duration_formatted \
+         FROM tracks WHERE path = ?1",
+        params![path],
+        |row| {
+            let duration_seconds: Option<i64> = row.get(6)?;
+            let duration_formatted: Option<String> = row.get(7)?;
+            Ok(AudioMetadata {
+                path: Some(row.get(0)?),
+                title: row.get(1)?,
+                artist: row.get(2)?,
+                album: row.get(3)?,
+                year: row.get(4)?,
+                track: row.get::<_, Option<i64>>(5)?.map(|n| n as u32),
+                duration: AudioDuration::new(
+                    duration_seconds.map(|n| n as u64),
+                    duration_formatted,
+                ),
+                image: None,
+            })
+        },
+    );
+    match result {
+        Ok(meta) => Ok(Some(meta)),
+        Err(rusqlite::Error::QueryReturnedNoRows) => Ok(None),
+        Err(e) => Err(e.to_string()),
+    }
+}
+
 pub(crate) fn delete_tracks(conn: &Connection, paths: &[String]) -> Result<(), String> {
     let mut stmt = conn
         .prepare("DELETE FROM tracks WHERE path = ?1")

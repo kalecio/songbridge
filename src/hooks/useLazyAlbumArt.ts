@@ -7,6 +7,17 @@ import { invoke } from '@tauri-apps/api/core';
 const cache = new Map<string, string | null>();
 const inflight = new Map<string, Promise<string | null>>();
 
+/** Replace the cached art for `path`. Causes mounted hook instances to re-render. */
+export function updateCachedArt(path: string, dataUrl: string | null): void {
+  cache.set(path, dataUrl);
+}
+
+/** Remove the cached art for `path` so the next hook mount fetches fresh from disk. */
+export function invalidateCachedArt(path: string): void {
+  cache.delete(path);
+  inflight.delete(path);
+}
+
 const fetchArt = (path: string): Promise<string | null> => {
   const existing = inflight.get(path);
   if (existing) return existing;
