@@ -14,6 +14,7 @@ import EditGroupMetadataModal, {
 import { useLazyAlbumArt } from '../../hooks/useLazyAlbumArt';
 import { useQueueActions } from '../../hooks/useQueueActions';
 import { useMetadataActions } from '../../hooks/useMetadataActions';
+import { splitArtists } from '../../utils/artistUtils';
 import { Grid, Card, Avatar, ArtistName, ArtistMeta, AvatarImage } from './styles';
 
 interface ArtistEntry {
@@ -27,9 +28,11 @@ interface ArtistEntry {
 function groupByArtist(library: MetadataType[]): ArtistEntry[] {
   const map = new Map<string, MetadataType[]>();
   for (const song of library) {
-    const key = song.artist ?? 'Unknown Artist';
-    if (!map.has(key)) map.set(key, []);
-    map.get(key)!.push(song);
+    const artists = splitArtists(song.artist ?? 'Unknown Artist');
+    for (const artist of artists) {
+      if (!map.has(artist)) map.set(artist, []);
+      map.get(artist)!.push(song);
+    }
   }
   return Array.from(map.entries())
     .map(([name, songs]) => ({

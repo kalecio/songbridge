@@ -5,6 +5,7 @@ import { FaGear } from 'react-icons/fa6';
 import Controls from '../../Components/Controls/Controls';
 import ProgressBar from '../../Components/ProgressBar/ProgressBar';
 import Song from '../../Components/Song/Song';
+import { splitArtists } from '../../utils/artistUtils';
 import Volume from '../../Components/Volume/Volume';
 import { invoke } from '@tauri-apps/api/core';
 import { open } from '@tauri-apps/plugin-dialog';
@@ -290,7 +291,7 @@ const Player = () => {
             albumImage={metadata?.image}
             albumName={metadata?.album}
             songName={displayTitle({ title: metadata?.title, path: path }, 'no name')}
-            artistName={metadata?.artist ?? 'no name'}
+            artistName={splitArtists(metadata?.artist ?? '')[0] ?? 'no name'}
           />
           <Controls />
           <Volume />
