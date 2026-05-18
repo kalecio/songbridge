@@ -1,7 +1,35 @@
-import { fireEvent, waitFor } from '@testing-library/react';
+import { fireEvent, render, waitFor } from '@testing-library/react';
+import { MemoryRouter } from 'react-router';
 import { invoke } from '@tauri-apps/api/core';
+import { AppContext } from '../../Context/AppContext';
+import { DEFAULT_SHORTCUTS } from '../../keyboard';
 import Sidebar from './Sidebar';
 import { renderWithContext } from '../../test/helpers';
+
+type AppContextValue = React.ComponentProps<typeof AppContext.Provider>['value'];
+
+const baseContext: AppContextValue = {
+  onRepeat: false,
+  onShuffle: false,
+  isPlaying: false,
+  isScanning: false,
+  scanProgress: { current: 0, total: 0 },
+  shortcuts: DEFAULT_SHORTCUTS,
+  library: [],
+  libraryPaths: [],
+  progress: 0,
+  currentPlaylist: [],
+  currentTheme: 'Midnight',
+};
+
+const wrap = (overrides: Partial<AppContextValue>) =>
+  render(
+    <MemoryRouter>
+      <AppContext.Provider value={{ ...baseContext, ...overrides }}>
+        <Sidebar />
+      </AppContext.Provider>
+    </MemoryRouter>,
+  );
 
 vi.mock('@tauri-apps/api/core', () => ({
   invoke: vi.fn().mockResolvedValue(undefined),
@@ -92,6 +120,35 @@ describe('Sidebar', () => {
       });
       fireEvent.click(getByLabelText('close queue'));
       expect(setShowQueue).toHaveBeenCalledWith(false);
+    });
+
+    it('uses library metadata directly without invoking get_metadata', async () => {
+      const library = [{ path: '/a.mp3', title: 'Library Title', artist: 'Library Artist' }];
+      const { getByText } = renderWithContext(<Sidebar />, {
+        showQueue: true,
+        currentPlaylist: ['/a.mp3'],
+        library,
+      });
+      await waitFor(() => expect(getByText('Library Title')).toBeInTheDocument());
+      expect(mockInvoke).not.toHaveBeenCalledWith('get_metadata', { path: '/a.mp3' });
+    });
+
+    it('refreshes queue display when library metadata changes without a path change', async () => {
+      const library = [{ path: '/a.mp3', title: 'Old Title', artist: 'Artist' }];
+      const { getByText, rerender } = wrap({ showQueue: true, currentPlaylist: ['/a.mp3'], library });
+      await waitFor(() => expect(getByText('Old Title')).toBeInTheDocument());
+
+      const updatedLibrary = [{ path: '/a.mp3', title: 'New Title', artist: 'Artist' }];
+      rerender(
+        <MemoryRouter>
+          <AppContext.Provider
+            value={{ ...baseContext, showQueue: true, currentPlaylist: ['/a.mp3'], library: updatedLibrary }}
+          >
+            <Sidebar />
+          </AppContext.Provider>
+        </MemoryRouter>,
+      );
+      await waitFor(() => expect(getByText('New Title')).toBeInTheDocument());
     });
 
     describe('drag to reorder', () => {
