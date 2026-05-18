@@ -319,4 +319,205 @@ describe('useMetadataActions', () => {
       );
     });
   });
+
+  // ── batchUpdateSongsMetadata ───────────────────────────────────────────────
+
+  describe('batchUpdateSongsMetadata', () => {
+    it('is a noop when the paths array is empty', async () => {
+      const setLibrary = vi.fn();
+      const { result: hook } = renderWithContext({ library: [], setLibrary });
+
+      await act(async () => {
+        await hook.current.batchUpdateSongsMetadata([], { artist: 'New' });
+      });
+
+      expect(mockInvoke).not.toHaveBeenCalled();
+      expect(setLibrary).not.toHaveBeenCalled();
+    });
+
+    it('invokes update_track_metadata once per song', async () => {
+      const songA = makeSong({ path: '/a.mp3' });
+      const songB = makeSong({ path: '/b.mp3' });
+      mockInvoke.mockResolvedValueOnce({ ...songA, artist: 'New' }).mockResolvedValueOnce({ ...songB, artist: 'New' });
+
+      const { result: hook } = renderWithContext({ library: [songA, songB] });
+
+      await act(async () => {
+        await hook.current.batchUpdateSongsMetadata(['/a.mp3', '/b.mp3'], { artist: 'New' });
+      });
+
+      expect(mockInvoke).toHaveBeenCalledTimes(2);
+      expect(mockInvoke).toHaveBeenNthCalledWith(
+        1,
+        'update_track_metadata',
+        expect.objectContaining({ path: '/a.mp3', artist: 'New' }),
+      );
+      expect(mockInvoke).toHaveBeenNthCalledWith(
+        2,
+        'update_track_metadata',
+        expect.objectContaining({ path: '/b.mp3', artist: 'New' }),
+      );
+    });
+
+    it('applies exactly one setLibrary call that patches every updated song', async () => {
+      const songA = makeSong({ path: '/a.mp3', artist: 'Old' });
+      const songB = makeSong({ path: '/b.mp3', artist: 'Old' });
+      const songC = makeSong({ path: '/c.mp3', artist: 'Old' });
+      mockInvoke
+        .mockResolvedValueOnce({ ...songA, artist: 'New' })
+        .mockResolvedValueOnce({ ...songB, artist: 'New' })
+        .mockResolvedValueOnce({ ...songC, artist: 'New' });
+
+      const setLibrary = vi.fn();
+      const { result: hook } = renderWithContext({
+        library: [songA, songB, songC],
+        setLibrary,
+      });
+
+      await act(async () => {
+        await hook.current.batchUpdateSongsMetadata(['/a.mp3', '/b.mp3', '/c.mp3'], { artist: 'New' });
+      });
+
+      // Core invariant: a single update covers all songs, not one call per song.
+      expect(setLibrary).toHaveBeenCalledTimes(1);
+      const newLib: MetadataType[] = setLibrary.mock.calls[0][0];
+      expect(newLib.find((s) => s.path === '/a.mp3')?.artist).toBe('New');
+      expect(newLib.find((s) => s.path === '/b.mp3')?.artist).toBe('New');
+      expect(newLib.find((s) => s.path === '/c.mp3')?.artist).toBe('New');
+    });
+
+    it('preserves songs that are not in the batch', async () => {
+      const target = makeSong({ path: '/a.mp3', artist: 'Old' });
+      const bystander = makeSong({ path: '/other.mp3', artist: 'Bystander' });
+      mockInvoke.mockResolvedValueOnce({ ...target, artist: 'New' });
+
+      const setLibrary = vi.fn();
+      const { result: hook } = renderWithContext({ library: [target, bystander], setLibrary });
+
+      await act(async () => {
+        await hook.current.batchUpdateSongsMetadata(['/a.mp3'], { artist: 'New' });
+      });
+
+      const newLib: MetadataType[] = setLibrary.mock.calls[0][0];
+      expect(newLib.find((s) => s.path === '/other.mp3')?.artist).toBe('Bystander');
+    });
+
+    it('seeds the image cache and sets library image for all songs when art is replaced', async () => {
+      const songA = makeSong({ path: '/a.mp3' });
+      const songB = makeSong({ path: '/b.mp3' });
+      mockInvoke
+        .mockResolvedValueOnce({ ...songA, image: 'data:new' })
+        .mockResolvedValueOnce({ ...songB, image: 'data:new' });
+
+      const setLibrary = vi.fn();
+      const { result: hook } = renderWithContext({ library: [songA, songB], setLibrary });
+
+      await act(async () => {
+        await hook.current.batchUpdateSongsMetadata(['/a.mp3', '/b.mp3'], { coverArtPath: '/cover.jpg' });
+      });
+
+      expect(mockUpdateCachedArt).toHaveBeenCalledWith('/a.mp3', 'data:new');
+      expect(mockUpdateCachedArt).toHaveBeenCalledWith('/b.mp3', 'data:new');
+      const newLib: MetadataType[] = setLibrary.mock.calls[0][0];
+      expect(newLib.find((s) => s.path === '/a.mp3')?.image).toBe('data:new');
+      expect(newLib.find((s) => s.path === '/b.mp3')?.image).toBe('data:new');
+    });
+
+    it('invalidates cache and clears image for all songs when removeCoverArt is true', async () => {
+      const songA = makeSong({ path: '/a.mp3', image: 'data:old' });
+      const songB = makeSong({ path: '/b.mp3', image: 'data:old' });
+      mockInvoke
+        .mockResolvedValueOnce({ ...songA, image: undefined })
+        .mockResolvedValueOnce({ ...songB, image: undefined });
+
+      const setLibrary = vi.fn();
+      const { result: hook } = renderWithContext({ library: [songA, songB], setLibrary });
+
+      await act(async () => {
+        await hook.current.batchUpdateSongsMetadata(['/a.mp3', '/b.mp3'], { removeCoverArt: true });
+      });
+
+      expect(mockInvalidateCachedArt).toHaveBeenCalledWith('/a.mp3');
+      expect(mockInvalidateCachedArt).toHaveBeenCalledWith('/b.mp3');
+      const newLib: MetadataType[] = setLibrary.mock.calls[0][0];
+      expect(newLib.find((s) => s.path === '/a.mp3')?.image).toBeUndefined();
+      expect(newLib.find((s) => s.path === '/b.mp3')?.image).toBeUndefined();
+    });
+
+    it('updates now-playing metadata when the playing song is in the batch', async () => {
+      const playing = makeSong({ path: '/a.mp3', artist: 'Old' });
+      const other = makeSong({ path: '/b.mp3', artist: 'Old' });
+      mockInvoke
+        .mockResolvedValueOnce({ ...playing, artist: 'New' })
+        .mockResolvedValueOnce({ ...other, artist: 'New' });
+
+      const setMetadata = vi.fn();
+      const { result: hook } = renderWithContext({
+        library: [playing, other],
+        metadata: playing,
+        setMetadata,
+      });
+
+      await act(async () => {
+        await hook.current.batchUpdateSongsMetadata(['/a.mp3', '/b.mp3'], { artist: 'New' });
+      });
+
+      expect(setMetadata).toHaveBeenCalledWith(expect.objectContaining({ path: '/a.mp3', artist: 'New' }));
+    });
+
+    it('does not call setMetadata when none of the batch songs are currently playing', async () => {
+      const songA = makeSong({ path: '/a.mp3' });
+      const nowPlaying = makeSong({ path: '/playing.mp3' });
+      mockInvoke.mockResolvedValueOnce({ ...songA, artist: 'New' });
+
+      const setMetadata = vi.fn();
+      const { result: hook } = renderWithContext({
+        library: [songA],
+        metadata: nowPlaying,
+        setMetadata,
+      });
+
+      await act(async () => {
+        await hook.current.batchUpdateSongsMetadata(['/a.mp3'], { artist: 'New' });
+      });
+
+      expect(setMetadata).not.toHaveBeenCalled();
+    });
+
+    it('updates the playback queue when a song in the batch is renamed', async () => {
+      const song = makeSong({ path: '/old.mp3' });
+      mockInvoke.mockResolvedValueOnce({ ...song, path: '/new.mp3' });
+
+      const setCurrentPlaylist = vi.fn();
+      const { result: hook } = renderWithContext({
+        library: [song],
+        currentPlaylist: ['/old.mp3', '/other.mp3'],
+        setCurrentPlaylist,
+      });
+
+      await act(async () => {
+        await hook.current.batchUpdateSongsMetadata(['/old.mp3'], {});
+      });
+
+      expect(setCurrentPlaylist).toHaveBeenCalledWith(['/new.mp3', '/other.mp3']);
+    });
+
+    it('does not call setCurrentPlaylist when no paths change', async () => {
+      const song = makeSong({ path: '/a.mp3' });
+      mockInvoke.mockResolvedValueOnce({ ...song });
+
+      const setCurrentPlaylist = vi.fn();
+      const { result: hook } = renderWithContext({
+        library: [song],
+        currentPlaylist: ['/a.mp3'],
+        setCurrentPlaylist,
+      });
+
+      await act(async () => {
+        await hook.current.batchUpdateSongsMetadata(['/a.mp3'], { artist: 'New' });
+      });
+
+      expect(setCurrentPlaylist).not.toHaveBeenCalled();
+    });
+  });
 });
