@@ -105,6 +105,7 @@ pub(crate) fn sanitize_filename(name: &str) -> String {
         .to_string()
 }
 
+#[allow(clippy::too_many_arguments)]
 #[tauri::command]
 pub fn update_track_metadata(
     db_state: State<DbState>,
