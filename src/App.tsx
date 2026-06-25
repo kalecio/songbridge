@@ -3,7 +3,7 @@ import { createGlobalStyle, ThemeProvider } from 'styled-components';
 import './App.css';
 import Player from './Pages/Player/Player';
 import { AppContext, ScanProgress } from './Context/AppContext';
-import { MetadataType, PlaylistType } from './types';
+import { MetadataType, PlaylistType, RepeatMode } from './types';
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import { themes, defaultTheme } from './theme';
@@ -22,7 +22,7 @@ function App() {
   const [currentPlaylist, setCurrentPlaylist] = useState<string[]>([]);
   const [playlists, setPlaylists] = useState<Array<PlaylistType>>([]);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
-  const [onRepeat, setOnRepeat] = useState<boolean>(false);
+  const [onRepeat, setOnRepeat] = useState<RepeatMode>('none');
   const [onShuffle, setOnShuffle] = useState<boolean>(false);
   const [progress, setProgress] = useState<number>(0);
   const [metadata, setMetadata] = useState<MetadataType | undefined>(undefined);
@@ -84,12 +84,12 @@ function App() {
         const prefs = await invoke<{
           current_path?: string;
           current_playlist: string[];
-          on_repeat: boolean;
+          on_repeat: RepeatMode;
           on_shuffle: boolean;
           theme: string;
         }>('db_get_preferences');
         if (prefs.current_playlist.length) setCurrentPlaylist(prefs.current_playlist);
-        setOnRepeat(prefs.on_repeat);
+        setOnRepeat(prefs.on_repeat as RepeatMode);
         setOnShuffle(prefs.on_shuffle);
         if (themes[prefs.theme]) setCurrentTheme(prefs.theme);
 

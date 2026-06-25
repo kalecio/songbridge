@@ -16,7 +16,7 @@ const mockInvoke = vi.mocked(invoke);
 type AppContextValue = React.ComponentProps<typeof AppContext.Provider>['value'];
 
 const baseContext: AppContextValue = {
-  onRepeat: false,
+  onRepeat: 'none',
   onShuffle: false,
   isPlaying: false,
   isScanning: false,

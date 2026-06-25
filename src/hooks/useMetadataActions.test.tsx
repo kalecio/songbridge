@@ -45,7 +45,7 @@ const renderWithContext = (overrides: ContextOverrides = {}) => {
   const wrapper = ({ children }: { children: React.ReactNode }) => (
     <AppContext.Provider
       value={{
-        onRepeat: false,
+        onRepeat: 'none',
         onShuffle: false,
         isPlaying: false,
         isScanning: false,

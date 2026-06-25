@@ -20,7 +20,7 @@ vi.mock('react-router', async () => {
 type AppContextValue = React.ComponentProps<typeof AppContext.Provider>['value'];
 
 const baseContext: AppContextValue = {
-  onRepeat: false,
+  onRepeat: 'none',
   onShuffle: false,
   isPlaying: false,
   isScanning: false,

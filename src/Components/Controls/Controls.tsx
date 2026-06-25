@@ -1,10 +1,11 @@
 import { useCallback, useContext, useEffect, useRef, useState } from 'react';
-import { Controls, Shuffle, Prev, Play, Next, Repeat, Pause } from './styles';
+import { Controls, Shuffle, Prev, Play, Next, RepeatButton, Pause } from './styles';
 import { invoke } from '@tauri-apps/api/core';
 import { AppContext } from '../../Context/AppContext';
 import { error as logError } from '../../logger';
-import { MetadataType } from '../../types';
+import { MetadataType, RepeatMode } from '../../types';
 import { AUDIO_EVENTS } from '../../audioEvents';
+import { TbRepeat, TbRepeatOnce } from 'react-icons/tb';
 
 const Player = () => {
   const [isSongLoaded, setIsSongLoaded] = useState(false);
@@ -96,6 +97,13 @@ const Player = () => {
     }
   };
 
+  const handleToggleRepeat = useCallback(() => {
+    const modes: RepeatMode[] = ['none', 'one', 'all'];
+    const currentIndex = modes.indexOf(onRepeat);
+    const nextIndex = (currentIndex + 1) % modes.length;
+    setOnRepeat?.(modes[nextIndex]);
+  }, [onRepeat, setOnRepeat]);
+
   // Bridge custom audio events (dispatched by the global keyboard-shortcut
   // handler) to the existing playback handlers. Refs keep the listeners
   // pointing at the latest closures without re-binding on every render.
@@ -104,14 +112,14 @@ const Player = () => {
     handleNextSong,
     handlePreviousSong,
     toggleShuffle: () => setOnShuffle?.(!onShuffle),
-    toggleRepeat: () => setOnRepeat?.(!onRepeat),
+    toggleRepeat: handleToggleRepeat,
   });
   handlersRef.current = {
     togglePlayPause,
     handleNextSong,
     handlePreviousSong,
     toggleShuffle: () => setOnShuffle?.(!onShuffle),
-    toggleRepeat: () => setOnRepeat?.(!onRepeat),
+    toggleRepeat: handleToggleRepeat,
   };
 
   useEffect(() => {
@@ -144,7 +152,9 @@ const Player = () => {
         <Play aria-label="play" onClick={isSongLoaded ? resume : playNewSong} />
       )}
       <Next aria-label="next" onClick={handleNextSong} />
-      <Repeat aria-label="repeat" $onRepeat={onRepeat} onClick={() => setOnRepeat?.(!onRepeat)} />
+      <RepeatButton aria-label="repeat" $onRepeat={onRepeat} onClick={handleToggleRepeat}>
+        {onRepeat === 'one' ? <TbRepeatOnce /> : <TbRepeat />}
+      </RepeatButton>
     </Controls>
   );
 };

@@ -1,3 +1,5 @@
+export type RepeatMode = 'none' | 'one' | 'all';
+
 export interface DurationType {
   duration_seconds?: number;
   duration_formatted?: string;

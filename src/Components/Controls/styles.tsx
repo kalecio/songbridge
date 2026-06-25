@@ -1,5 +1,6 @@
-import { FaShuffle, FaForward, FaBackward, FaRepeat, FaPlay, FaPause } from 'react-icons/fa6';
+import { FaShuffle, FaForward, FaBackward, FaPlay, FaPause } from 'react-icons/fa6';
 import { styled } from 'styled-components';
+import { RepeatMode } from '../../types';
 
 const Controls = styled.div`
   display: flex;
@@ -30,11 +31,32 @@ const Prev = styled(FaBackward)`
   color: ${({ theme }) => theme.accent};
 `;
 
-const Repeat = styled(FaRepeat)<{ $onRepeat: boolean }>`
+const RepeatButton = styled.button<{ $onRepeat: RepeatMode }>`
+  background: none;
+  border: none;
+  padding: 0;
   width: 60px;
   height: 30px;
   cursor: pointer;
-  color: ${(props) => (props.$onRepeat ? props.theme.accent : props.theme.primaryDark)};
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: ${(props) => {
+    if (props.$onRepeat === 'one' || props.$onRepeat === 'all') {
+      return props.theme.accent;
+    }
+    return props.theme.primaryDark;
+  }};
+
+  & svg {
+    width: 60px;
+    height: 35px;
+  }
+
+  &:focus,
+  &:active {
+    outline: none;
+  }
 `;
 
 const Play = styled(FaPlay)`
@@ -51,4 +73,4 @@ const Pause = styled(FaPause)`
   color: ${({ theme }) => theme.accent};
 `;
 
-export { Controls, Shuffle, Next, Prev, Repeat, Play, Pause };
+export { Controls, Shuffle, Next, Prev, RepeatButton, Play, Pause };

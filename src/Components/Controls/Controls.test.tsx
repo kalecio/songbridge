@@ -101,14 +101,34 @@ describe('Controls', () => {
     expect(setOnShuffle).toHaveBeenCalledWith(true);
   });
 
-  it('calls setOnRepeat with the toggled value when Repeat is clicked', () => {
+  it('calls setOnRepeat with the next mode when Repeat is clicked (none -> one)', () => {
     const setOnRepeat = vi.fn();
     const { getByLabelText } = renderWithContext(<Controls />, {
-      onRepeat: false,
+      onRepeat: 'none',
       setOnRepeat,
     });
     fireEvent.click(getByLabelText('repeat'));
-    expect(setOnRepeat).toHaveBeenCalledWith(true);
+    expect(setOnRepeat).toHaveBeenCalledWith('one');
+  });
+
+  it('calls setOnRepeat with the next mode when Repeat is clicked (one -> all)', () => {
+    const setOnRepeat = vi.fn();
+    const { getByLabelText } = renderWithContext(<Controls />, {
+      onRepeat: 'one',
+      setOnRepeat,
+    });
+    fireEvent.click(getByLabelText('repeat'));
+    expect(setOnRepeat).toHaveBeenCalledWith('all');
+  });
+
+  it('calls setOnRepeat with the next mode when Repeat is clicked (all -> none)', () => {
+    const setOnRepeat = vi.fn();
+    const { getByLabelText } = renderWithContext(<Controls />, {
+      onRepeat: 'all',
+      setOnRepeat,
+    });
+    fireEvent.click(getByLabelText('repeat'));
+    expect(setOnRepeat).toHaveBeenCalledWith('none');
   });
 
   it('invokes pause and sets isPlaying to false when Pause is clicked', async () => {

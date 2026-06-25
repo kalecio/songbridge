@@ -1,5 +1,5 @@
 import React, { createContext } from 'react';
-import { MetadataType, PlaylistType } from '../types';
+import { MetadataType, PlaylistType, RepeatMode } from '../types';
 import { DEFAULT_SHORTCUTS, ShortcutBindings } from '../keyboard';
 
 export interface ScanProgress {
@@ -18,7 +18,7 @@ interface AppContext {
   library: MetadataType[];
   libraryPaths: string[];
   metadata?: MetadataType;
-  onRepeat: boolean;
+  onRepeat: RepeatMode;
   onShuffle: boolean;
   playlists?: PlaylistType[];
   progress: number;
@@ -35,13 +35,13 @@ interface AppContext {
   setIsPlaying?: (_playing: boolean) => void;
   setProgress?: (_progress: number) => void;
   setMetadata?: (_metadata?: MetadataType) => void;
-  setOnRepeat?: (_onRepeat: boolean) => void;
+  setOnRepeat?: (_onRepeat: RepeatMode) => void;
   setOnShuffle?: (_onShuffle: boolean) => void;
   setShowQueue?: (_showQueue: boolean) => void;
 }
 
 export const AppContext = createContext<AppContext>({
-  onRepeat: false,
+  onRepeat: 'none',
   onShuffle: false,
   isPlaying: false,
   isScanning: false,

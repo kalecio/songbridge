@@ -142,20 +142,23 @@ const Player = () => {
             if (currentProgress >= durationSeconds && !endedRef.current) {
               endedRef.current = true;
 
-              // If repeat is enabled, seek back to the start and ensure playback resumes
-              if (onRepeat) {
+              if (onRepeat === 'one') {
                 try {
                   if (path) {
                     await handleSeek(0);
                     await invoke('resume');
-                    // Reset ended flag so repeat can trigger again at next end
-                    endedRef.current = false;
+                    // Wait for seek to actually take effect before clearing ended flag.
+                    // The progress poll may still return the old position for a short time.
+                    await new Promise((resolve) => setTimeout(resolve, 200));
+                    // Verify position actually reset by checking progress again
+                    const verifyProgress = await invoke<number>('get_progress');
+                    if (verifyProgress < durationSeconds * 0.1) {
+                      endedRef.current = false;
+                    }
                   }
                 } catch (err) {
                   logError(`Repeat failed: ${err}`).catch(() => {});
                 }
-
-                // If shuffle is enabled, pick a random next track
               } else if (onShuffle) {
                 try {
                   if (currentPlaylist && currentPlaylist.length > 0) {
@@ -166,13 +169,14 @@ const Player = () => {
                 } catch (err) {
                   logError(`Shuffle failed: ${err}`).catch(() => {});
                 }
-
-                // Otherwise advance to the next track in the playlist
               } else if (currentPlaylist && currentPlaylist.length > 0) {
                 const currentIndex = currentPlaylist.indexOf(path ?? '');
-                const nextIndex = (currentIndex + 1) % currentPlaylist.length;
-                const nextPath = currentPlaylist[nextIndex];
-                setCurrentPath?.(nextPath);
+                if (currentIndex !== -1 && currentIndex < currentPlaylist.length - 1) {
+                  const nextPath = currentPlaylist[currentIndex + 1];
+                  setCurrentPath?.(nextPath);
+                } else if (onRepeat === 'all') {
+                  setCurrentPath?.(currentPlaylist[0]);
+                }
               }
             }
           }

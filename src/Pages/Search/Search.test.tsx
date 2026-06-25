@@ -9,7 +9,7 @@ import Search from './Search';
 type AppContextValue = React.ComponentProps<typeof AppContext.Provider>['value'];
 
 const defaultContext: AppContextValue = {
-  onRepeat: false,
+  onRepeat: 'none',
   onShuffle: false,
   isPlaying: false,
   isScanning: false,

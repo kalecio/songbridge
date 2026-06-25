@@ -50,10 +50,14 @@ pub fn spawn_audio_thread() -> Sender<AudioCommand> {
         let mut max_pos: Duration = Duration::from_secs(0);
         let mut ended_reported = false;
         let started_threshold = Duration::from_millis(500);
+        // Store the last loaded path so we can reload the track when seeking
+        // on an empty sink (e.g., repeat-one after track ends).
+        let mut current_path: Option<String> = None;
 
         while let Ok(cmd) = rx.recv() {
             match cmd {
                 AudioCommand::Load(path) => {
+                    current_path = Some(path.clone());
                     sink.stop();
                     max_pos = Duration::from_secs(0);
                     ended_reported = false;
@@ -75,7 +79,25 @@ pub fn spawn_audio_thread() -> Sender<AudioCommand> {
                 AudioCommand::Resume => sink.play(),
                 AudioCommand::SetVolume(v) => sink.set_volume(v),
                 AudioCommand::Seek(pos) => {
+                    // If the sink is empty (track ended), reload the track first
+                    if sink.empty() {
+                        if let Some(path) = &current_path {
+                            if let Ok(file) = File::open(path) {
+                                let byte_len = file.metadata().map(|m| m.len()).unwrap_or(0);
+                                let source = DecoderBuilder::new()
+                                    .with_data(BufReader::new(file))
+                                    .with_byte_len(byte_len)
+                                    .with_seekable(true)
+                                    .build();
+                                if let Ok(src) = source {
+                                    sink.append(src);
+                                }
+                            }
+                        }
+                    }
                     let _ = sink.try_seek(pos);
+                    max_pos = Duration::from_secs(0);
+                    ended_reported = false;
                 }
                 AudioCommand::GetPosition(resp) => {
                     let pos = sink.get_pos();
