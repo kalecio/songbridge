@@ -31,4 +31,15 @@ const LyricLine = styled.p<LyricLineProps>`
   }
 `;
 
-export { LyricsContainer, LyricLine };
+const PlainLyricLine = styled.p`
+  font-size: 2.4rem;
+  font-weight: 500;
+  color: ${({ theme }) => theme.textSecondary};
+  text-align: center;
+  margin: 0;
+  padding: 0.4rem 1rem;
+  line-height: 1.45;
+  cursor: default;
+`;
+
+export { LyricsContainer, LyricLine, PlainLyricLine };

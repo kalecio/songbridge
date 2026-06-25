@@ -3,72 +3,147 @@ import { parseLrc, getActiveIndex } from './lrcParser';
 
 describe('parseLrc', () => {
   it('parses a simple [mm:ss] timestamp', () => {
-    const lines = parseLrc('[00:10]Hello world');
-    expect(lines).toHaveLength(1);
-    expect(lines[0]).toEqual({ time: 10, text: 'Hello world' });
+    const result = parseLrc('[00:10]Hello world');
+    expect(result.lines).toHaveLength(1);
+    expect(result.lines[0]).toEqual({ time: 10, text: 'Hello world' });
+    expect(result.isPlainText).toBe(false);
   });
 
   it('parses [mm:ss.xx] with centisecond precision', () => {
-    const lines = parseLrc('[01:23.45]Lyric');
-    expect(lines[0].time).toBeCloseTo(83.45);
+    const result = parseLrc('[01:23.45]Lyric');
+    expect(result.lines[0].time).toBeCloseTo(83.45);
+    expect(result.isPlainText).toBe(false);
   });
 
   it('parses [mm:ss.xxx] with millisecond precision', () => {
-    const lines = parseLrc('[00:01.500]Half second');
-    expect(lines[0].time).toBeCloseTo(1.5);
+    const result = parseLrc('[00:01.500]Half second');
+    expect(result.lines[0].time).toBeCloseTo(1.5);
+    expect(result.isPlainText).toBe(false);
   });
 
   it('parses [mm:ss.x] with single fractional digit', () => {
-    const lines = parseLrc('[00:02.5]Five hundred ms');
-    expect(lines[0].time).toBeCloseTo(2.5);
+    const result = parseLrc('[00:02.5]Five hundred ms');
+    expect(result.lines[0].time).toBeCloseTo(2.5);
+    expect(result.isPlainText).toBe(false);
   });
 
   it('strips the timestamp from the text', () => {
-    const lines = parseLrc('[00:05.00]Clean text');
-    expect(lines[0].text).toBe('Clean text');
+    const result = parseLrc('[00:05.00]Clean text');
+    expect(result.lines[0].text).toBe('Clean text');
+    expect(result.isPlainText).toBe(false);
   });
 
   it('skips lines with no text after stripping timestamps', () => {
     const content = '[00:00.00]\n[00:01.00]Real lyric';
-    const lines = parseLrc(content);
-    expect(lines).toHaveLength(1);
-    expect(lines[0].text).toBe('Real lyric');
+    const result = parseLrc(content);
+    expect(result.lines).toHaveLength(1);
+    expect(result.lines[0].text).toBe('Real lyric');
+    expect(result.isPlainText).toBe(false);
   });
 
   it('skips blank lines', () => {
     const content = '[00:01.00]Line one\n\n[00:02.00]Line two';
-    const lines = parseLrc(content);
-    expect(lines).toHaveLength(2);
+    const result = parseLrc(content);
+    expect(result.lines).toHaveLength(2);
+    expect(result.isPlainText).toBe(false);
   });
 
   it('supports multiple timestamps on a single line', () => {
-    const lines = parseLrc('[00:10.00][00:30.00]Repeated lyric');
-    expect(lines).toHaveLength(2);
-    expect(lines[0]).toEqual({ time: 10, text: 'Repeated lyric' });
-    expect(lines[1]).toEqual({ time: 30, text: 'Repeated lyric' });
+    const result = parseLrc('[00:10.00][00:30.00]Repeated lyric');
+    expect(result.lines).toHaveLength(2);
+    expect(result.lines[0]).toEqual({ time: 10, text: 'Repeated lyric' });
+    expect(result.lines[1]).toEqual({ time: 30, text: 'Repeated lyric' });
+    expect(result.isPlainText).toBe(false);
   });
 
   it('returns lines sorted by ascending time', () => {
     const content = '[00:30.00]Third\n[00:10.00]First\n[00:20.00]Second';
-    const lines = parseLrc(content);
-    expect(lines.map((l) => l.text)).toEqual(['First', 'Second', 'Third']);
+    const result = parseLrc(content);
+    expect(result.lines.map((l) => l.text)).toEqual(['First', 'Second', 'Third']);
+    expect(result.isPlainText).toBe(false);
   });
 
   it('handles minutes correctly', () => {
-    const lines = parseLrc('[02:00.00]Two minutes');
-    expect(lines[0].time).toBe(120);
+    const result = parseLrc('[02:00.00]Two minutes');
+    expect(result.lines[0].time).toBe(120);
+    expect(result.isPlainText).toBe(false);
   });
 
-  it('returns an empty array for content with no valid timestamps', () => {
-    expect(parseLrc('No timestamps here')).toHaveLength(0);
-    expect(parseLrc('')).toHaveLength(0);
+  it('parses plain text content as lyrics (new behavior)', () => {
+    const result = parseLrc('No timestamps here');
+    expect(result.lines).toHaveLength(1);
+    expect(result.lines[0].text).toBe('No timestamps here');
+    expect(result.isPlainText).toBe(true);
+    expect(parseLrc('').lines).toHaveLength(0);
+    expect(parseLrc('').isPlainText).toBe(true);
   });
 
   it('ignores LRC metadata tags like [ar:] and [ti:]', () => {
     const content = '[ti:Song Title]\n[ar:Artist Name]\n[00:05.00]First lyric';
-    const lines = parseLrc(content);
-    expect(lines).toHaveLength(1);
-    expect(lines[0].text).toBe('First lyric');
+    const result = parseLrc(content);
+    expect(result.lines).toHaveLength(1);
+    expect(result.lines[0].text).toBe('First lyric');
+    expect(result.isPlainText).toBe(false);
+  });
+
+  describe('plain text (no timestamps)', () => {
+    it('parses each non-empty line as a lyric', () => {
+      const content = 'Line one\nLine two\nLine three';
+      const result = parseLrc(content);
+      expect(result.isPlainText).toBe(true);
+      expect(result.lines).toHaveLength(3);
+      expect(result.lines.map((l) => l.text)).toEqual(['Line one', 'Line two', 'Line three']);
+    });
+
+    it('skips empty lines', () => {
+      const content = 'Line one\n\nLine two\n\n\nLine three';
+      const result = parseLrc(content);
+      expect(result.isPlainText).toBe(true);
+      expect(result.lines).toHaveLength(3);
+    });
+
+    it('trims whitespace from lines', () => {
+      const content = '  Line one  \n\tLine two\t';
+      const result = parseLrc(content);
+      expect(result.lines[0].text).toBe('Line one');
+      expect(result.lines[1].text).toBe('Line two');
+    });
+
+    it('assigns sequential time indices starting from 0', () => {
+      const content = 'First\nSecond\nThird';
+      const result = parseLrc(content);
+      expect(result.lines[0].time).toBe(0);
+      expect(result.lines[1].time).toBe(1);
+      expect(result.lines[2].time).toBe(2);
+    });
+
+    it('returns empty for blank content', () => {
+      const result = parseLrc('');
+      expect(result.isPlainText).toBe(true);
+      expect(result.lines).toHaveLength(0);
+    });
+
+    it('returns empty for only whitespace', () => {
+      const result = parseLrc('   \n\t\n  ');
+      expect(result.isPlainText).toBe(true);
+      expect(result.lines).toHaveLength(0);
+    });
+
+    it("detects timestamped content correctly (metadata tags don't count)", () => {
+      const content = '[ti:Title]\n[ar:Artist]\nJust plain text';
+      const result = parseLrc(content);
+      expect(result.isPlainText).toBe(true);
+      expect(result.lines).toHaveLength(1);
+      expect(result.lines[0].text).toBe('Just plain text');
+    });
+
+    it('treats mixed timestamped and plain as timestamped', () => {
+      const content = '[00:10]Timestamped\nPlain line';
+      const result = parseLrc(content);
+      expect(result.isPlainText).toBe(false);
+      expect(result.lines).toHaveLength(1);
+      expect(result.lines[0].text).toBe('Timestamped');
+    });
   });
 });
 
