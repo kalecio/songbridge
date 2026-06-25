@@ -4268,6 +4268,7 @@ dependencies = [
  "tauri-plugin-dialog",
  "tauri-plugin-log",
  "tauri-plugin-opener",
+ "tempfile",
  "url",
  "walkdir",
 ]

@@ -37,3 +37,6 @@ url = "2"
 lofty = "0.24"
 image = { version = "0.25", default-features = false, features = ["jpeg", "png", "webp", "gif", "tiff"] }
 
+[dev-dependencies]
+tempfile = "3"
+
