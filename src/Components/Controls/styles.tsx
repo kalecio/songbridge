@@ -73,4 +73,20 @@ const Pause = styled(FaPause)`
   color: ${({ theme }) => theme.accent};
 `;
 
-export { Controls, Shuffle, Next, Prev, RepeatButton, Play, Pause };
+const CurrentTime = styled.div`
+  font-size: 12px;
+  font-family: monospace;
+  color: ${({ theme }) => theme.accent};
+  min-width: 90px;
+  text-align: center;
+`;
+
+const Container = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+`;
+
+export { Controls, Shuffle, Next, Prev, RepeatButton, Play, Pause, CurrentTime, Container };

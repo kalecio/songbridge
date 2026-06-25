@@ -1,5 +1,5 @@
 import { useCallback, useContext, useEffect, useRef, useState } from 'react';
-import { Controls, Shuffle, Prev, Play, Next, RepeatButton, Pause } from './styles';
+import { Controls, Shuffle, Prev, Play, Next, RepeatButton, Pause, CurrentTime, Container } from './styles';
 import { invoke } from '@tauri-apps/api/core';
 import { AppContext } from '../../Context/AppContext';
 import { error as logError } from '../../logger';
@@ -22,6 +22,8 @@ const Player = () => {
     setOnRepeat,
     onShuffle,
     setOnShuffle,
+    progress,
+    metadata,
   } = context;
 
   const playNewSong = useCallback(async () => {
@@ -142,20 +144,36 @@ const Player = () => {
     };
   }, []);
 
+  const totalSeconds = metadata?.duration?.duration_seconds ?? 0;
+  const currentSeconds = Math.floor((progress / 100) * totalSeconds);
+  const formatTime = (seconds: number) => {
+    const h = Math.floor(seconds / 3600);
+    const m = Math.floor((seconds % 3600) / 60);
+    const s = Math.floor(seconds % 60);
+    if (h > 0) {
+      return `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+    }
+    return `${m}:${s.toString().padStart(2, '0')}`;
+  };
+  const currentTimeStr = `${formatTime(currentSeconds)} / ${formatTime(totalSeconds)}`;
+
   return (
-    <Controls>
-      <Shuffle aria-label="shuffle" $onShuffle={onShuffle} onClick={() => setOnShuffle?.(!onShuffle)} />
-      <Prev aria-label="previous" onClick={handlePreviousSong} />
-      {isPlaying ? (
-        <Pause aria-label="pause" onClick={pause} />
-      ) : (
-        <Play aria-label="play" onClick={isSongLoaded ? resume : playNewSong} />
-      )}
-      <Next aria-label="next" onClick={handleNextSong} />
-      <RepeatButton aria-label="repeat" $onRepeat={onRepeat} onClick={handleToggleRepeat}>
-        {onRepeat === 'one' ? <TbRepeatOnce /> : <TbRepeat />}
-      </RepeatButton>
-    </Controls>
+    <Container>
+      <CurrentTime style={{ textAlign: 'center', marginBottom: '4px' }}>{currentTimeStr}</CurrentTime>
+      <Controls>
+        <Shuffle aria-label="shuffle" $onShuffle={onShuffle} onClick={() => setOnShuffle?.(!onShuffle)} />
+        <Prev aria-label="previous" onClick={handlePreviousSong} />
+        {isPlaying ? (
+          <Pause aria-label="pause" onClick={pause} />
+        ) : (
+          <Play aria-label="play" onClick={isSongLoaded ? resume : playNewSong} />
+        )}
+        <Next aria-label="next" onClick={handleNextSong} />
+        <RepeatButton aria-label="repeat" $onRepeat={onRepeat} onClick={handleToggleRepeat}>
+          {onRepeat === 'one' ? <TbRepeatOnce /> : <TbRepeat />}
+        </RepeatButton>
+      </Controls>
+    </Container>
   );
 };
 
