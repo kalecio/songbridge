@@ -64,7 +64,12 @@ const Player = () => {
     setProgress,
   } = context;
   const intervalRef = useRef<number | null>(null);
+  const animationFrameRef = useRef<number | null>(null);
   const endedRef = useRef(false);
+  // Interpolation state
+  const lastPolledProgressRef = useRef<number>(0); // 0-1
+  const lastPolledTimeRef = useRef<number>(0); // timestamp
+  const localProgressRef = useRef<number>(0); // 0-1 interpolated
   const [searchTerm, setSearchTerm] = useState('');
   const debounceTimeoutRef = useRef<number | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
@@ -73,11 +78,16 @@ const Player = () => {
     async (progressRatio: number) => {
       try {
         await invoke('seek', { percent: progressRatio, path });
+        // Reset interpolation state after seek
+        lastPolledProgressRef.current = progressRatio;
+        lastPolledTimeRef.current = performance.now();
+        localProgressRef.current = progressRatio;
+        setProgress?.(progressRatio * 100);
       } catch (error) {
         logError(`Seek failed: ${error}`).catch(() => {});
       }
     },
-    [path],
+    [path, setProgress],
   );
 
   const handleOpenFile = async () => {
@@ -126,79 +136,125 @@ const Player = () => {
       window.clearInterval(intervalRef.current);
       intervalRef.current = null;
     }
-
-    // Only poll progress if playing
-    if (isPlaying) {
-      intervalRef.current = window.setInterval(async () => {
-        try {
-          const currentProgress = await invoke<number>('get_progress');
-          const durationSeconds = metadata?.duration?.duration_seconds ?? 0;
-
-          // Update progress percentage only when we have a valid duration
-          if (durationSeconds > 0) {
-            setProgress?.((currentProgress / durationSeconds) * 100);
-
-            // If the track reached its end, handle repeat or advance to the next track once
-            if (currentProgress >= durationSeconds && !endedRef.current) {
-              endedRef.current = true;
-
-              if (onRepeat === 'one') {
-                try {
-                  if (path) {
-                    await handleSeek(0);
-                    await invoke('resume');
-                    // Wait for seek to actually take effect before clearing ended flag.
-                    // The progress poll may still return the old position for a short time.
-                    await new Promise((resolve) => setTimeout(resolve, 200));
-                    // Verify position actually reset by checking progress again
-                    const verifyProgress = await invoke<number>('get_progress');
-                    if (verifyProgress < durationSeconds * 0.1) {
-                      endedRef.current = false;
-                    }
-                  }
-                } catch (err) {
-                  logError(`Repeat failed: ${err}`).catch(() => {});
-                }
-              } else if (onShuffle) {
-                try {
-                  if (currentPlaylist && currentPlaylist.length > 0) {
-                    const randomIndex = Math.floor(Math.random() * currentPlaylist.length);
-                    const randomPath = currentPlaylist[randomIndex];
-                    setCurrentPath?.(randomPath);
-                  }
-                } catch (err) {
-                  logError(`Shuffle failed: ${err}`).catch(() => {});
-                }
-              } else if (currentPlaylist && currentPlaylist.length > 0) {
-                const currentIndex = currentPlaylist.indexOf(path ?? '');
-                if (currentIndex !== -1 && currentIndex < currentPlaylist.length - 1) {
-                  const nextPath = currentPlaylist[currentIndex + 1];
-                  setCurrentPath?.(nextPath);
-                } else if (onRepeat === 'all') {
-                  setCurrentPath?.(currentPlaylist[0]);
-                }
-              }
-            }
-          }
-        } catch (error) {
-          logError(`Progress poll failed: ${error}`).catch(() => {});
-        }
-      }, 1000); // Update every second
+    if (animationFrameRef.current !== null) {
+      window.cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = null;
     }
 
-    // Cleanup interval on unmount or when isPlaying changes
+    // Interpolation loop - runs at 60fps for smooth progress bar
+    const animate = () => {
+      const now = performance.now();
+      const durationSeconds = metadata?.duration?.duration_seconds ?? 0;
+
+      if (durationSeconds > 0 && isPlaying) {
+        const elapsedSincePoll = (now - lastPolledTimeRef.current) / 1000; // seconds
+        // Interpolate: last known progress + elapsed time since poll
+        let interpolated = lastPolledProgressRef.current + elapsedSincePoll / durationSeconds;
+        // Clamp to [0, 1]
+        interpolated = Math.max(0, Math.min(1, interpolated));
+        localProgressRef.current = interpolated;
+        setProgress?.(interpolated * 100);
+
+        // Check for track end using interpolated progress
+        if (interpolated >= 1 && !endedRef.current) {
+          endedRef.current = true;
+          handleTrackEnd();
+        }
+      }
+      animationFrameRef.current = window.requestAnimationFrame(animate);
+    };
+
+    // Backend polling - runs every 1s to sync with actual playback position
+    const pollBackend = async () => {
+      try {
+        const currentProgress = await invoke<number>('get_progress');
+        const durationSeconds = metadata?.duration?.duration_seconds ?? 0;
+
+        if (durationSeconds > 0) {
+          const progressRatio = currentProgress / durationSeconds;
+          lastPolledProgressRef.current = progressRatio;
+          lastPolledTimeRef.current = performance.now();
+
+          // If track ended, handle repeat/advance
+          if (currentProgress >= durationSeconds && !endedRef.current) {
+            endedRef.current = true;
+            handleTrackEnd();
+          }
+        }
+      } catch (error) {
+        logError(`Progress poll failed: ${error}`).catch(() => {});
+      }
+    };
+
+    const handleTrackEnd = async () => {
+      if (onRepeat === 'one') {
+        try {
+          if (path) {
+            await handleSeek(0);
+            await invoke('resume');
+            await new Promise((resolve) => setTimeout(resolve, 200));
+            const verifyProgress = await invoke<number>('get_progress');
+            const durationSeconds = metadata?.duration?.duration_seconds ?? 0;
+            if (verifyProgress < durationSeconds * 0.1) {
+              endedRef.current = false;
+              lastPolledProgressRef.current = 0;
+              lastPolledTimeRef.current = performance.now();
+              localProgressRef.current = 0;
+              setProgress?.(0);
+            }
+          }
+        } catch (err) {
+          logError(`Repeat failed: ${err}`).catch(() => {});
+        }
+      } else if (onShuffle) {
+        try {
+          if (currentPlaylist && currentPlaylist.length > 0) {
+            const randomIndex = Math.floor(Math.random() * currentPlaylist.length);
+            const randomPath = currentPlaylist[randomIndex];
+            setCurrentPath?.(randomPath);
+          }
+        } catch (err) {
+          logError(`Shuffle failed: ${err}`).catch(() => {});
+        }
+      } else if (currentPlaylist && currentPlaylist.length > 0) {
+        const currentIndex = currentPlaylist.indexOf(path ?? '');
+        if (currentIndex !== -1 && currentIndex < currentPlaylist.length - 1) {
+          const nextPath = currentPlaylist[currentIndex + 1];
+          setCurrentPath?.(nextPath);
+        } else if (onRepeat === 'all') {
+          setCurrentPath?.(currentPlaylist[0]);
+        }
+      }
+    };
+
+    if (isPlaying) {
+      // Initialize interpolation state
+      lastPolledTimeRef.current = performance.now();
+      animate();
+      intervalRef.current = window.setInterval(pollBackend, 1000);
+    }
+
+    // Cleanup
     return () => {
       if (intervalRef.current !== null) {
         window.clearInterval(intervalRef.current);
         intervalRef.current = null;
       }
+      if (animationFrameRef.current !== null) {
+        window.cancelAnimationFrame(animationFrameRef.current);
+        animationFrameRef.current = null;
+      }
     };
   }, [isPlaying, setProgress, currentPlaylist, path, setCurrentPath, metadata, onRepeat, onShuffle, handleSeek]);
 
-  // Reset the ended flag when the current path changes so the next track can be advanced again.
+  // Reset the ended flag and interpolation state when the current path changes so the next track can be advanced again.
   useEffect(() => {
     endedRef.current = false;
-  }, [path]);
+    lastPolledProgressRef.current = 0;
+    lastPolledTimeRef.current = performance.now();
+    localProgressRef.current = 0;
+    setProgress?.(0);
+  }, [path, setProgress]);
 
   // Sync the search input to the URL: shows the active query when on /search,
   // clears the input when the user navigates anywhere else, and cancels any
