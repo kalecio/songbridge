@@ -1,0 +1,1 @@
+export { LyricsSearchModal } from './LyricsSearchModal';

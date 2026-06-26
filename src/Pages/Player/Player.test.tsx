@@ -3,6 +3,7 @@ import { MemoryRouter } from 'react-router';
 import { AppContext } from '../../Context/AppContext';
 import { DEFAULT_SHORTCUTS } from '../../keyboard';
 import { RepeatMode } from '../../types';
+import { LyricsSearchModalProvider } from '../../Context/LyricsSearchModalContext';
 
 // Mock must be before Player import since Player imports @tauri-apps/api/core
 vi.mock('@tauri-apps/api/core', () => ({
@@ -54,9 +55,11 @@ const defaultContext = {
 const renderWithContext = (overrides = {}) =>
   render(
     <MemoryRouter>
-      <AppContext.Provider value={{ ...defaultContext, ...overrides }}>
-        <Player />
-      </AppContext.Provider>
+      <LyricsSearchModalProvider>
+        <AppContext.Provider value={{ ...defaultContext, ...overrides }}>
+          <Player />
+        </AppContext.Provider>
+      </LyricsSearchModalProvider>
     </MemoryRouter>,
   );
 
@@ -112,16 +115,18 @@ describe('Player interpolation', () => {
     // Simulate track change by re-rendering with new path
     rerender(
       <MemoryRouter>
-        <AppContext.Provider
-          value={{
-            ...defaultContext,
-            isPlaying: true,
-            currentPath: '/test/new-song.mp3',
-            metadata: { duration: { duration_seconds: 100 } },
-          }}
-        >
-          <Player />
-        </AppContext.Provider>
+        <LyricsSearchModalProvider>
+          <AppContext.Provider
+            value={{
+              ...defaultContext,
+              isPlaying: true,
+              currentPath: '/test/new-song.mp3',
+              metadata: { duration: { duration_seconds: 100 } },
+            }}
+          >
+            <Player />
+          </AppContext.Provider>
+        </LyricsSearchModalProvider>
       </MemoryRouter>,
     );
 

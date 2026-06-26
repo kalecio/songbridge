@@ -20,3 +20,25 @@ export interface PlaylistType {
   name: string;
   songs: MetadataType[];
 }
+
+export interface LyricsTrackResponse {
+  id: number;
+  trackName?: string;
+  artistName?: string;
+  albumName?: string;
+  duration?: number;
+  instrumental: boolean;
+  plainLyrics?: string | null;
+  syncedLyrics?: string | null;
+  lyricsFile?: string | null;
+}
+
+export interface LyricsPreview {
+  hasSynced: boolean;
+  hasPlain: boolean;
+  instrumental: boolean;
+  duration?: number;
+  trackName?: string;
+  artistName?: string;
+  albumName?: string;
+}

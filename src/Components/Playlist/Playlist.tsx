@@ -77,9 +77,16 @@ const Playlist = ({
   const { updateSongMetadata } = useMetadataActions();
   const buildLyricsMenuItem = useLyricsMenu();
 
+  // Track last checked paths to avoid redundant calls when songs reference changes but content is same
+  const lastCheckedPathsRef = useRef<string>('');
+
   useEffect(() => {
     const paths = songs.map((s) => s.path).filter((p): p is string => Boolean(p));
     if (paths.length === 0) return;
+
+    const pathsKey = paths.join(',');
+    if (pathsKey === lastCheckedPathsRef.current) return;
+    lastCheckedPathsRef.current = pathsKey;
 
     invoke<string[]>('check_paths_exist', { paths })
       .then((missing) => setMissingPaths(new Set(missing)))

@@ -5,6 +5,7 @@ import { AppContext } from '../../Context/AppContext';
 import { DEFAULT_SHORTCUTS } from '../../keyboard';
 import Sidebar from './Sidebar';
 import { renderWithContext } from '../../test/helpers';
+import { LyricsSearchModalProvider } from '../../Context/LyricsSearchModalContext';
 
 type AppContextValue = React.ComponentProps<typeof AppContext.Provider>['value'];
 
@@ -25,9 +26,11 @@ const baseContext: AppContextValue = {
 const wrap = (overrides: Partial<AppContextValue>) =>
   render(
     <MemoryRouter>
-      <AppContext.Provider value={{ ...baseContext, ...overrides }}>
-        <Sidebar />
-      </AppContext.Provider>
+      <LyricsSearchModalProvider>
+        <AppContext.Provider value={{ ...baseContext, ...overrides }}>
+          <Sidebar />
+        </AppContext.Provider>
+      </LyricsSearchModalProvider>
     </MemoryRouter>,
   );
 
@@ -141,11 +144,13 @@ describe('Sidebar', () => {
       const updatedLibrary = [{ path: '/a.mp3', title: 'New Title', artist: 'Artist' }];
       rerender(
         <MemoryRouter>
-          <AppContext.Provider
-            value={{ ...baseContext, showQueue: true, currentPlaylist: ['/a.mp3'], library: updatedLibrary }}
-          >
-            <Sidebar />
-          </AppContext.Provider>
+          <LyricsSearchModalProvider>
+            <AppContext.Provider
+              value={{ ...baseContext, showQueue: true, currentPlaylist: ['/a.mp3'], library: updatedLibrary }}
+            >
+              <Sidebar />
+            </AppContext.Provider>
+          </LyricsSearchModalProvider>
         </MemoryRouter>,
       );
       await waitFor(() => expect(getByText('New Title')).toBeInTheDocument());

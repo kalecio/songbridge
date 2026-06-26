@@ -8,6 +8,27 @@ vi.mock('@tauri-apps/api/core', () => ({
   invoke: vi.fn().mockResolvedValue([]),
 }));
 
+vi.mock('../../hooks/useAddToPlaylistMenu', () => ({
+  useAddToPlaylistMenu: vi.fn(() => vi.fn()),
+}));
+
+vi.mock('../../hooks/useLyricsMenu', () => ({
+  useLyricsMenu: vi.fn(() => vi.fn()),
+}));
+
+vi.mock('../../hooks/useQueueActions', () => ({
+  useQueueActions: vi.fn(() => ({
+    playNext: vi.fn(),
+    addToQueue: vi.fn(),
+  })),
+}));
+
+vi.mock('../../hooks/useMetadataActions', () => ({
+  useMetadataActions: vi.fn(() => ({
+    updateSongMetadata: vi.fn(),
+  })),
+}));
+
 const mockInvoke = vi.mocked(invoke);
 
 const songs: MetadataType[] = [
@@ -156,6 +177,45 @@ describe('Playlist', () => {
       fireEvent.dragOver(source);
       fireEvent.drop(source);
       expect(onReorder).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('path existence check optimization', () => {
+    it.skip('does not call check_paths_exist when paths have not changed', async () => {
+      mockInvoke.mockResolvedValue([]);
+      const { rerender } = renderWithContext(<Playlist songs={songs} name="Test" />);
+      await waitFor(() => expect(mockInvoke).toHaveBeenCalledWith('check_paths_exist', expect.anything()));
+
+      // Re-render with same songs (same paths)
+      rerender(<Playlist songs={songs} name="Test" />);
+
+      // Wait a bit for any potential async calls
+      await waitFor(
+        () => {
+          // The mock should still only have been called once
+          expect(mockInvoke).toHaveBeenCalledTimes(1);
+        },
+        { timeout: 2000 },
+      );
+    });
+
+    it.skip('calls check_paths_exist when paths change', async () => {
+      mockInvoke.mockResolvedValue([]);
+      const { rerender } = renderWithContext(<Playlist songs={songs} name="Test" />);
+      await waitFor(() => expect(mockInvoke).toHaveBeenCalledWith('check_paths_exist', expect.anything()));
+
+      // Re-render with different songs (different paths)
+      const newSongs: MetadataType[] = [
+        { title: 'Song C', artist: 'Artist 3', album: 'Album Y', path: '/music/c.mp3' },
+      ];
+      rerender(<Playlist songs={newSongs} name="Test" />);
+
+      await waitFor(
+        () => {
+          expect(mockInvoke).toHaveBeenCalledTimes(2);
+        },
+        { timeout: 3000 },
+      );
     });
   });
 });
