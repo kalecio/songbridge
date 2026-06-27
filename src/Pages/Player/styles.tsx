@@ -17,8 +17,10 @@ const StyledPlayer = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0 3rem;
   width: 100%;
+  gap: 1rem;
+  padding: 0 2rem;
+  box-sizing: border-box;
 `;
 
 const Container = styled.div`

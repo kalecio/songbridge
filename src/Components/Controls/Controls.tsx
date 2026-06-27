@@ -1,5 +1,5 @@
-import { useCallback, useContext, useEffect, useRef, useState } from 'react';
-import { Controls, Shuffle, Prev, Play, Next, RepeatButton, Pause, CurrentTime, Container } from './styles';
+import { useCallback, useContext, useEffect, useRef, useState, CSSProperties } from 'react';
+import { ControlsContainer, Shuffle, Prev, Play, Next, RepeatButton, Pause, CurrentTime, Container } from './styles';
 import { invoke } from '@tauri-apps/api/core';
 import { AppContext } from '../../Context/AppContext';
 import { error as logError } from '../../logger';
@@ -7,7 +7,11 @@ import { MetadataType, RepeatMode } from '../../types';
 import { AUDIO_EVENTS } from '../../audioEvents';
 import { TbRepeat, TbRepeatOnce } from 'react-icons/tb';
 
-const Player = () => {
+interface ControlsProps {
+  style?: CSSProperties;
+}
+
+const Controls = ({ style }: ControlsProps) => {
   const [isSongLoaded, setIsSongLoaded] = useState(false);
 
   const context = useContext(AppContext);
@@ -106,9 +110,6 @@ const Player = () => {
     setOnRepeat?.(modes[nextIndex]);
   }, [onRepeat, setOnRepeat]);
 
-  // Bridge custom audio events (dispatched by the global keyboard-shortcut
-  // handler) to the existing playback handlers. Refs keep the listeners
-  // pointing at the latest closures without re-binding on every render.
   const handlersRef = useRef({
     togglePlayPause,
     handleNextSong,
@@ -144,23 +145,21 @@ const Player = () => {
     };
   }, []);
 
-  const totalSeconds = metadata?.duration?.duration_seconds ?? 0;
-  const currentSeconds = Math.floor((progress / 100) * totalSeconds);
   const formatTime = (seconds: number) => {
-    const h = Math.floor(seconds / 3600);
-    const m = Math.floor((seconds % 3600) / 60);
+    const m = Math.floor(seconds / 60);
     const s = Math.floor(seconds % 60);
-    if (h > 0) {
-      return `${h}:${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-    }
     return `${m}:${s.toString().padStart(2, '0')}`;
   };
+  const totalSeconds = metadata?.duration?.duration_seconds ?? 0;
+  const currentSeconds = Math.floor((progress / 100) * totalSeconds);
   const currentTimeStr = `${formatTime(currentSeconds)} / ${formatTime(totalSeconds)}`;
 
   return (
     <Container>
-      <CurrentTime style={{ textAlign: 'center', marginBottom: '4px' }}>{currentTimeStr}</CurrentTime>
-      <Controls>
+      <CurrentTime style={{ textAlign: 'center', marginBottom: '10px', marginTop: '-1.5rem' }}>
+        {currentTimeStr}
+      </CurrentTime>
+      <ControlsContainer style={style}>
         <Shuffle aria-label="shuffle" $onShuffle={onShuffle} onClick={() => setOnShuffle?.(!onShuffle)} />
         <Prev aria-label="previous" onClick={handlePreviousSong} />
         {isPlaying ? (
@@ -172,9 +171,9 @@ const Player = () => {
         <RepeatButton aria-label="repeat" $onRepeat={onRepeat} onClick={handleToggleRepeat}>
           {onRepeat === 'one' ? <TbRepeatOnce /> : <TbRepeat />}
         </RepeatButton>
-      </Controls>
+      </ControlsContainer>
     </Container>
   );
 };
 
-export default Player;
+export default Controls;

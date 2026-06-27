@@ -2,31 +2,40 @@ import { FaShuffle, FaForward, FaBackward, FaPlay, FaPause } from 'react-icons/f
 import { styled } from 'styled-components';
 import { RepeatMode } from '../../types';
 
-const Controls = styled.div`
+const ControlsContainer = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 5px;
-  width: 400px;
+  gap: 4px;
+  width: 100%;
+  flex: 1;
+  max-width: 380px;
+  min-width: 220px;
 `;
 
 const Shuffle = styled(FaShuffle)<{ $onShuffle: boolean }>`
-  width: 60px;
-  height: 30px;
+  width: 44px;
+  height: 24px;
+  max-width: 44px;
+  flex-shrink: 1;
   cursor: pointer;
   color: ${(props) => (props.$onShuffle ? props.theme.accent : props.theme.primaryDark)};
 `;
 
 const Next = styled(FaForward)`
-  width: 60px;
-  height: 30px;
+  width: 44px;
+  height: 24px;
+  max-width: 44px;
+  flex-shrink: 1;
   cursor: pointer;
   color: ${({ theme }) => theme.accent};
 `;
 
 const Prev = styled(FaBackward)`
-  width: 60px;
-  height: 30px;
+  width: 44px;
+  height: 24px;
+  max-width: 44px;
+  flex-shrink: 1;
   cursor: pointer;
   color: ${({ theme }) => theme.accent};
 `;
@@ -35,8 +44,10 @@ const RepeatButton = styled.button<{ $onRepeat: RepeatMode }>`
   background: none;
   border: none;
   padding: 0;
-  width: 60px;
-  height: 30px;
+  width: 44px;
+  height: 24px;
+  max-width: 44px;
+  flex-shrink: 1;
   cursor: pointer;
   display: flex;
   align-items: center;
@@ -49,8 +60,10 @@ const RepeatButton = styled.button<{ $onRepeat: RepeatMode }>`
   }};
 
   & svg {
-    width: 60px;
-    height: 35px;
+    width: 44px;
+    height: 28px;
+    max-width: 44px;
+    flex-shrink: 1;
   }
 
   &:focus,
@@ -60,15 +73,19 @@ const RepeatButton = styled.button<{ $onRepeat: RepeatMode }>`
 `;
 
 const Play = styled(FaPlay)`
-  width: 60px;
-  height: 30px;
+  width: 44px;
+  height: 24px;
+  max-width: 44px;
+  flex-shrink: 1;
   cursor: pointer;
   color: ${({ theme }) => theme.accent};
 `;
 
 const Pause = styled(FaPause)`
-  width: 60px;
-  height: 30px;
+  width: 44px;
+  height: 24px;
+  max-width: 44px;
+  flex-shrink: 1;
   cursor: pointer;
   color: ${({ theme }) => theme.accent};
 `;
@@ -87,6 +104,7 @@ const Container = styled.div`
   align-items: center;
   justify-content: center;
   gap: 4px;
+  width: 100%;
 `;
 
-export { Controls, Shuffle, Next, Prev, RepeatButton, Play, Pause, CurrentTime, Container };
+export { ControlsContainer, Shuffle, Next, Prev, RepeatButton, Play, Pause, CurrentTime, Container };

@@ -351,9 +351,12 @@ const Player = () => {
             albumName={metadata?.album}
             songName={displayTitle({ title: metadata?.title, path: path }, 'no name')}
             artistName={splitArtists(metadata?.artist ?? '')[0] ?? 'no name'}
+            style={{ minWidth: '200px', flexShrink: 0 }}
           />
-          <Controls />
-          <Volume />
+          <div style={{ flex: 1, display: 'flex', justifyContent: 'center', minWidth: 0 }}>
+            <Controls style={{ width: '100%', maxWidth: '340px' }} />
+          </div>
+          <Volume style={{ minWidth: '150px', flexShrink: 0 }} />
         </StyledPlayer>
       </PlayerContainer>
     </Container>
