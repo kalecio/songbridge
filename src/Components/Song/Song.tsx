@@ -1,16 +1,14 @@
 import { useNavigate } from 'react-router';
 import { AlbumImage, AlbumImagePlaceholder, ArtistName, MusicInfo, MusicName, SongContainer } from '../Song/styles';
-import { CSSProperties } from 'react';
 
 interface SongProps {
   albumImage?: string | null;
   albumName?: string | null;
   artistName: string;
   songName: string;
-  style?: CSSProperties;
 }
 
-const SongComponent = ({ songName, artistName, albumImage, albumName, style }: SongProps) => {
+const SongComponent = ({ songName, artistName, albumImage, albumName }: SongProps) => {
   const navigate = useNavigate();
   // Tauri may deserialize a missing album as `null`, which the `?? ''` covers
   // (a destructure default only fires for `undefined`).
@@ -39,7 +37,7 @@ const SongComponent = ({ songName, artistName, albumImage, albumName, style }: S
     : {};
 
   return (
-    <SongContainer style={style}>
+    <SongContainer>
       {albumImage ? (
         <AlbumImage src={albumImage} alt={safeAlbum} {...albumLinkProps} />
       ) : (

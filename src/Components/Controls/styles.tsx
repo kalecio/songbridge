@@ -96,6 +96,8 @@ const CurrentTime = styled.div`
   color: ${({ theme }) => theme.accent};
   min-width: 90px;
   text-align: center;
+  margin-top: -1.5rem;
+  margin-bottom: 10px;
 `;
 
 const Container = styled.div`

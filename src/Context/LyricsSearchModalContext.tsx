@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useCallback } from 'react';
 import { MetadataType } from '../types';
-import { LyricsSearchModal } from '../Components/LyricsSearchModal';
+import { LyricsSearchModal } from '../Components/LyricsSearchModal/LyricsSearchModal';
 
 interface LyricsSearchModalApi {
   open: (_song: MetadataType) => void;

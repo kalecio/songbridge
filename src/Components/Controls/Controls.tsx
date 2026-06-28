@@ -1,4 +1,4 @@
-import { useCallback, useContext, useEffect, useRef, useState, CSSProperties } from 'react';
+import { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { ControlsContainer, Shuffle, Prev, Play, Next, RepeatButton, Pause, CurrentTime, Container } from './styles';
 import { invoke } from '@tauri-apps/api/core';
 import { AppContext } from '../../Context/AppContext';
@@ -7,11 +7,7 @@ import { MetadataType, RepeatMode } from '../../types';
 import { AUDIO_EVENTS } from '../../audioEvents';
 import { TbRepeat, TbRepeatOnce } from 'react-icons/tb';
 
-interface ControlsProps {
-  style?: CSSProperties;
-}
-
-const Controls = ({ style }: ControlsProps) => {
+const Controls = () => {
   const [isSongLoaded, setIsSongLoaded] = useState(false);
 
   const context = useContext(AppContext);
@@ -156,10 +152,8 @@ const Controls = ({ style }: ControlsProps) => {
 
   return (
     <Container>
-      <CurrentTime style={{ textAlign: 'center', marginBottom: '10px', marginTop: '-1.5rem' }}>
-        {currentTimeStr}
-      </CurrentTime>
-      <ControlsContainer style={style}>
+      <CurrentTime>{currentTimeStr}</CurrentTime>
+      <ControlsContainer>
         <Shuffle aria-label="shuffle" $onShuffle={onShuffle} onClick={() => setOnShuffle?.(!onShuffle)} />
         <Prev aria-label="previous" onClick={handlePreviousSong} />
         {isPlaying ? (

@@ -156,6 +156,13 @@ const ScanBannerLabel = styled.div`
   color: ${({ theme }) => theme.textMuted};
 `;
 
+const ControlsWrapper = styled.div`
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  min-width: 0;
+`;
+
 export {
   PlayerContainer,
   StyledPlayer,
@@ -173,4 +180,5 @@ export {
   SettingsButton,
   ScanBanner,
   ScanBannerLabel,
+  ControlsWrapper,
 };

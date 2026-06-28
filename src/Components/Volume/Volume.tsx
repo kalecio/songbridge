@@ -1,4 +1,4 @@
-import { useContext, useEffect, useRef, useState, CSSProperties } from 'react';
+import { useContext, useEffect, useRef, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router';
 import Slider from '../Slider/Slider';
 import { Heart, LyricsIcon, VolumeContainer, VolumeHigh, VolumeLow, VolumeOff, VolumeXmark } from './styles';
@@ -7,7 +7,7 @@ import { AppContext } from '../../Context/AppContext';
 import { useFavourites } from '../../hooks/useFavourites';
 import { AUDIO_EVENTS } from '../../audioEvents';
 
-const Volume = ({ style }: { style?: CSSProperties }) => {
+const Volume = () => {
   const [volume, setVolume] = useState(70);
   const [isVolumeOff, setVolumeOff] = useState(false);
 
@@ -57,7 +57,7 @@ const Volume = ({ style }: { style?: CSSProperties }) => {
   };
 
   return (
-    <VolumeContainer style={style}>
+    <VolumeContainer>
       <LyricsIcon
         aria-label="Lyrics"
         $active={isLyricsActive}

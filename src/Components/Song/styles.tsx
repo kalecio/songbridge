@@ -7,7 +7,8 @@ const SongContainer = styled.div`
   justify-content: flex-start;
   align-items: center;
   gap: 0.65rem;
-  min-width: 0;
+  min-width: 200px;
+  flex-shrink: 0;
   max-width: 22rem;
 `;
 
