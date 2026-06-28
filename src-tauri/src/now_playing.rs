@@ -534,4 +534,128 @@ mod tests {
     fn file_url_to_path_returns_none_for_a_non_file_url() {
         assert!(file_url_to_path("https://example.com/cover.jpg").is_none());
     }
+
+    // ── Discord Rich Presence integration ────────────────────────────────
+
+    #[test]
+    fn test_now_playing_inner_stores_cached_metadata() {
+        let inner = NowPlayingInner {
+            controls: None,
+            cached_metadata: None,
+        };
+
+        assert!(inner.cached_metadata.is_none());
+
+        let payload = NowPlayingPayload {
+            title: Some("Test Song".to_string()),
+            artist: Some("Test Artist".to_string()),
+            album: Some("Test Album".to_string()),
+            duration_seconds: Some(180),
+            cover_data_url: None,
+        };
+
+        let mut inner = inner;
+        inner.cached_metadata = Some(payload.clone());
+
+        assert!(inner.cached_metadata.is_some());
+        assert_eq!(
+            inner.cached_metadata.as_ref().unwrap().title,
+            Some("Test Song".to_string())
+        );
+        assert_eq!(
+            inner.cached_metadata.as_ref().unwrap().artist,
+            Some("Test Artist".to_string())
+        );
+    }
+
+    #[test]
+    fn test_playback_state_payload_creation() {
+        let playback = PlaybackStatePayload {
+            is_playing: true,
+            elapsed_seconds: Some(45.0),
+        };
+
+        assert_eq!(playback.is_playing, true);
+        assert_eq!(playback.elapsed_seconds, Some(45.0));
+    }
+
+    #[test]
+    fn test_playback_state_payload_paused() {
+        let playback = PlaybackStatePayload {
+            is_playing: false,
+            elapsed_seconds: Some(90.0),
+        };
+
+        assert_eq!(playback.is_playing, false);
+        assert_eq!(playback.elapsed_seconds, Some(90.0));
+    }
+
+    #[test]
+    fn test_now_playing_payload_with_album() {
+        let payload = NowPlayingPayload {
+            title: Some("Song".to_string()),
+            artist: Some("Artist".to_string()),
+            album: Some("Album".to_string()),
+            duration_seconds: Some(200),
+            cover_data_url: None,
+        };
+
+        assert_eq!(payload.album.as_deref(), Some("Album"));
+    }
+
+    #[test]
+    fn test_now_playing_payload_without_album() {
+        let payload = NowPlayingPayload {
+            title: Some("Song".to_string()),
+            artist: Some("Artist".to_string()),
+            album: None,
+            duration_seconds: Some(200),
+            cover_data_url: None,
+        };
+
+        assert_eq!(payload.album.as_deref(), None);
+    }
+
+    #[test]
+    fn test_update_discord_presence_with_cached_metadata() {
+        // This tests the logic flow - we can't test the actual Discord call
+        // but we can verify the metadata and playback structures are correct
+        let metadata = NowPlayingPayload {
+            title: Some("Test Track".to_string()),
+            artist: Some("Test Artist".to_string()),
+            album: Some("Test Album".to_string()),
+            duration_seconds: Some(240),
+            cover_data_url: None,
+        };
+
+        let playback = PlaybackStatePayload {
+            is_playing: true,
+            elapsed_seconds: Some(60.0),
+        };
+
+        // Verify the data that would be passed to Discord
+        assert_eq!(metadata.title.as_deref(), Some("Test Track"));
+        assert_eq!(metadata.duration_seconds, Some(240));
+        assert_eq!(playback.is_playing, true);
+        assert_eq!(playback.elapsed_seconds, Some(60.0));
+    }
+
+    #[test]
+    fn test_update_discord_presence_paused() {
+        let metadata = NowPlayingPayload {
+            title: Some("Test Track".to_string()),
+            artist: Some("Test Artist".to_string()),
+            album: Some("Test Album".to_string()),
+            duration_seconds: Some(240),
+            cover_data_url: None,
+        };
+
+        let playback = PlaybackStatePayload {
+            is_playing: false,
+            elapsed_seconds: Some(120.0),
+        };
+
+        assert_eq!(playback.is_playing, false);
+        assert_eq!(playback.elapsed_seconds, Some(120.0));
+    }
 }

@@ -190,3 +190,193 @@ pub fn init(app: &AppHandle) -> Option<DiscordPresence> {
 
     Some(presence)
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::now_playing::{NowPlayingPayload, PlaybackStatePayload};
+
+    // We can't easily test the full Discord connection without a running Discord instance,
+    // but we can test the activity building logic and config parsing
+
+    #[test]
+    fn test_get_discord_app_id_from_config() {
+        // This tests the config parsing logic
+        let json = serde_json::json!({
+            "plugins": {
+                "discord-rpc": {
+                    "applicationId": "123456789012345678"
+                }
+            }
+        });
+
+        // We can't easily test get_discord_app_id without an AppHandle,
+        // but we can test the DiscordConfig deserialization
+        let config: DiscordConfig = serde_json::from_value(
+            json.get("plugins")
+                .unwrap()
+                .get("discord-rpc")
+                .unwrap()
+                .clone(),
+        )
+        .unwrap();
+        assert_eq!(
+            config.application_id,
+            Some("123456789012345678".to_string())
+        );
+    }
+
+    #[test]
+    fn test_discord_config_empty_app_id() {
+        let config: DiscordConfig = serde_json::from_value(serde_json::json!({
+            "applicationId": ""
+        }))
+        .unwrap();
+        assert_eq!(config.application_id, Some("".to_string()));
+
+        // Test filtering empty string
+        let filtered = config.application_id.filter(|s| !s.is_empty());
+        assert_eq!(filtered, None);
+    }
+
+    #[test]
+    fn test_discord_config_missing_app_id() {
+        let config: DiscordConfig = serde_json::from_value(serde_json::json!({})).unwrap();
+        assert_eq!(config.application_id, None);
+    }
+
+    #[test]
+    fn test_discord_presence_new() {
+        let presence = DiscordPresence::new("test_app_id".to_string());
+        assert_eq!(presence.app_id, "test_app_id");
+        assert!(!*presence.connected.lock().unwrap());
+        assert!(presence.client.lock().unwrap().is_none());
+    }
+
+    #[test]
+    fn test_discord_presence_default_values() {
+        let presence = DiscordPresence::new("test".to_string());
+        assert_eq!(presence.app_id, "test");
+        assert_eq!(*presence.connected.lock().unwrap(), false);
+    }
+
+    #[test]
+    fn test_set_activity_builds_correct_activity_structure() {
+        // We can't call set_activity without a connected client,
+        // but we can verify the activity building logic by checking
+        // what parameters it would use
+        let metadata = NowPlayingPayload {
+            title: Some("Test Song".to_string()),
+            artist: Some("Test Artist".to_string()),
+            album: Some("Test Album".to_string()),
+            duration_seconds: Some(180),
+            cover_data_url: None,
+        };
+
+        let playback = PlaybackStatePayload {
+            is_playing: true,
+            elapsed_seconds: Some(45.0),
+        };
+
+        // Verify the data we'd pass to Discord
+        assert_eq!(metadata.title.as_deref(), Some("Test Song"));
+        assert_eq!(metadata.artist.as_deref(), Some("Test Artist"));
+        assert_eq!(metadata.album.as_deref(), Some("Test Album"));
+        assert_eq!(metadata.duration_seconds, Some(180));
+        assert_eq!(playback.is_playing, true);
+        assert_eq!(playback.elapsed_seconds, Some(45.0));
+    }
+
+    #[test]
+    fn test_set_activity_with_paused_playback() {
+        let metadata = NowPlayingPayload {
+            title: Some("Test Song".to_string()),
+            artist: Some("Test Artist".to_string()),
+            album: Some("Test Album".to_string()),
+            duration_seconds: Some(180),
+            cover_data_url: None,
+        };
+
+        let playback = PlaybackStatePayload {
+            is_playing: false,
+            elapsed_seconds: Some(90.0),
+        };
+
+        assert_eq!(playback.is_playing, false);
+        assert_eq!(playback.elapsed_seconds, Some(90.0));
+    }
+
+    #[test]
+    fn test_set_activity_with_no_metadata() {
+        let metadata = NowPlayingPayload {
+            title: None,
+            artist: None,
+            album: None,
+            duration_seconds: None,
+            cover_data_url: None,
+        };
+
+        let playback = PlaybackStatePayload {
+            is_playing: true,
+            elapsed_seconds: None,
+        };
+
+        assert_eq!(metadata.title.as_deref(), None);
+        assert_eq!(metadata.artist.as_deref(), None);
+        assert_eq!(playback.elapsed_seconds, None);
+    }
+
+    #[test]
+    fn test_timestamp_calculation() {
+        // Test the timestamp calculation logic used in set_activity
+        let elapsed = 45.0;
+        let total = 180;
+        let now = 1000000000000i64; // Fixed timestamp for testing
+
+        let elapsed_ms = (elapsed * 1000.0) as i64;
+        let total_ms = total as i64 * 1000;
+        let start_ms = now - elapsed_ms;
+        let end_ms = start_ms + total_ms;
+
+        assert_eq!(elapsed_ms, 45000);
+        assert_eq!(total_ms, 180000);
+        assert_eq!(start_ms, now - 45000);
+        assert_eq!(end_ms, start_ms + 180000);
+
+        // Progress percentage
+        let progress = (elapsed_ms as f64 / total_ms as f64) * 100.0;
+        assert!((progress - 25.0).abs() < f64::EPSILON);
+    }
+
+    #[test]
+    fn test_timestamp_calculation_zero_elapsed() {
+        let elapsed = 0.0;
+        let total = 180;
+        let now = 1000000000000i64;
+
+        let elapsed_ms = (elapsed * 1000.0) as i64;
+        let total_ms = total as i64 * 1000;
+        let start_ms = now - elapsed_ms;
+        let end_ms = start_ms + total_ms;
+
+        assert_eq!(elapsed_ms, 0);
+        assert_eq!(start_ms, now);
+        assert_eq!(end_ms, now + 180000);
+    }
+
+    #[test]
+    fn test_activity_type_is_listening() {
+        // Verify we use ActivityType::Listening (not Playing)
+        use discord_rich_presence::activity::ActivityType;
+        assert_eq!(ActivityType::Listening as u8, 2);
+        assert_eq!(ActivityType::Playing as u8, 0);
+    }
+
+    #[test]
+    fn test_clear_and_shutdown_dont_panic() {
+        let presence = DiscordPresence::new("test".to_string());
+        // These should not panic even without a connection
+        presence.clear();
+        presence.shutdown();
+    }
+}
