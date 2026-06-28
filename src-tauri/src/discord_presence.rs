@@ -147,7 +147,7 @@ impl DiscordPresence {
 
         activity = activity.buttons(vec![Button::new(
             "Listen on Songbridge",
-            "https://github.com/kaleciosantana/songbridge",
+            "https://github.com/kalecio/songbridge/releases",
         )]);
 
         if let Err(e) = client.set_activity(activity) {

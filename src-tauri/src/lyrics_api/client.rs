@@ -11,7 +11,7 @@ const LRCLIB_BASE_URL: &str = "https://lrclib.net/api";
 
 static HTTP_CLIENT: Lazy<Client> = Lazy::new(|| {
     ClientBuilder::new()
-        .user_agent("SongBridge/0.5.0 (https://github.com/kaleciosantana/songbridge)")
+        .user_agent("SongBridge/0.5.0 (https://github.com/kalecio/songbridge)")
         .timeout(Duration::from_secs(10))
         .build()
         .expect("Failed to create HTTP client")
