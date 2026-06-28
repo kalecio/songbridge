@@ -144,6 +144,11 @@ const Controls = () => {
   const formatTime = (seconds: number) => {
     const m = Math.floor(seconds / 60);
     const s = Math.floor(seconds % 60);
+    if (seconds >= 3600) {
+      const h = Math.floor(seconds / 3600);
+      const adjustedM = m - h * 60; // Adjust minutes to be within the hour
+      return `${h}:${adjustedM.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+    }
     return `${m}:${s.toString().padStart(2, '0')}`;
   };
   const totalSeconds = metadata?.duration?.duration_seconds ?? 0;
