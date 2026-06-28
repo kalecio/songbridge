@@ -22,6 +22,8 @@ use souvlaki::{MediaControlEvent, MediaControls, MediaMetadata, MediaPlayback, P
 use tauri::{AppHandle, Emitter, Manager};
 use url::Url;
 
+use crate::discord_presence::{init as init_discord, DiscordPresence};
+
 #[derive(Default, Clone, serde::Deserialize)]
 pub struct NowPlayingPayload {
     pub title: Option<String>,
@@ -40,7 +42,15 @@ pub struct PlaybackStatePayload {
     pub elapsed_seconds: Option<f64>,
 }
 
-pub struct NowPlayingState(pub Arc<Mutex<Option<MediaControls>>>);
+/// Inner state that holds both media controls and cached metadata for Discord presence
+pub struct NowPlayingInner {
+    pub controls: Option<MediaControls>,
+    pub cached_metadata: Option<NowPlayingPayload>,
+}
+
+pub type NowPlayingState = Arc<Mutex<NowPlayingInner>>;
+
+pub struct DiscordPresenceState(pub Arc<Mutex<Option<DiscordPresence>>>);
 
 /// Parse a `data:image/<kind>;base64,<body>` URL into `(extension, bytes)`.
 /// We only inspect the header for "png" — everything else is treated as
@@ -146,17 +156,25 @@ pub fn init(app: &AppHandle) {
         Ok(c) => c,
         Err(e) => {
             log::warn!("Failed to create media controls: {:?}", e);
-            app.manage(NowPlayingState(Arc::new(Mutex::new(None))));
+            let empty_inner = Arc::new(Mutex::new(NowPlayingInner {
+                controls: None,
+                cached_metadata: None,
+            }));
+            app.manage(empty_inner);
             return;
         }
     };
 
-    let controls = Arc::new(Mutex::new(Some(controls)));
+    let inner = Arc::new(Mutex::new(NowPlayingInner {
+        controls: Some(controls),
+        cached_metadata: None,
+    }));
 
     {
         let app_for_handler = app_handle.clone();
-        if let Some(ref mut c) = *controls.lock().unwrap() {
-            if let Err(e) = c.attach(move |event: MediaControlEvent| match event {
+        let mut inner_guard = inner.lock().unwrap();
+        if let Some(ref mut controls) = inner_guard.controls.as_mut() {
+            if let Err(e) = controls.attach(move |event: MediaControlEvent| match event {
                 MediaControlEvent::Play | MediaControlEvent::Pause | MediaControlEvent::Toggle => {
                     let _ = app_for_handler.emit("media-key:play-pause", ());
                 }
@@ -178,19 +196,32 @@ pub fn init(app: &AppHandle) {
         }
     }
 
-    app.manage(NowPlayingState(controls));
+    app.manage(inner.clone());
+
+    // Initialize Discord Rich Presence
+    if let Some(discord) = init_discord(app) {
+        app.manage(DiscordPresenceState(Arc::new(Mutex::new(Some(discord)))));
+    }
 }
 
 #[tauri::command]
-pub fn set_now_playing(state: tauri::State<NowPlayingState>, payload: NowPlayingPayload) {
-    let mut guard = match state.0.lock() {
+pub fn set_now_playing(
+    state: tauri::State<NowPlayingState>,
+    discord_state: tauri::State<DiscordPresenceState>,
+    payload: NowPlayingPayload,
+) {
+    let mut inner = match state.lock() {
         Ok(g) => g,
         Err(e) => {
             log::warn!("now_playing lock poisoned: {}", e);
             return;
         }
     };
-    let Some(controls) = guard.as_mut() else {
+
+    // Cache metadata for Discord presence updates
+    inner.cached_metadata = Some(payload.clone());
+
+    let Some(controls) = inner.controls.as_mut() else {
         return;
     };
 
@@ -246,18 +277,46 @@ pub fn set_now_playing(state: tauri::State<NowPlayingState>, payload: NowPlaying
             }
         }
     }
+
+    // Update Discord presence if we have playback state (default to paused)
+    update_discord_presence(
+        &discord_state,
+        &payload,
+        &PlaybackStatePayload {
+            is_playing: false,
+            elapsed_seconds: Some(0.0),
+        },
+    );
 }
 
 #[tauri::command]
-pub fn set_playback_state(state: tauri::State<NowPlayingState>, payload: PlaybackStatePayload) {
-    let mut guard = match state.0.lock() {
+pub fn set_playback_state(
+    state: tauri::State<NowPlayingState>,
+    discord_state: tauri::State<DiscordPresenceState>,
+    payload: PlaybackStatePayload,
+) {
+    // First, get cached metadata without holding the lock for the entire function
+    let cached_metadata = {
+        let inner = match state.lock() {
+            Ok(g) => g,
+            Err(e) => {
+                log::warn!("now_playing lock poisoned: {}", e);
+                return;
+            }
+        };
+        inner.cached_metadata.clone()
+    };
+
+    // Now get controls and update playback
+    let mut inner = match state.lock() {
         Ok(g) => g,
         Err(e) => {
             log::warn!("now_playing lock poisoned: {}", e);
             return;
         }
     };
-    let Some(controls) = guard.as_mut() else {
+
+    let Some(controls) = inner.controls.as_mut() else {
         return;
     };
 
@@ -277,6 +336,23 @@ pub fn set_playback_state(state: tauri::State<NowPlayingState>, payload: Playbac
     );
     if let Err(e) = controls.set_playback(playback) {
         log::warn!("Failed to set playback state: {:?}", e);
+    }
+
+    // Update Discord presence with cached metadata
+    if let Some(metadata) = cached_metadata {
+        update_discord_presence(&discord_state, &metadata, &payload);
+    }
+}
+
+/// Update Discord Rich Presence with current track metadata and playback state
+fn update_discord_presence(
+    discord_state: &tauri::State<DiscordPresenceState>,
+    metadata: &NowPlayingPayload,
+    playback: &PlaybackStatePayload,
+) {
+    let guard = discord_state.0.lock().unwrap();
+    if let Some(discord) = guard.as_ref() {
+        discord.set_activity(metadata, playback);
     }
 }
 
