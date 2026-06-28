@@ -32,6 +32,7 @@ jobs:
             libayatana-appindicator3-dev
             librsvg2-dev
             libasound2-dev
+            pulseaudio
           version: 1.0
 
       - uses: dtolnay/rust-toolchain@stable
@@ -53,6 +54,11 @@ jobs:
 
       - name: Clippy
         run: cargo clippy --manifest-path src-tauri/Cargo.toml -- -D warnings
+
+      - name: Start PulseAudio
+        run: |
+          pulseaudio --start --exit-idle-time=-1 --daemonize=no --disallow-exit=yes --no-cpu-limit=yes &
+          sleep 2
 
       - name: Unit tests
         run: cargo test --manifest-path src-tauri/Cargo.toml --lib
