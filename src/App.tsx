@@ -1,14 +1,15 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { createGlobalStyle, ThemeProvider } from 'styled-components';
 import './App.css';
 import Player from './Pages/Player/Player';
 import { AppContext, ScanProgress } from './Context/AppContext';
-import { MetadataType, PlaylistType } from './types';
+import { MetadataType, PlaylistType, RepeatMode } from './types';
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
 import { themes, defaultTheme } from './theme';
 import { ShortcutBindings, loadShortcuts, saveShortcuts } from './keyboard';
 import { ModalProvider } from './Context/ModalContext';
+import { LyricsSearchModalProvider } from './Context/LyricsSearchModalContext';
 
 const GlobalStyle = createGlobalStyle`
   body {
@@ -22,7 +23,7 @@ function App() {
   const [currentPlaylist, setCurrentPlaylist] = useState<string[]>([]);
   const [playlists, setPlaylists] = useState<Array<PlaylistType>>([]);
   const [isPlaying, setIsPlaying] = useState<boolean>(false);
-  const [onRepeat, setOnRepeat] = useState<boolean>(false);
+  const [onRepeat, setOnRepeat] = useState<RepeatMode>('none');
   const [onShuffle, setOnShuffle] = useState<boolean>(false);
   const [progress, setProgress] = useState<number>(0);
   const [metadata, setMetadata] = useState<MetadataType | undefined>(undefined);
@@ -33,6 +34,8 @@ function App() {
   const [scanProgress, setScanProgress] = useState<ScanProgress>({ current: 0, total: 0 });
   const [currentTheme, setCurrentTheme] = useState<string>(defaultTheme.name);
   const [shortcuts, setShortcutsState] = useState<ShortcutBindings>(() => loadShortcuts());
+  const playbackStateLastCall = useRef(0);
+  const playbackStateLastPlaying = useRef(false);
 
   const setShortcuts = (next: ShortcutBindings) => {
     setShortcutsState(next);
@@ -84,12 +87,12 @@ function App() {
         const prefs = await invoke<{
           current_path?: string;
           current_playlist: string[];
-          on_repeat: boolean;
+          on_repeat: RepeatMode;
           on_shuffle: boolean;
           theme: string;
         }>('db_get_preferences');
         if (prefs.current_playlist.length) setCurrentPlaylist(prefs.current_playlist);
-        setOnRepeat(prefs.on_repeat);
+        setOnRepeat(prefs.on_repeat as RepeatMode);
         setOnShuffle(prefs.on_shuffle);
         if (themes[prefs.theme]) setCurrentTheme(prefs.theme);
 
@@ -152,19 +155,23 @@ function App() {
     }).catch(() => {});
   }, [metadata]);
 
-  // Push playback state + elapsed position whenever they change. Cheap call
-  // (no cover encoding) so it's safe to fire on every 1s `progress` update —
-  // this is what makes the OS scrubber slide as the song plays and stay put
-  // when paused.
+  // Push playback state + elapsed position. Throttle to ~1s to avoid
+  // excessive calls from 60fps progress interpolation.
   useEffect(() => {
     const total = metadata?.duration?.duration_seconds ?? 0;
     const elapsed = total > 0 ? (progress / 100) * total : null;
-    invoke('set_playback_state', {
-      payload: {
-        is_playing: isPlaying,
-        elapsed_seconds: elapsed,
-      },
-    }).catch(() => {});
+    const now = Date.now();
+    const lastCall = playbackStateLastCall.current;
+    if (now - lastCall >= 1000 || isPlaying !== playbackStateLastPlaying.current) {
+      playbackStateLastCall.current = now;
+      playbackStateLastPlaying.current = isPlaying;
+      invoke('set_playback_state', {
+        payload: {
+          is_playing: isPlaying,
+          elapsed_seconds: elapsed,
+        },
+      }).catch(() => {});
+    }
   }, [isPlaying, progress, metadata]);
 
   // Persist playlists whenever they change
@@ -218,7 +225,9 @@ function App() {
       <ThemeProvider theme={activeTheme}>
         <GlobalStyle />
         <ModalProvider>
-          <Player />
+          <LyricsSearchModalProvider>
+            <Player />
+          </LyricsSearchModalProvider>
         </ModalProvider>
       </ThemeProvider>
     </AppContext.Provider>

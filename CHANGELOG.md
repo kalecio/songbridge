@@ -30,8 +30,6 @@ A right-click-everywhere release: a unified context-menu system, in-app modal di
 ### Fixed
 - **Native OS context menu suppressed in production builds** — Tauri's default right-click menu (Reload, Inspect Element…) is now blocked outside dev, so it can't surface over or override the in-app context menu. Development still gets the OS menu so DevTools remains one click away.
 
-[0.5.0]: https://github.com/kalecio/songbridge/compare/songbridge-v0.4.1...songbridge-v0.5.0
-
 ## [0.4.1] - 2026-05-11
 
 ### Fixed

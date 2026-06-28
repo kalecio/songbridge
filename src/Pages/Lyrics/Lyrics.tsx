@@ -1,14 +1,15 @@
 import { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { AppContext } from '../../Context/AppContext';
-import { parseLrc, getActiveIndex, LrcLine } from '../../utils/lrcParser';
+import { parseLrc, getActiveIndex, LrcLine, LrcParseResult } from '../../utils/lrcParser';
 import StatusMessage from '../../Components/StatusMessage/StatusMessage';
 import { error as logError } from '../../logger';
-import { LyricsContainer, LyricLine } from './styles';
+import { LyricsContainer, LyricLine, PlainLyricLine } from './styles';
 
 const Lyrics = () => {
   const { currentPath: path, progress, metadata, isPlaying } = useContext(AppContext);
   const [lines, setLines] = useState<LrcLine[]>([]);
+  const [isPlainText, setIsPlainText] = useState(false);
   const [hasLrc, setHasLrc] = useState<boolean | null>(null);
   const activeRef = useRef<HTMLParagraphElement>(null);
 
@@ -44,6 +45,7 @@ const Lyrics = () => {
   useEffect(() => {
     if (!path) {
       setLines([]);
+      setIsPlainText(false);
       setHasLrc(null);
       return;
     }
@@ -52,15 +54,19 @@ const Lyrics = () => {
         if (content == null) {
           setHasLrc(false);
           setLines([]);
+          setIsPlainText(false);
           return;
         }
+        const result: LrcParseResult = parseLrc(content);
         setHasLrc(true);
-        setLines(parseLrc(content));
+        setIsPlainText(result.isPlainText);
+        setLines(result.lines);
       })
       .catch((err) => {
         logError(`Failed to read LRC file: ${err}`).catch(() => {});
         setHasLrc(false);
         setLines([]);
+        setIsPlainText(false);
       });
   }, [path]);
 
@@ -80,6 +86,16 @@ const Lyrics = () => {
   if (!path) return <StatusMessage>No song playing</StatusMessage>;
   if (hasLrc === false) return <StatusMessage>No lyrics found for this song</StatusMessage>;
   if (hasLrc === null || lines.length === 0) return null;
+
+  if (isPlainText) {
+    return (
+      <LyricsContainer>
+        {lines.map((line, i) => (
+          <PlainLyricLine key={`${line.time}-${i}`}>{line.text}</PlainLyricLine>
+        ))}
+      </LyricsContainer>
+    );
+  }
 
   return (
     <LyricsContainer>

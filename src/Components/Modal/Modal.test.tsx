@@ -70,4 +70,14 @@ describe('Modal', () => {
     fireEvent.mouseDown(getByRole('presentation'));
     expect(onClose).not.toHaveBeenCalled();
   });
+
+  it('applies maxWidth prop to the surface', () => {
+    const { getByRole } = renderWithContext(
+      <Modal isOpen onClose={vi.fn()} title="Wide" maxWidth="800px">
+        body
+      </Modal>,
+    );
+    const surface = getByRole('dialog');
+    expect(surface).toHaveStyle({ maxWidth: '800px' });
+  });
 });

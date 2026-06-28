@@ -1,12 +1,13 @@
 import { useCallback, useContext, useEffect, useRef, useState } from 'react';
-import { Controls, Shuffle, Prev, Play, Next, Repeat, Pause } from './styles';
+import { ControlsContainer, Shuffle, Prev, Play, Next, RepeatButton, Pause, CurrentTime, Container } from './styles';
 import { invoke } from '@tauri-apps/api/core';
 import { AppContext } from '../../Context/AppContext';
 import { error as logError } from '../../logger';
-import { MetadataType } from '../../types';
+import { MetadataType, RepeatMode } from '../../types';
 import { AUDIO_EVENTS } from '../../audioEvents';
+import { TbRepeat, TbRepeatOnce } from 'react-icons/tb';
 
-const Player = () => {
+const Controls = () => {
   const [isSongLoaded, setIsSongLoaded] = useState(false);
 
   const context = useContext(AppContext);
@@ -21,6 +22,8 @@ const Player = () => {
     setOnRepeat,
     onShuffle,
     setOnShuffle,
+    progress,
+    metadata,
   } = context;
 
   const playNewSong = useCallback(async () => {
@@ -96,22 +99,26 @@ const Player = () => {
     }
   };
 
-  // Bridge custom audio events (dispatched by the global keyboard-shortcut
-  // handler) to the existing playback handlers. Refs keep the listeners
-  // pointing at the latest closures without re-binding on every render.
+  const handleToggleRepeat = useCallback(() => {
+    const modes: RepeatMode[] = ['none', 'one', 'all'];
+    const currentIndex = modes.indexOf(onRepeat);
+    const nextIndex = (currentIndex + 1) % modes.length;
+    setOnRepeat?.(modes[nextIndex]);
+  }, [onRepeat, setOnRepeat]);
+
   const handlersRef = useRef({
     togglePlayPause,
     handleNextSong,
     handlePreviousSong,
     toggleShuffle: () => setOnShuffle?.(!onShuffle),
-    toggleRepeat: () => setOnRepeat?.(!onRepeat),
+    toggleRepeat: handleToggleRepeat,
   });
   handlersRef.current = {
     togglePlayPause,
     handleNextSong,
     handlePreviousSong,
     toggleShuffle: () => setOnShuffle?.(!onShuffle),
-    toggleRepeat: () => setOnRepeat?.(!onRepeat),
+    toggleRepeat: handleToggleRepeat,
   };
 
   useEffect(() => {
@@ -134,19 +141,38 @@ const Player = () => {
     };
   }, []);
 
+  const formatTime = (seconds: number) => {
+    const m = Math.floor(seconds / 60);
+    const s = Math.floor(seconds % 60);
+    if (seconds >= 3600) {
+      const h = Math.floor(seconds / 3600);
+      const adjustedM = m - h * 60; // Adjust minutes to be within the hour
+      return `${h}:${adjustedM.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+    }
+    return `${m}:${s.toString().padStart(2, '0')}`;
+  };
+  const totalSeconds = metadata?.duration?.duration_seconds ?? 0;
+  const currentSeconds = Math.floor((progress / 100) * totalSeconds);
+  const currentTimeStr = `${formatTime(currentSeconds)} / ${formatTime(totalSeconds)}`;
+
   return (
-    <Controls>
-      <Shuffle aria-label="shuffle" $onShuffle={onShuffle} onClick={() => setOnShuffle?.(!onShuffle)} />
-      <Prev aria-label="previous" onClick={handlePreviousSong} />
-      {isPlaying ? (
-        <Pause aria-label="pause" onClick={pause} />
-      ) : (
-        <Play aria-label="play" onClick={isSongLoaded ? resume : playNewSong} />
-      )}
-      <Next aria-label="next" onClick={handleNextSong} />
-      <Repeat aria-label="repeat" $onRepeat={onRepeat} onClick={() => setOnRepeat?.(!onRepeat)} />
-    </Controls>
+    <Container>
+      <CurrentTime>{currentTimeStr}</CurrentTime>
+      <ControlsContainer>
+        <Shuffle aria-label="shuffle" $onShuffle={onShuffle} onClick={() => setOnShuffle?.(!onShuffle)} />
+        <Prev aria-label="previous" onClick={handlePreviousSong} />
+        {isPlaying ? (
+          <Pause aria-label="pause" onClick={pause} />
+        ) : (
+          <Play aria-label="play" onClick={isSongLoaded ? resume : playNewSong} />
+        )}
+        <Next aria-label="next" onClick={handleNextSong} />
+        <RepeatButton aria-label="repeat" $onRepeat={onRepeat} onClick={handleToggleRepeat}>
+          {onRepeat === 'one' ? <TbRepeatOnce /> : <TbRepeat />}
+        </RepeatButton>
+      </ControlsContainer>
+    </Container>
   );
 };
 
-export default Player;
+export default Controls;

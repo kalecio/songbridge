@@ -5,6 +5,7 @@ import { AppContext } from '../../Context/AppContext';
 import { PlaylistType } from '../../types';
 import { DEFAULT_SHORTCUTS } from '../../keyboard';
 import Detail from './Detail';
+import { LyricsSearchModalProvider } from '../../Context/LyricsSearchModalContext';
 
 vi.mock('@tauri-apps/api/core', () => ({
   invoke: vi.fn().mockResolvedValue([]),
@@ -15,7 +16,7 @@ const mockInvoke = vi.mocked(invoke);
 type AppContextValue = React.ComponentProps<typeof AppContext.Provider>['value'];
 
 const defaultContext: AppContextValue = {
-  onRepeat: false,
+  onRepeat: 'none',
   onShuffle: false,
   isPlaying: false,
   isScanning: false,
@@ -31,11 +32,13 @@ const defaultContext: AppContextValue = {
 const renderDetail = (playlists: PlaylistType[], contextOverrides: Partial<AppContextValue> = {}, playlistId = '1') => {
   return render(
     <MemoryRouter initialEntries={[`/playlist/${playlistId}`]}>
-      <AppContext.Provider value={{ ...defaultContext, ...contextOverrides }}>
-        <Routes>
-          <Route path="/playlist/:id" element={<Detail playlists={playlists} />} />
-        </Routes>
-      </AppContext.Provider>
+      <LyricsSearchModalProvider>
+        <AppContext.Provider value={{ ...defaultContext, ...contextOverrides }}>
+          <Routes>
+            <Route path="/playlist/:id" element={<Detail playlists={playlists} />} />
+          </Routes>
+        </AppContext.Provider>
+      </LyricsSearchModalProvider>
     </MemoryRouter>,
   );
 };

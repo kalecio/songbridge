@@ -1,12 +1,15 @@
 import { render, type RenderOptions } from '@testing-library/react';
 import { MemoryRouter } from 'react-router';
+import { ThemeProvider } from 'styled-components';
 import { AppContext } from '../Context/AppContext';
 import { DEFAULT_SHORTCUTS } from '../keyboard';
+import { LyricsSearchModalProvider } from '../Context/LyricsSearchModalContext';
+import { defaultTheme } from '../theme';
 
 type AppContextValue = React.ComponentProps<typeof AppContext.Provider>['value'];
 
 const defaultContext: AppContextValue = {
-  onRepeat: false,
+  onRepeat: 'none',
   onShuffle: false,
   isPlaying: false,
   isScanning: false,
@@ -26,7 +29,11 @@ export const renderWithContext = (
 ) =>
   render(
     <MemoryRouter>
-      <AppContext.Provider value={{ ...defaultContext, ...contextOverrides }}>{ui}</AppContext.Provider>
+      <ThemeProvider theme={defaultTheme}>
+        <LyricsSearchModalProvider>
+          <AppContext.Provider value={{ ...defaultContext, ...contextOverrides }}>{ui}</AppContext.Provider>
+        </LyricsSearchModalProvider>
+      </ThemeProvider>
     </MemoryRouter>,
     options,
   );

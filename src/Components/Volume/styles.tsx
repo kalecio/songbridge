@@ -48,6 +48,8 @@ const VolumeContainer = styled.div`
   justify-content: flex-end;
   align-items: center;
   gap: 1rem;
+  min-width: 150px;
+  flex-shrink: 0;
 `;
 
 export { VolumeContainer, VolumeXmark, VolumeOff, VolumeLow, VolumeHigh, Heart, LyricsIcon };

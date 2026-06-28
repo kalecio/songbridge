@@ -17,8 +17,10 @@ const StyledPlayer = styled.div`
   display: flex;
   justify-content: space-between;
   align-items: center;
-  padding: 0 3rem;
   width: 100%;
+  gap: 1rem;
+  padding: 0 2rem;
+  box-sizing: border-box;
 `;
 
 const Container = styled.div`
@@ -154,6 +156,13 @@ const ScanBannerLabel = styled.div`
   color: ${({ theme }) => theme.textMuted};
 `;
 
+const ControlsWrapper = styled.div`
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  min-width: 0;
+`;
+
 export {
   PlayerContainer,
   StyledPlayer,
@@ -171,4 +180,5 @@ export {
   SettingsButton,
   ScanBanner,
   ScanBannerLabel,
+  ControlsWrapper,
 };

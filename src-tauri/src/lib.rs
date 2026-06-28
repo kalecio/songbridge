@@ -6,6 +6,7 @@ use tauri_plugin_log::{Target, TargetKind};
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 mod audio;
 mod db;
+mod lyrics_api;
 mod metadata;
 mod music_library;
 mod now_playing;
@@ -69,6 +70,10 @@ pub fn run() {
             metadata::commands::update_track_metadata,
             metadata::commands::read_lrc_file,
             metadata::commands::import_lrc_file,
+            lyrics_api::commands::search_lrclib_lyrics,
+            lyrics_api::commands::get_lrclib_lyrics_by_id,
+            lyrics_api::commands::download_lrclib_lyrics,
+            lyrics_api::commands::get_lrclib_lyrics_preview,
             music_library::commands::scan_music_library,
             music_library::commands::get_all_songs,
             music_library::commands::get_songs_by_album,

@@ -101,14 +101,34 @@ describe('Controls', () => {
     expect(setOnShuffle).toHaveBeenCalledWith(true);
   });
 
-  it('calls setOnRepeat with the toggled value when Repeat is clicked', () => {
+  it('calls setOnRepeat with the next mode when Repeat is clicked (none -> one)', () => {
     const setOnRepeat = vi.fn();
     const { getByLabelText } = renderWithContext(<Controls />, {
-      onRepeat: false,
+      onRepeat: 'none',
       setOnRepeat,
     });
     fireEvent.click(getByLabelText('repeat'));
-    expect(setOnRepeat).toHaveBeenCalledWith(true);
+    expect(setOnRepeat).toHaveBeenCalledWith('one');
+  });
+
+  it('calls setOnRepeat with the next mode when Repeat is clicked (one -> all)', () => {
+    const setOnRepeat = vi.fn();
+    const { getByLabelText } = renderWithContext(<Controls />, {
+      onRepeat: 'one',
+      setOnRepeat,
+    });
+    fireEvent.click(getByLabelText('repeat'));
+    expect(setOnRepeat).toHaveBeenCalledWith('all');
+  });
+
+  it('calls setOnRepeat with the next mode when Repeat is clicked (all -> none)', () => {
+    const setOnRepeat = vi.fn();
+    const { getByLabelText } = renderWithContext(<Controls />, {
+      onRepeat: 'all',
+      setOnRepeat,
+    });
+    fireEvent.click(getByLabelText('repeat'));
+    expect(setOnRepeat).toHaveBeenCalledWith('none');
   });
 
   it('invokes pause and sets isPlaying to false when Pause is clicked', async () => {
@@ -129,5 +149,42 @@ describe('Controls', () => {
     await act(async () => {});
     expect(mockInvoke).not.toHaveBeenCalledWith('load_song', expect.anything());
     expect(mockInvoke).not.toHaveBeenCalledWith('play_song');
+  });
+
+  describe('time display', () => {
+    const renderWithTime = (progress: number, totalSeconds: number) =>
+      renderWithContext(<Controls />, {
+        progress,
+        metadata: { duration: { duration_seconds: totalSeconds } },
+        currentPath: undefined,
+      });
+
+    it('shows mm:ss for songs under one hour', () => {
+      const { getByText } = renderWithTime(50, 120); // 1:00 / 2:00
+      expect(getByText('1:00 / 2:00')).toBeInTheDocument();
+    });
+
+    it('shows h:mm:ss for songs one hour or longer', () => {
+      // 3660s = 1h 1m, 50% = 1830s = 30m 30s
+      const { getByText } = renderWithTime(50, 3660);
+      expect(getByText('30:30 / 1:01:00')).toBeInTheDocument();
+    });
+
+    it('shows zero time when no metadata duration', () => {
+      const { getByText } = renderWithContext(<Controls />, {
+        progress: 0,
+        metadata: undefined,
+        currentPath: undefined,
+      });
+      expect(getByText('0:00 / 0:00')).toBeInTheDocument();
+    });
+
+    it('updates current time as progress changes', () => {
+      const { getByText } = renderWithTime(0, 180); // 0:00 / 3:00
+      expect(getByText('0:00 / 3:00')).toBeInTheDocument();
+      // re-render with new props
+      const { getByText: getByText2 } = renderWithTime(50, 180);
+      expect(getByText2('1:30 / 3:00')).toBeInTheDocument();
+    });
   });
 });

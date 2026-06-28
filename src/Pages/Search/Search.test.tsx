@@ -5,11 +5,12 @@ import { MetadataType, PlaylistType } from '../../types';
 import { FAVOURITES_PLAYLIST_ID } from '../../hooks/useFavourites';
 import { DEFAULT_SHORTCUTS } from '../../keyboard';
 import Search from './Search';
+import { LyricsSearchModalProvider } from '../../Context/LyricsSearchModalContext';
 
 type AppContextValue = React.ComponentProps<typeof AppContext.Provider>['value'];
 
 const defaultContext: AppContextValue = {
-  onRepeat: false,
+  onRepeat: 'none',
   onShuffle: false,
   isPlaying: false,
   isScanning: false,
@@ -32,29 +33,23 @@ const library: MetadataType[] = [
 const renderSearch = (query: string, contextOverrides: Partial<AppContextValue> = {}) =>
   render(
     <MemoryRouter initialEntries={[`/search?q=${encodeURIComponent(query)}`]}>
-      <AppContext.Provider value={{ ...defaultContext, library, ...contextOverrides }}>
-        <Routes>
-          <Route path="/search" element={<Search />} />
-          <Route path="/artists/:id" element={<div>Artist page</div>} />
-          <Route path="/albums/:id" element={<div>Album page</div>} />
-          <Route path="/playlist/:id" element={<div>Playlist page</div>} />
-        </Routes>
-      </AppContext.Provider>
+      <LyricsSearchModalProvider>
+        <AppContext.Provider value={{ ...defaultContext, library, ...contextOverrides }}>
+          <Routes>
+            <Route path="/search" element={<Search />} />
+            <Route path="/artists/:id" element={<div>Artist page</div>} />
+            <Route path="/albums/:id" element={<div>Album page</div>} />
+            <Route path="/playlist/:id" element={<div>Playlist page</div>} />
+          </Routes>
+        </AppContext.Provider>
+      </LyricsSearchModalProvider>
     </MemoryRouter>,
   );
 
 describe('Search', () => {
   describe('empty state', () => {
     it('renders nothing when query is empty', () => {
-      render(
-        <MemoryRouter initialEntries={['/search?q=']}>
-          <AppContext.Provider value={{ ...defaultContext, library }}>
-            <Routes>
-              <Route path="/search" element={<Search />} />
-            </Routes>
-          </AppContext.Provider>
-        </MemoryRouter>,
-      );
+      renderSearch('');
       expect(screen.queryByText(/results/i)).not.toBeInTheDocument();
     });
 

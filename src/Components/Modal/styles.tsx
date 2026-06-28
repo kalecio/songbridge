@@ -11,14 +11,18 @@ export const Backdrop = styled.div`
   padding: 1rem;
 `;
 
-export const Surface = styled.div`
+interface SurfaceProps {
+  $maxWidth?: string;
+}
+
+export const Surface = styled.div<SurfaceProps>`
   background: ${({ theme }) => theme.cardBackground};
   color: ${({ theme }) => theme.textPrimary};
   border: 1px solid ${({ theme }) => theme.border};
   border-radius: 0.75rem;
   box-shadow: 0 16px 48px ${({ theme }) => theme.cardShadowHover};
   width: 100%;
-  max-width: 24rem;
+  max-width: ${({ $maxWidth }) => $maxWidth ?? '24rem'};
   display: flex;
   flex-direction: column;
   overflow: hidden;

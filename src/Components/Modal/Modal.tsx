@@ -10,11 +10,12 @@ interface Props {
   footer?: React.ReactNode;
   dismissible?: boolean;
   labelledBy?: string;
+  maxWidth?: string;
 }
 
 const TITLE_ID = 'modal-title';
 
-const Modal = ({ isOpen, onClose, title, children, footer, dismissible = true, labelledBy }: Props) => {
+const Modal = ({ isOpen, onClose, title, children, footer, dismissible = true, labelledBy, maxWidth }: Props) => {
   const surfaceRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -42,6 +43,7 @@ const Modal = ({ isOpen, onClose, title, children, footer, dismissible = true, l
         role="dialog"
         aria-modal="true"
         aria-labelledby={labelledBy ?? (title ? TITLE_ID : undefined)}
+        $maxWidth={maxWidth}
       >
         {title && (
           <Header>

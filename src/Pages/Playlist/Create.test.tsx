@@ -24,7 +24,7 @@ const Wrapper = ({
     <MemoryRouter initialEntries={initialEntries}>
       <AppContext.Provider
         value={{
-          onRepeat: false,
+          onRepeat: 'none',
           onShuffle: false,
           isPlaying: false,
           isScanning: false,
