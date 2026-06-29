@@ -121,6 +121,15 @@ When reporting a bug, attaching this log file helps us diagnose the issue faster
 
 Contributions are welcome. Please read [CONTRIBUTORS.md](./CONTRIBUTORS.md) before opening a pull request.
 
+## Acknowledgements
+
+A special thanks to everyone who has contributed to this project:
+
+- Handsforup - For coming up with the logo for the app.
+- [MarcosHK6](https://github.com/MarcosHK6) - For starting up initial backend code and helping me understand how to deal with rodio and implementing the core music player feature.
+- [carlosdaguano](https://github.com/carlosdaguano) - For helping out on setting up templates for issues, PRs, contributors and such.
+- [Matheus Nicéas](https://github.com/mniceas) - For helping testing up the application and doing some QAing in different linux distros and desktop enviroments.
+
 ## License
 
 [CC BY-NC-SA 4.0](./LICENSE)
