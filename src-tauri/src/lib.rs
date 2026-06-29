@@ -6,6 +6,7 @@ use tauri_plugin_log::{Target, TargetKind};
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 mod audio;
 mod db;
+mod discord_presence;
 mod lyrics_api;
 mod metadata;
 mod music_library;
@@ -53,6 +54,7 @@ pub fn run() {
                 .map_err(|e| format!("Failed to open database: {e}"))?;
             app.manage(db_state);
             now_playing::init(app.handle());
+            let _discord = discord_presence::init(app.handle());
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
