@@ -45,7 +45,7 @@ describe('useLrclibLyrics', () => {
       query: 'test query',
     };
 
-    let data: Awaited<ReturnType<typeof result.current.searchLyrics>>;
+    let data!: Awaited<ReturnType<typeof result.current.searchLyrics>>;
     await act(async () => {
       data = await result.current.searchLyrics(params);
     });
@@ -58,7 +58,7 @@ describe('useLrclibLyrics', () => {
     mockInvoke.mockResolvedValue(mockTrackResponse);
     const { result } = renderHook(() => useLrclibLyrics());
 
-    let data: Awaited<ReturnType<typeof result.current.getLyricsById>>;
+    let data!: Awaited<ReturnType<typeof result.current.getLyricsById>>;
     await act(async () => {
       data = await result.current.getLyricsById(1);
     });
@@ -71,7 +71,7 @@ describe('useLrclibLyrics', () => {
     mockInvoke.mockResolvedValue(mockPreview);
     const { result } = renderHook(() => useLrclibLyrics());
 
-    let data: Awaited<ReturnType<typeof result.current.getLyricsPreview>>;
+    let data!: Awaited<ReturnType<typeof result.current.getLyricsPreview>>;
     await act(async () => {
       data = await result.current.getLyricsPreview(1);
     });
