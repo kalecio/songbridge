@@ -642,7 +642,7 @@ mod tests {
 
     #[test]
     fn test_update_discord_presence_paused() {
-        let metadata = NowPlayingPayload {
+        let _metadata = NowPlayingPayload {
             title: Some("Test Track".to_string()),
             artist: Some("Test Artist".to_string()),
             album: Some("Test Album".to_string()),

@@ -32,7 +32,10 @@ jobs:
             libayatana-appindicator3-dev
             librsvg2-dev
             libasound2-dev
+            libasound2-plugins
             pulseaudio
+            pulseaudio-utils
+            alsa-utils
           version: 1.0
 
       - uses: dtolnay/rust-toolchain@stable
@@ -55,13 +58,26 @@ jobs:
       - name: Clippy
         run: cargo clippy --manifest-path src-tauri/Cargo.toml -- -D warnings
 
-      - name: Start PulseAudio
+      - name: Setup audio device
         run: |
-          pulseaudio --start --exit-idle-time=-1 --daemonize=no --disallow-exit=yes --no-cpu-limit=yes &
-          sleep 2
-
-      - name: Unit tests
-        run: cargo test --manifest-path src-tauri/Cargo.toml --lib
+          # Use ALSA null device - always available, no kernel modules needed
+          echo 'pcm.!default { type null }' | sudo tee /etc/asound.conf
+          echo 'ctl.!default { type null }' | sudo tee -a /etc/asound.conf
+          
+          # Verify
+          cat /etc/asound.conf
+          aplay -L 2>&1 | head -10
+          
+      - name: Run tests with null audio
+        run: |
+          # Verify audio setup
+          echo "=== ALSA devices ==="
+          aplay -L 2>&1 | head -20
+          cat /etc/asound.conf
+          
+          # Run tests
+          cd src-tauri
+          cargo test --lib -- --nocapture 2>&1
 
       - name: Security audit
         run: |

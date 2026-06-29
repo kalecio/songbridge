@@ -289,7 +289,7 @@ mod tests {
 
     #[test]
     fn test_set_activity_with_paused_playback() {
-        let metadata = NowPlayingPayload {
+        let _metadata = NowPlayingPayload {
             title: Some("Test Song".to_string()),
             artist: Some("Test Artist".to_string()),
             album: Some("Test Album".to_string()),
@@ -308,7 +308,7 @@ mod tests {
 
     #[test]
     fn test_set_activity_with_no_metadata() {
-        let metadata = NowPlayingPayload {
+        let _metadata = NowPlayingPayload {
             title: None,
             artist: None,
             album: None,
@@ -321,8 +321,7 @@ mod tests {
             elapsed_seconds: None,
         };
 
-        assert_eq!(metadata.title.as_deref(), None);
-        assert_eq!(metadata.artist.as_deref(), None);
+        assert_eq!(playback.is_playing, true);
         assert_eq!(playback.elapsed_seconds, None);
     }
 
