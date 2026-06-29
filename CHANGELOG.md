@@ -5,6 +5,34 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.6.0] - 2026-06-28
+
+A lyrics-and-presence release: full LRC lyrics support with lrclib.net search/preview/download, metadata editing for songs/albums/artists, Discord Rich Presence, three-state repeat mode, 60fps progress interpolation, and a centered responsive Controls bar.
+
+### Added
+- **LRC lyrics engine** — new `lrcParser` utility parses timestamped `.lrc` lines (including `[mm:ss.xx]`, `[mm:ss]`, and `[h:mm:ss.xx]` formats) into typed `LyricLine[]`; synced lyrics render in a dedicated **Lyrics page** with auto-scroll to the current line and a tap-to-seek interaction
+- **lrclib.net integration** — `useLrclibLyrics` hook searches lrclib by track metadata, fetches synced/plain lyrics, and caches them; **LyricsSearchModal** lets users preview, pick, and download matches (or plain-text fallbacks) per track
+- **Metadata CRUD** — `EditMetadataModal` (single track) and `EditGroupMetadataModal` (multi-select albums/artists) with debounced save, validation, and rollback; backed by new Rust `metadata` commands (`update_track_metadata`, `update_album_metadata`, `update_artist_metadata`) and `useMetadataActions` hook (full unit-test coverage)
+- **Discord Rich Presence** — optional Discord RPC shows current track, album art, playback state, and elapsed/total time; toggled in Settings → Integrations; updates on track change, play/pause, and seek
+- **Three-state repeat mode** — **Repeat Off / Repeat One / Repeat All** (was boolean); persists in SQLite and survives restarts; fixes the repeat-one edge case where the queue would advance instead of looping
+- **60 fps progress bar** — `rAF` loop interpolates the playhead locally; backend sync at 1 Hz corrects drift without UI jitter; new `Player.test.tsx` validates interpolation math and auto-advance
+- **Time display above controls** — `mm:ss` (or `h:mm:ss` for long tracks) shows current/total time with hover tooltip for exact seconds
+- **Centered, responsive Controls bar** — Play/Pause, Previous, Next, Shuffle, Repeat grouped in a flex container with `min-width` guards so Song/Volume sections never collapse on narrow windows
+
+### Changed
+- **Repeat mode stored as string** — SQLite `repeat_mode` column migrated from boolean to `'none' | 'one' | 'all'`; default `'all'`
+- **Album/Artist list cards gain inline "Edit metadata" action** — opens the group modal pre-filled with the entity's current tags
+- **Search results include "Edit metadata" for albums/artists** — consistent entry point from global search
+- **Player layout refinements** — progress bar sits above controls; lyrics button (when lyrics exist) opens Lyrics page; volume slider stays right-aligned
+- **Rust audio backend** — extracted `load_track` helper with unit tests; end-of-track detection hardened for repeat-one
+- **Test suite expanded** — 500+ new frontend tests (LyricsSearchModal, Controls, Player, useLrclibLyrics, lrcParser, useMetadataActions) + Rust unit tests for metadata commands and lyrics client
+
+### Fixed
+- **Repeat-one bug** — queue no longer advances when repeat-one is active; track restarts cleanly
+- **Progress bar drift on pause/resume** — rAF loop pauses with playback; backend sync resumes from exact position
+- **Metadata edit modal focus trap** — ESC closes, Tab cycles only within modal, first input auto-focused
+- **Lyrics search race conditions** — debounced search cancels in-flight requests; stale responses discarded
+
 ## [0.5.0] - 2026-05-15
 
 A right-click-everywhere release: a unified context-menu system, in-app modal dialogs, drag-to-reorder for playlists and the queue, smarter album ordering by track number, and a refreshed theme lineup.
