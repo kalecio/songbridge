@@ -3,15 +3,15 @@ import { styled } from 'styled-components';
 const ProgressBarInner = styled.div<{ $height?: number }>`
   background-color: ${({ theme }) => theme.accent};
   width: 0; /* Adjust with JavaScript */
-  height: ${(props) => props.$height || '15px'};
+  height: ${(props) => props.$height || '3px'};
   border-radius: 10px;
 `;
 
 const CustomProgressBar = styled.div<{ $height?: number }>`
-  background-color: ${({ theme }) => theme.primaryDark};
+  background-color: ${({ theme }) => theme.borderLight};
   border-radius: 10px;
   padding: 0px;
-  height: ${(props) => props.$height || '15px'};
+  height: ${(props) => props.$height || '3px'};
   width: 100%;
 `;
 
@@ -28,7 +28,7 @@ const Slider = styled.input.attrs({ type: 'range' })<{ $height?: number }>`
   -webkit-appearance: none;
   width: 100%;
   max-width: 120px;
-  height: ${(props) => props.$height || '15px'};
+  height: ${(props) => props.$height || '3px'};
   background: none;
   outline: none;
   opacity: 1;

@@ -1,5 +1,6 @@
 import { useContext, useEffect, useRef, useState } from 'react';
 import { useNavigate, useLocation } from 'react-router';
+import { FaListUl } from 'react-icons/fa6';
 import Slider from '../Slider/Slider';
 import { Heart, LyricsIcon, VolumeContainer, VolumeHigh, VolumeLow, VolumeOff, VolumeXmark } from './styles';
 import { invoke } from '@tauri-apps/api/core';
@@ -7,11 +8,11 @@ import { AppContext } from '../../Context/AppContext';
 import { useFavourites } from '../../hooks/useFavourites';
 import { AUDIO_EVENTS } from '../../audioEvents';
 
-const Volume = () => {
+const Volume = ({ showFavourite = true }: { showFavourite?: boolean }) => {
   const [volume, setVolume] = useState(70);
   const [isVolumeOff, setVolumeOff] = useState(false);
 
-  const { currentPath, metadata, library } = useContext(AppContext);
+  const { currentPath, metadata, library, showQueue, setShowQueue } = useContext(AppContext);
   const { isFavourite, toggleFavourite } = useFavourites();
   const navigate = useNavigate();
   const location = useLocation();
@@ -58,19 +59,29 @@ const Volume = () => {
 
   return (
     <VolumeContainer>
+      <button
+        type="button"
+        aria-label="Playing now"
+        aria-pressed={Boolean(showQueue)}
+        onClick={() => setShowQueue?.(!showQueue)}
+      >
+        <FaListUl />
+      </button>
       <LyricsIcon
         aria-label="Lyrics"
         $active={isLyricsActive}
         onClick={() => navigate(isLyricsActive ? '/' : '/lyrics')}
       />
-      <Heart
-        role="button"
-        aria-label={isFav ? 'remove from favourites' : 'add to favourites'}
-        aria-pressed={isFav}
-        aria-disabled={!canFavourite}
-        $isFavorite={isFav}
-        onClick={handleToggleFavourite}
-      />
+      {showFavourite && (
+        <Heart
+          role="button"
+          aria-label={isFav ? 'remove from favourites' : 'add to favourites'}
+          aria-pressed={isFav}
+          aria-disabled={!canFavourite}
+          $isFavorite={isFav}
+          onClick={handleToggleFavourite}
+        />
+      )}
       {isVolumeOff ? (
         <VolumeXmark aria-label="volume-muted" onClick={handleToggleVolume} />
       ) : (

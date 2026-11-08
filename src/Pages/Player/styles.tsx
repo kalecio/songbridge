@@ -8,7 +8,10 @@ const PlayerContainer = styled.div`
   align-items: center;
   justify-content: flex-start;
   flex-direction: column;
-  height: 120px;
+  min-height: 76px;
+  flex-shrink: 0;
+  border-top: 1px solid ${({ theme }) => theme.border};
+  justify-content: center;
   position: relative;
   gap: 1rem;
 `;
@@ -18,8 +21,8 @@ const StyledPlayer = styled.div`
   justify-content: space-between;
   align-items: center;
   width: 100%;
-  gap: 1rem;
-  padding: 0 2rem;
+  gap: 24px;
+  padding: 14px clamp(20px, 2.6vw, 48px);
   box-sizing: border-box;
 `;
 
@@ -59,63 +62,72 @@ const MainWrapper = styled.div`
   flex: 1;
   min-width: 0;
   overflow: hidden;
+  position: relative;
 `;
 
-const AppHeader = styled.header`
+const NowPlaying = styled.div`
   display: flex;
   align-items: center;
-  gap: 0.75rem;
-  padding: 0.75rem 1rem;
-  border-bottom: 1px solid ${({ theme }) => theme.border};
-  background: ${({ theme }) => theme.surface};
-  flex-shrink: 0;
-  max-height: 3.5rem;
+  gap: 8px;
+  width: 28%;
+  min-width: 180px;
 `;
-
-const SearchWrapper = styled.div`
+const AppHeader = styled.header`
+  position: absolute;
+  top: 30px;
+  right: clamp(24px, 2.6vw, 48px);
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+`;
+const SearchWrapper = styled.div<{ $expanded?: boolean }>`
   position: relative;
   display: flex;
   align-items: center;
-  flex: 1;
+  width: ${({ $expanded }) => ($expanded ? '250px' : '26px')};
+  &:focus-within {
+    width: min(300px, 45vw);
+  }
 `;
-
 const SearchIcon = styled(FaMagnifyingGlass)`
   position: absolute;
-  left: 0.65rem;
-  width: 0.75rem;
-  height: 0.75rem;
-  color: ${({ theme }) => theme.primary};
+  right: 5px;
+  width: 17px;
+  height: 17px;
+  color: ${({ theme }) => theme.textSecondary};
   pointer-events: none;
 `;
-
 const SearchInput = styled.input`
   width: 100%;
-  padding: 0.5rem 0.75rem 0.5rem 2rem;
-  border: 1px solid ${({ theme }) => theme.borderLight};
-  border-radius: 0.65rem;
-  background: ${({ theme }) => theme.surfaceRaised};
-  font-size: 0.85rem;
+  height: 32px;
+  padding: 6px 28px 6px 10px;
+  background: ${({ theme }) => theme.background};
+  border: 1px solid transparent;
   color: ${({ theme }) => theme.textPrimary};
-  outline: none;
-  transition: border-color 0.15s;
-
+  font: inherit;
+  font-size: 12px;
+  border-radius: 5px;
   &::placeholder {
     color: ${({ theme }) => theme.textMuted};
   }
-
   &:focus {
-    border-color: ${({ theme }) => theme.primary};
+    border-color: ${({ theme }) => theme.accent};
+    outline: none;
   }
 `;
-
-const SettingsButton = styled(FaGear)`
-  width: 25px;
-  height: 25px;
-  color: ${({ theme }) => theme.primaryDark};
+const SettingsButton = styled.button.attrs({ type: 'button', children: <FaGear /> })`
+  padding: 0;
+  border: 0;
+  background: none;
+  display: flex;
+  align-items: center;
+  width: 16px;
+  height: 16px;
+  color: ${({ theme }) => theme.textMuted};
   cursor: pointer;
-
   &:hover {
-    color: ${({ theme }) => theme.textPrimary};
+    color: ${({ theme }) => theme.accent};
   }
 `;
 
@@ -160,10 +172,11 @@ const ControlsWrapper = styled.div`
   flex: 1;
   display: flex;
   justify-content: center;
-  min-width: 0;
+  min-width: 220px;
 `;
 
 export {
+  NowPlaying,
   PlayerContainer,
   StyledPlayer,
   Container,

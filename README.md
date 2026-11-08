@@ -133,3 +133,22 @@ A special thanks to everyone who has contributed to this project:
 ## License
 
 [CC BY-NC-SA 4.0](./LICENSE)
+
+## Website
+
+O site institucional fica em [`website/`](website/README.md), com build independente
+e publicação no Cloudflare Pages em https://songbridge.kalec.io.
+
+```sh
+npm run website:dev
+npm run website:deploy
+```
+
+### Prévia visual do aplicativo
+
+`npx vite --config vite.visual.config.ts` abre uma prévia dos componentes reais
+com dados de exemplo em http://127.0.0.1:5174. Essa entrada é exclusiva para
+comparações visuais: não altera a biblioteca local nem participa do build desktop.
+A sidebar permite arrastar a divisória ou usar as setas, Home e End ao focá-la.
+A largura é salva localmente, entre 175 e 360 px, preservando pelo menos 680 px
+para a biblioteca nas dimensões de janela suportadas pelo aplicativo.
