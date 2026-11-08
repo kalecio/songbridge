@@ -2,6 +2,8 @@ import { useContext, useEffect, useRef, useState } from 'react';
 import { open } from '@tauri-apps/plugin-dialog';
 import { invoke } from '@tauri-apps/api/core';
 import { AppContext } from '../../Context/AppContext';
+import LyricsFontControl from '../../Components/LyricsFontControl/LyricsFontControl';
+import { useLyricsFontSize } from '../../hooks/useLyricsFontSize';
 import { themes } from '../../theme';
 import { DEFAULT_SHORTCUTS, SHORTCUT_LABELS, ShortcutAction, eventToBinding, formatBinding } from '../../keyboard';
 import {
@@ -29,6 +31,7 @@ import {
   ThemeRow,
   ThemeSelect,
   TrashIcon,
+  LyricsPreviewText,
 } from './styles';
 
 const Settings = () => {
@@ -42,6 +45,7 @@ const Settings = () => {
     shortcuts,
     setShortcuts,
   } = useContext(AppContext);
+  const { fontSize } = useLyricsFontSize();
   const [scanSuccess, setScanSuccess] = useState(false);
   const successTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [recording, setRecording] = useState<ShortcutAction | null>(null);
@@ -108,6 +112,12 @@ const Settings = () => {
             ))}
           </ThemeSelect>
         </ThemeRow>
+      </Section>
+
+      <Section>
+        <SectionTitle>Lyrics</SectionTitle>
+        <LyricsFontControl />
+        <LyricsPreviewText style={{ fontSize }}>Encontre seu ritmo.</LyricsPreviewText>
       </Section>
 
       <Section>

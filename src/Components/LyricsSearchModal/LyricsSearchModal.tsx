@@ -65,7 +65,7 @@ export const LyricsSearchModal = ({ isOpen, onClose, song }: Props) => {
   useEffect(() => {
     if (isOpen && !initialSearchDone.current) {
       initialSearchDone.current = true;
-      setQuery(`${song.title} ${song.artist}`.trim());
+      setQuery([song.title, song.artist].filter(Boolean).join(' '));
       performSearch();
     } else if (!isOpen) {
       initialSearchDone.current = false;
