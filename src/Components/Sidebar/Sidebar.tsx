@@ -13,18 +13,18 @@ import {
   LogoImg,
   ArtistsIcon,
   BackIcon,
-  FavouriteThumb,
   HeartIcon,
-  HomeIcon,
+  AppName,
+  SidebarFooter,
   Menu,
   MenuItem,
   PlaylistItem,
   PlaylistsRow,
-  PlaylistThumb,
-  PlusButton,
   QueueHeader,
   SectionLabel,
   SidebarContainer,
+  SidebarContent,
+  ResizeHandle,
   SongsIcon,
 } from './styles';
 import { isFavouritesPlaylist, sortFavouritesFirst } from '../../hooks/useFavourites';
@@ -33,6 +33,7 @@ import { usePlaylistActions } from '../../hooks/usePlaylistActions';
 import { usePlayHistory } from '../../hooks/usePlayHistory';
 import { useAddToPlaylistMenu } from '../../hooks/useAddToPlaylistMenu';
 import { useLyricsMenu } from '../../hooks/useLyricsMenu';
+import { useSidebarWidth, SIDEBAR_MIN_WIDTH } from '../../hooks/useSidebarWidth';
 import { displayTitle } from '../../songDisplay';
 
 type SidebarMenu =
@@ -40,6 +41,7 @@ type SidebarMenu =
   | { kind: 'playlist'; x: number; y: number; playlist: PlaylistType };
 
 const Sidebar = () => {
+  const { width, maxWidth, isResizing, handleProps } = useSidebarWidth();
   const [songs, setSongs] = useState<MetadataType[]>([]);
   const [menu, setMenu] = useState<SidebarMenu | null>(null);
   const [dragFromIndex, setDragFromIndex] = useState<number | null>(null);
@@ -121,134 +123,138 @@ const Sidebar = () => {
   };
 
   return (
-    <SidebarContainer>
-      <AppLogo>
-        <LogoImg src={appLogo} alt="Songbridge" />
-      </AppLogo>
+    <SidebarContainer $width={width} $resizing={isResizing}>
+      <SidebarContent>
+        <AppLogo>
+          <LogoImg src={appLogo} alt="" />
+          <AppName>Songbridge</AppName>
+        </AppLogo>
 
-      {!showQueue && (
-        <>
-          <SectionLabel>Menu</SectionLabel>
-          <Menu>
-            <MenuItem $active={isActive('/')} onClick={() => navigate('/')}>
-              <HomeIcon /> Home
-            </MenuItem>
-            <MenuItem $active={isActive('/artists')} onClick={() => navigate('/artists')}>
-              <ArtistsIcon /> Artists
-            </MenuItem>
-            <MenuItem $active={isActive('/albums')} onClick={() => navigate('/albums')}>
-              <AlbumsIcon /> Albums
-            </MenuItem>
-            <MenuItem $active={isActive('/songs')} onClick={() => navigate('/songs')}>
-              <SongsIcon /> Songs
-            </MenuItem>
-          </Menu>
-
-          <PlaylistsRow>
-            <SectionLabel>Playlists</SectionLabel>
-            <PlusButton aria-label="manage playlists" onClick={() => navigate('/playlist')} />
-          </PlaylistsRow>
-          <Menu>
-            {songs.length > 0 && <MenuItem onClick={() => setShowQueue?.(true)}>Playing now</MenuItem>}
-            {sortFavouritesFirst(playlists ?? []).map((playlist) => (
-              <PlaylistItem
-                key={playlist.id}
-                $active={location.pathname === `/playlist/${playlist.id}`}
-                onClick={() => navigate(`/playlist/${playlist.id}`)}
-                onContextMenu={(e) => {
-                  if (isFavouritesPlaylist(playlist.id)) {
-                    return null;
-                  }
-                  e.preventDefault();
-                  setMenu({ kind: 'playlist', x: e.clientX, y: e.clientY, playlist });
-                }}
-              >
-                {isFavouritesPlaylist(playlist.id) ? (
-                  <FavouriteThumb>
-                    <HeartIcon />
-                  </FavouriteThumb>
-                ) : (
-                  <PlaylistThumb>
-                    <AlbumImage
-                      metadata={library.find((l) => l.path === playlist.songs[0]?.path) ?? playlist.songs[0]}
-                      height="100%"
-                      width="100%"
-                    />
-                  </PlaylistThumb>
-                )}
-                {playlist.name}
-              </PlaylistItem>
-            ))}
-          </Menu>
-        </>
-      )}
-
-      {showQueue && (
-        <>
-          <QueueHeader aria-label="close queue" onClick={() => setShowQueue?.(false)}>
-            <BackIcon /> Queue
-          </QueueHeader>
-          <Menu>
-            {songs.map((song, index) => {
-              const isDragging = dragFromIndex === index;
-              const showIndicator = dragFromIndex !== null && dragOverIndex === index && dragFromIndex !== index;
-              const dropAbove = showIndicator && (dragFromIndex as number) > index;
-              const dropBelow = showIndicator && (dragFromIndex as number) < index;
-              return (
-                <MenuItem
-                  $active={song.path === currentPath}
-                  $dragging={isDragging}
-                  $dropAbove={dropAbove}
-                  $dropBelow={dropBelow}
-                  draggable
-                  key={song.path ?? `${song.title}-${song.artist}`}
-                  onClick={() => setCurrentPath?.(song.path)}
+        {!showQueue && (
+          <>
+            <SectionLabel>Sua biblioteca</SectionLabel>
+            <Menu>
+              <MenuItem $active={isActive('/') || isActive('/albums')} onClick={() => navigate('/')}>
+                <AlbumsIcon /> Álbuns
+              </MenuItem>
+              <MenuItem $active={isActive('/songs')} onClick={() => navigate('/songs')}>
+                <SongsIcon /> Músicas
+              </MenuItem>
+              <MenuItem $active={isActive('/artists')} onClick={() => navigate('/artists')}>
+                <ArtistsIcon /> Artistas
+              </MenuItem>
+            </Menu>
+            <PlaylistsRow>
+              <SectionLabel>Playlists</SectionLabel>
+            </PlaylistsRow>
+            <Menu>
+              {sortFavouritesFirst(playlists ?? []).map((playlist) => (
+                <PlaylistItem
+                  key={playlist.id}
+                  $active={location.pathname === `/playlist/${playlist.id}`}
+                  onClick={() => navigate(`/playlist/${playlist.id}`)}
                   onContextMenu={(e) => {
-                    e.preventDefault();
-                    setMenu({ kind: 'queue', x: e.clientX, y: e.clientY, song });
-                  }}
-                  onDragStart={(e) => {
-                    dragFromRef.current = index;
-                    setDragFromIndex(index);
-                    if (e.dataTransfer) {
-                      e.dataTransfer.effectAllowed = 'move';
-                      // Firefox requires setData for the drag to actually start.
-                      e.dataTransfer.setData('text/plain', String(index));
+                    if (isFavouritesPlaylist(playlist.id)) {
+                      return null;
                     }
-                  }}
-                  onDragOver={(e) => {
-                    if (dragFromRef.current === null) return;
                     e.preventDefault();
-                    if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
-                    if (dragOverIndex !== index) setDragOverIndex(index);
+                    setMenu({ kind: 'playlist', x: e.clientX, y: e.clientY, playlist });
                   }}
-                  onDrop={(e) => {
-                    e.preventDefault();
-                    const from = dragFromRef.current;
-                    if (from !== null && from !== index) {
-                      reorderQueue(from, index);
-                    }
-                    resetDrag();
-                  }}
-                  onDragEnd={resetDrag}
-                  title={displayTitle(song)}
                 >
-                  <AlbumImage metadata={song} height="2.25rem" width="2.25rem" draggable={false} />
-                  {displayTitle(song)}
-                </MenuItem>
-              );
-            })}
-          </Menu>
-        </>
-      )}
-      {menu && (
-        <ContextMenu
-          x={menu.x}
-          y={menu.y}
-          items={menu.kind === 'queue' ? queueMenuItems(menu.song) : playlistMenuItems(menu.playlist)}
-          onClose={() => setMenu(null)}
-        />
-      )}
+                  {isFavouritesPlaylist(playlist.id) ? <HeartIcon /> : <FaListUl />}
+                  <span className="sidebar-item-label" title={playlist.name}>
+                    {isFavouritesPlaylist(playlist.id) ? 'Favoritas' : playlist.name}
+                  </span>
+                </PlaylistItem>
+              ))}
+              <MenuItem aria-label="manage playlists" onClick={() => navigate('/playlist')}>
+                <span aria-hidden="true">＋</span> Nova playlist
+              </MenuItem>
+            </Menu>
+            <SidebarFooter>
+              <span /> Sua coleção, por perto
+            </SidebarFooter>
+          </>
+        )}
+
+        {showQueue && (
+          <>
+            <QueueHeader aria-label="close queue" onClick={() => setShowQueue?.(false)}>
+              <BackIcon /> Queue
+            </QueueHeader>
+            <Menu>
+              {songs.map((song, index) => {
+                const isDragging = dragFromIndex === index;
+                const showIndicator = dragFromIndex !== null && dragOverIndex === index && dragFromIndex !== index;
+                const dropAbove = showIndicator && (dragFromIndex as number) > index;
+                const dropBelow = showIndicator && (dragFromIndex as number) < index;
+                return (
+                  <MenuItem
+                    $active={song.path === currentPath}
+                    $dragging={isDragging}
+                    $dropAbove={dropAbove}
+                    $dropBelow={dropBelow}
+                    draggable
+                    key={song.path ?? `${song.title}-${song.artist}`}
+                    onClick={() => setCurrentPath?.(song.path)}
+                    onContextMenu={(e) => {
+                      e.preventDefault();
+                      setMenu({ kind: 'queue', x: e.clientX, y: e.clientY, song });
+                    }}
+                    onDragStart={(e) => {
+                      dragFromRef.current = index;
+                      setDragFromIndex(index);
+                      if (e.dataTransfer) {
+                        e.dataTransfer.effectAllowed = 'move';
+                        // Firefox requires setData for the drag to actually start.
+                        e.dataTransfer.setData('text/plain', String(index));
+                      }
+                    }}
+                    onDragOver={(e) => {
+                      if (dragFromRef.current === null) return;
+                      e.preventDefault();
+                      if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
+                      if (dragOverIndex !== index) setDragOverIndex(index);
+                    }}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      const from = dragFromRef.current;
+                      if (from !== null && from !== index) {
+                        reorderQueue(from, index);
+                      }
+                      resetDrag();
+                    }}
+                    onDragEnd={resetDrag}
+                    title={displayTitle(song)}
+                  >
+                    <AlbumImage metadata={song} height="2.25rem" width="2.25rem" draggable={false} />
+                    <span className="sidebar-item-label">{displayTitle(song)}</span>
+                  </MenuItem>
+                );
+              })}
+            </Menu>
+          </>
+        )}
+        {menu && (
+          <ContextMenu
+            x={menu.x}
+            y={menu.y}
+            items={menu.kind === 'queue' ? queueMenuItems(menu.song) : playlistMenuItems(menu.playlist)}
+            onClose={() => setMenu(null)}
+          />
+        )}
+      </SidebarContent>
+      <ResizeHandle
+        role="separator"
+        tabIndex={0}
+        aria-label="Largura da navegação lateral"
+        aria-orientation="vertical"
+        aria-valuemin={SIDEBAR_MIN_WIDTH}
+        aria-valuemax={maxWidth}
+        aria-valuenow={width}
+        aria-valuetext={`${width} pixels`}
+        {...handleProps}
+      />
     </SidebarContainer>
   );
 };
