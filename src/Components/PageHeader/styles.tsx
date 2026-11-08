@@ -1,12 +1,11 @@
 import { styled } from 'styled-components';
 
 export const PageHeader = styled.h2`
-  color: ${({ theme }) => theme.textPrimary};
+  color: ${({ theme }) => theme.primaryDeep};
   margin: 0 0 0.75rem;
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  font-size: 30px;
-  letter-spacing: -1px;
-  padding: 0 0 28px;
+  max-height: 2.5rem;
+  padding: 3rem 0rem;
 `;

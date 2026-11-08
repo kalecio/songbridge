@@ -16,10 +16,6 @@ import { useQueueActions } from '../../hooks/useQueueActions';
 import { useMetadataActions } from '../../hooks/useMetadataActions';
 import { Grid, GridItem, Card, ArtWrapper, CardInfo, CardTitle, CardBottom, CardArtist, CardCount } from './styles';
 
-import { LibraryHeading, LibraryTabs, RecentTrack } from './LibraryHeader';
-import FavouriteButton from '../../Components/Song/FavouriteButton';
-import { displayTitle } from '../../songDisplay';
-
 interface AlbumEntry {
   name: string;
   artist?: string;
@@ -29,7 +25,7 @@ interface AlbumEntry {
   songs: MetadataType[];
 }
 
-function groupByAlbum(library: MetadataType[], alphabetical = true): AlbumEntry[] {
+function groupByAlbum(library: MetadataType[]): AlbumEntry[] {
   const map = new Map<string, AlbumEntry>();
   for (const song of library) {
     const key = song.album ?? 'Unknown Album';
@@ -48,13 +44,11 @@ function groupByAlbum(library: MetadataType[], alphabetical = true): AlbumEntry[
     if (!entry.image && song.image) entry.image = song.image;
     if (!entry.coverPath && song.path) entry.coverPath = song.path;
   }
-  const result = Array.from(map.values());
-  return alphabetical ? result.sort((a, b) => a.name.localeCompare(b.name)) : result;
+  return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
 }
 
-const Albums = ({ home = false, recentPaths = [] }: { home?: boolean; recentPaths?: string[] }) => {
-  const [recentOnly, setRecentOnly] = useState(false);
-  const { library, isScanning, metadata, currentPath } = useContext(AppContext);
+const Albums = () => {
+  const { library, isScanning } = useContext(AppContext);
   const navigate = useNavigate();
   const [menu, setMenu] = useState<{ x: number; y: number; album: AlbumEntry } | null>(null);
   const [editAlbum, setEditAlbum] = useState<AlbumEntry | null>(null);
@@ -70,7 +64,7 @@ const Albums = ({ home = false, recentPaths = [] }: { home?: boolean; recentPath
     [editAlbum, batchUpdateSongsMetadata],
   );
 
-  if (isScanning && !library.length && !home) {
+  if (isScanning) {
     return (
       <Page>
         <StatusMessage>Scanning music library…</StatusMessage>
@@ -78,20 +72,9 @@ const Albums = ({ home = false, recentPaths = [] }: { home?: boolean; recentPath
     );
   }
 
-  const allAlbums = groupByAlbum(library, !home);
-  const albums = recentOnly
-    ? [...allAlbums]
-        .filter((album) => album.songs.some((song) => song.path && recentPaths.includes(song.path)))
-        .sort(
-          (a, b) =>
-            Math.min(...a.songs.map((song) => recentPaths.indexOf(song.path ?? '')).filter((i) => i >= 0)) -
-            Math.min(...b.songs.map((song) => recentPaths.indexOf(song.path ?? '')).filter((i) => i >= 0)),
-        )
-    : allAlbums;
-  const currentTrack =
-    library.find((song) => song.path === currentPath) ?? (currentPath ? { ...metadata, path: currentPath } : undefined);
+  const albums = groupByAlbum(library);
 
-  if (allAlbums.length === 0 && !home) {
+  if (albums.length === 0) {
     return (
       <Page>
         <StatusMessage>No albums found in your music library.</StatusMessage>
@@ -119,46 +102,9 @@ const Albums = ({ home = false, recentPaths = [] }: { home?: boolean; recentPath
 
   return (
     <Page>
-      {home ? (
-        <>
-          <LibraryHeading>
-            <p>BOM TE VER POR AQUI</p>
-            <h1>Encontre seu ritmo.</h1>
-          </LibraryHeading>
-          <LibraryTabs aria-label="Biblioteca">
-            <button type="button" aria-pressed={!recentOnly} onClick={() => setRecentOnly(false)}>
-              Seus álbuns
-            </button>
-            <button type="button" onClick={() => navigate('/artists')}>
-              Artistas
-            </button>
-            <button type="button" aria-pressed={recentOnly} onClick={() => setRecentOnly(true)}>
-              Recentes
-            </button>
-            <button type="button" className="collection" onClick={() => navigate('/settings')}>
-              Sua coleção ↗
-            </button>
-          </LibraryTabs>
-        </>
-      ) : (
-        <PageHeader>
-          Albums <Count>{albums.length}</Count>
-        </PageHeader>
-      )}
-      {!albums.length && (
-        <StatusMessage>
-          {isScanning
-            ? 'Carregando sua biblioteca…'
-            : recentOnly
-              ? 'Os álbuns que você ouvir aparecerão aqui.'
-              : 'Sua coleção começa aqui. Adicione suas pastas nas configurações.'}
-        </StatusMessage>
-      )}
-      {!allAlbums.length && home && (
-        <button type="button" onClick={() => navigate('/settings')}>
-          Adicionar músicas
-        </button>
-      )}
+      <PageHeader>
+        Albums <Count>{albums.length}</Count>
+      </PageHeader>
       <Grid>
         {albums.map((album) => (
           <GridItem
@@ -182,31 +128,14 @@ const Albums = ({ home = false, recentPaths = [] }: { home?: boolean; recentPath
               <CardTitle title={album.name}>{album.name}</CardTitle>
               <CardBottom>
                 <CardArtist title={album.artist ?? 'Unknown Artist'}>{album.artist ?? 'Unknown Artist'}</CardArtist>
-                {!home && (
-                  <CardCount>
-                    {album.songs.length} {album.songs.length === 1 ? 'song' : 'songs'}
-                  </CardCount>
-                )}
+                <CardCount>
+                  {album.songs.length} {album.songs.length === 1 ? 'song' : 'songs'}
+                </CardCount>
               </CardBottom>
             </CardInfo>
           </GridItem>
         ))}
       </Grid>
-      {home && currentTrack && (
-        <RecentTrack>
-          <span className="equalizer" aria-hidden="true">
-            ▂ ▆ ▃ ▇
-          </span>
-          <button type="button" className="track-title" onClick={() => playSongs([currentTrack])}>
-            {displayTitle(currentTrack)}
-            <small>
-              {currentTrack.artist} · {currentTrack.album}
-            </small>
-          </button>
-          <FavouriteButton song={currentTrack} />
-          <time>{currentTrack.duration?.duration_formatted ?? ''}</time>
-        </RecentTrack>
-      )}
       {menu && <ContextMenu x={menu.x} y={menu.y} items={albumMenuItems(menu.album)} onClose={() => setMenu(null)} />}
       <EditGroupMetadataModal
         groupType="album"

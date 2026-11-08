@@ -2,44 +2,44 @@ import { FaVolumeXmark, FaVolumeOff, FaVolumeLow, FaVolumeHigh, FaHeart, FaMicro
 import { styled } from 'styled-components';
 
 const VolumeXmark = styled(FaVolumeXmark)`
-  width: 16px;
-  height: 16px;
-  color: ${({ theme }) => theme.textSecondary};
+  width: 25px;
+  height: 25px;
+  color: ${({ theme }) => theme.accent};
   cursor: pointer;
 `;
 
 const VolumeOff = styled(FaVolumeOff)`
-  width: 16px;
-  height: 16px;
-  color: ${({ theme }) => theme.textSecondary};
+  width: 25px;
+  height: 25px;
+  color: ${({ theme }) => theme.accent};
   cursor: pointer;
 `;
 
 const VolumeLow = styled(FaVolumeLow)`
-  width: 16px;
-  height: 16px;
-  color: ${({ theme }) => theme.textSecondary};
+  width: 25px;
+  height: 25px;
+  color: ${({ theme }) => theme.accent};
   cursor: pointer;
 `;
 
 const VolumeHigh = styled(FaVolumeHigh)`
-  width: 16px;
-  height: 16px;
-  color: ${({ theme }) => theme.textSecondary};
+  width: 25px;
+  height: 25px;
+  color: ${({ theme }) => theme.accent};
   cursor: pointer;
 `;
 
 const Heart = styled(FaHeart)<{ $isFavorite: boolean }>`
-  width: 16px;
-  height: 16px;
-  color: ${(props) => (props.$isFavorite ? props.theme.textSecondary : props.theme.textSecondary)};
+  width: 25px;
+  height: 25px;
+  color: ${(props) => (props.$isFavorite ? props.theme.accent : props.theme.primaryDark)};
   cursor: pointer;
 `;
 
 const LyricsIcon = styled(FaMicrophone)<{ $active: boolean }>`
-  width: 16px;
-  height: 16px;
-  color: ${({ $active, theme }) => ($active ? theme.textSecondary : theme.textMuted)};
+  width: 25px;
+  height: 25px;
+  color: ${({ $active, theme }) => ($active ? theme.accent : theme.primaryDark)};
   cursor: pointer;
 `;
 
@@ -47,19 +47,8 @@ const VolumeContainer = styled.div`
   display: flex;
   justify-content: flex-end;
   align-items: center;
-  gap: 14px;
-  min-width: 180px;
-  width: 24%;
-  & > button {
-    display: inline-flex;
-    color: ${({ theme }) => theme.textSecondary};
-    background: none;
-    border: 0;
-    cursor: pointer;
-  }
-  & > button[aria-pressed='true'] {
-    color: ${({ theme }) => theme.accent};
-  }
+  gap: 1rem;
+  min-width: 150px;
   flex-shrink: 0;
 `;
 

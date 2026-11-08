@@ -49,10 +49,10 @@ describe('Sidebar', () => {
   describe('navigation menu', () => {
     it('renders all menu items when not showing queue', () => {
       const { getByText } = renderWithContext(<Sidebar />, { showQueue: false });
-      expect(getByText('Sua biblioteca')).toBeInTheDocument();
-      expect(getByText('Artistas')).toBeInTheDocument();
-      expect(getByText('Álbuns')).toBeInTheDocument();
-      expect(getByText('Músicas')).toBeInTheDocument();
+      expect(getByText('Home')).toBeInTheDocument();
+      expect(getByText('Artists')).toBeInTheDocument();
+      expect(getByText('Albums')).toBeInTheDocument();
+      expect(getByText('Songs')).toBeInTheDocument();
     });
 
     it('hides the navigation menu when the queue is open', () => {
@@ -75,10 +75,13 @@ describe('Sidebar', () => {
       expect(queryByText('Playing now')).not.toBeInTheDocument();
     });
 
-    it('renders compact playlist navigation without artwork', () => {
+    it('renders an img thumbnail for a playlist when the first song is in the library with an image', () => {
       const playlists = [{ id: '1', name: 'Chill', songs: [{ path: '/a.mp3', title: 'Track A' }] }];
-      const { getByRole } = renderWithContext(<Sidebar />, { playlists });
-      expect(getByRole('button', { name: 'Chill' })).toBeInTheDocument();
+      const library = [{ path: '/a.mp3', title: 'Track A', image: 'data:image/jpeg;base64,abc' }];
+      const { getAllByRole, queryByTestId } = renderWithContext(<Sidebar />, { playlists, library });
+      expect(queryByTestId('album-placeholder-container')).not.toBeInTheDocument();
+      const imgs = getAllByRole('img') as HTMLImageElement[];
+      expect(imgs.some((img) => img.src.includes('data:image/jpeg;base64,abc'))).toBe(true);
     });
   });
 

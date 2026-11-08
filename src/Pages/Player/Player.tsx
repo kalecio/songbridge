@@ -14,7 +14,7 @@ import {
   Container,
   ContentContainer,
   ControlsWrapper,
-  NowPlaying,
+  HomeCenter,
   Main,
   MainWrapper,
   PlayerContainer,
@@ -32,8 +32,7 @@ import { displayTitle } from '../../songDisplay';
 import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts';
 import { useMediaKeys } from '../../hooks/useMediaKeys';
 import Sidebar from '../../Components/Sidebar/Sidebar';
-import FavouriteButton from '../../Components/Song/FavouriteButton';
-import { useRecentTracks } from '../../hooks/useRecentTracks';
+import AlbumImage from '../../Components/AlbumImage/AlbumImage';
 import PlaylistRoute from '../Playlist/Detail';
 import Songs from '../Songs/List';
 import Albums from '../Albuns/List';
@@ -58,13 +57,13 @@ const Player = () => {
     shortcuts,
     metadata,
     playlists,
+    progress,
     onRepeat,
     onShuffle,
     setCurrentPath,
     setCurrentPlaylist,
     setProgress,
   } = context;
-  const recentPaths = useRecentTracks(path);
   const intervalRef = useRef<number | null>(null);
   const animationFrameRef = useRef<number | null>(null);
   const endedRef = useRef(false);
@@ -293,11 +292,11 @@ const Player = () => {
         <Sidebar />
         <MainWrapper>
           <AppHeader>
-            <SearchWrapper $expanded={location.pathname === '/search'}>
+            <SearchWrapper>
               <SearchIcon />
               <SearchInput
                 ref={searchInputRef}
-                placeholder="Buscar músicas, artistas, álbuns…"
+                placeholder="Search songs, artists, albums…"
                 value={searchTerm}
                 onChange={handleInputChange}
                 aria-label="Search library"
@@ -321,7 +320,14 @@ const Player = () => {
           )}
           <Main>
             <Routes>
-              <Route path="/" element={<Albums home recentPaths={recentPaths} />} />
+              <Route
+                path="/"
+                element={
+                  <HomeCenter>
+                    <AlbumImage metadata={metadata} onClick={handleOpenFile} />
+                  </HomeCenter>
+                }
+              />
               <Route path="/artists" element={<Artists />} />
               <Route path="/artists/:id" element={<ArtistDetail />} />
               <Route path="/albums" element={<Albums />} />
@@ -339,20 +345,18 @@ const Player = () => {
         </MainWrapper>
       </ContentContainer>
       <PlayerContainer>
+        <ProgressBar progress={progress} max={100} onSeek={handleSeek} />
         <StyledPlayer>
-          <NowPlaying>
-            <Song
-              albumImage={metadata?.image}
-              albumName={metadata?.album}
-              songName={displayTitle({ title: metadata?.title, path: path }, 'no name')}
-              artistName={splitArtists(metadata?.artist ?? '')[0] ?? 'no name'}
-            />
-            <FavouriteButton />
-          </NowPlaying>
+          <Song
+            albumImage={metadata?.image}
+            albumName={metadata?.album}
+            songName={displayTitle({ title: metadata?.title, path: path }, 'no name')}
+            artistName={splitArtists(metadata?.artist ?? '')[0] ?? 'no name'}
+          />
           <ControlsWrapper>
-            <Controls onSeek={handleSeek} />
+            <Controls />
           </ControlsWrapper>
-          <Volume showFavourite={false} />
+          <Volume />
         </StyledPlayer>
       </PlayerContainer>
     </Container>

@@ -8,7 +8,8 @@ fontes Inter locais e logo original: sem serviços externos ou JavaScript no vis
 A logo original combina uma ponte, ondas e barras de áudio em azul e branco.
 O site estende essa linguagem com azul elétrico, lavanda e os fundos do tema
 Midnight do aplicativo. A prévia é uma captura dos componentes reais do aplicativo, renderizados com
-uma biblioteca de exemplo em `src/test/visual/`. Recursos descritos seguem o README do app.
+uma biblioteca de exemplo. A captura é estática e o build do site é independente
+do aplicativo. Recursos descritos seguem o README do app.
 
 ## Desenvolvimento e publicação
 

@@ -60,23 +60,6 @@ describe('Albums', () => {
     expect(names[1]).toBe('Second Album');
   });
 
-  it('filters the home gallery by recently played tracks and can return to all albums', () => {
-    const { getByRole, queryByText, getByText } = renderWithContext(<Albums home recentPaths={['/music/3.mp3']} />, {
-      library,
-    });
-    fireEvent.click(getByRole('button', { name: 'Recentes' }));
-    expect(queryByText('First Album')).not.toBeInTheDocument();
-    expect(getByText('Second Album')).toBeInTheDocument();
-    fireEvent.click(getByRole('button', { name: 'Seus álbuns' }));
-    expect(getByText('First Album')).toBeInTheDocument();
-  });
-
-  it('opens library settings from the empty home screen', () => {
-    const { getByRole } = renderWithContext(<Albums home />, { library: [] });
-    fireEvent.click(getByRole('button', { name: 'Adicionar músicas' }));
-    expect(mockNavigate).toHaveBeenCalledWith('/settings');
-  });
-
   describe('context menu — Edit metadata', () => {
     it('shows an "Edit metadata" option in the album context menu', () => {
       renderWithContext(<Albums />, { library });

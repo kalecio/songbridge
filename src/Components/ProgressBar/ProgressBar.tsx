@@ -40,20 +40,12 @@ const ProgressBar = ({ progress = 0, max, onSeek }: ProgressBarProps) => {
     <CustomProgressBar>
       <ProgressBarInner style={{ width: `${progressValue}%` }} />
       <Slider
-        aria-label="Playback position"
         value={progressValue}
         onChange={handleProgressChange}
         onMouseDown={handleMouseDown}
         onMouseUp={handleMouseUp}
         onTouchStart={handleMouseDown}
         onTouchEnd={handleMouseUp}
-        onKeyUp={(event) => {
-          if (
-            ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End', 'PageUp', 'PageDown'].includes(event.key)
-          ) {
-            onSeek?.(Number(event.currentTarget.value) / max);
-          }
-        }}
         min={0}
         max={max}
       />

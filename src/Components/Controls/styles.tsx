@@ -1,52 +1,52 @@
-import { FaShuffle, FaForwardStep, FaBackwardStep, FaPlay, FaPause } from 'react-icons/fa6';
+import { FaShuffle, FaForward, FaBackward, FaPlay, FaPause } from 'react-icons/fa6';
 import { styled } from 'styled-components';
 import { RepeatMode } from '../../types';
 
 const ControlsContainer = styled.div`
   display: flex;
-  justify-content: center;
+  justify-content: space-between;
   align-items: center;
-  gap: 14px;
+  gap: 4px;
   width: 100%;
   flex: 1;
-  max-width: 260px;
+  max-width: 380px;
   min-width: 220px;
 `;
 
 const Shuffle = styled(FaShuffle)<{ $onShuffle: boolean }>`
-  width: 18px;
-  height: 16px;
-  max-width: 18px;
+  width: 44px;
+  height: 24px;
+  max-width: 44px;
   flex-shrink: 1;
   cursor: pointer;
-  color: ${(props) => (props.$onShuffle ? props.theme.accent : props.theme.textSecondary)};
+  color: ${(props) => (props.$onShuffle ? props.theme.accent : props.theme.primaryDark)};
 `;
 
-const Next = styled(FaForwardStep)`
-  width: 18px;
-  height: 16px;
-  max-width: 18px;
+const Next = styled(FaForward)`
+  width: 44px;
+  height: 24px;
+  max-width: 44px;
   flex-shrink: 1;
   cursor: pointer;
-  color: ${({ theme }) => theme.textSecondary};
+  color: ${({ theme }) => theme.accent};
 `;
 
-const Prev = styled(FaBackwardStep)`
-  width: 18px;
-  height: 16px;
-  max-width: 18px;
+const Prev = styled(FaBackward)`
+  width: 44px;
+  height: 24px;
+  max-width: 44px;
   flex-shrink: 1;
   cursor: pointer;
-  color: ${({ theme }) => theme.textSecondary};
+  color: ${({ theme }) => theme.accent};
 `;
 
 const RepeatButton = styled.button<{ $onRepeat: RepeatMode }>`
   background: none;
   border: none;
   padding: 0;
-  width: 18px;
-  height: 16px;
-  max-width: 18px;
+  width: 44px;
+  height: 24px;
+  max-width: 44px;
   flex-shrink: 1;
   cursor: pointer;
   display: flex;
@@ -56,13 +56,13 @@ const RepeatButton = styled.button<{ $onRepeat: RepeatMode }>`
     if (props.$onRepeat === 'one' || props.$onRepeat === 'all') {
       return props.theme.accent;
     }
-    return props.theme.textSecondary;
+    return props.theme.primaryDark;
   }};
 
   & svg {
-    width: 18px;
-    height: 18px;
-    max-width: 18px;
+    width: 44px;
+    height: 28px;
+    max-width: 44px;
     flex-shrink: 1;
   }
 
@@ -73,59 +73,31 @@ const RepeatButton = styled.button<{ $onRepeat: RepeatMode }>`
 `;
 
 const Play = styled(FaPlay)`
-  width: 18px;
-  height: 16px;
-  max-width: 18px;
+  width: 44px;
+  height: 24px;
+  max-width: 44px;
   flex-shrink: 1;
   cursor: pointer;
-  color: ${({ theme }) => theme.textSecondary};
+  color: ${({ theme }) => theme.accent};
 `;
 
 const Pause = styled(FaPause)`
-  width: 18px;
-  height: 16px;
-  max-width: 18px;
+  width: 44px;
+  height: 24px;
+  max-width: 44px;
   flex-shrink: 1;
   cursor: pointer;
-  color: ${({ theme }) => theme.textSecondary};
+  color: ${({ theme }) => theme.accent};
 `;
 
-const TransportButton = styled.button<{ $primary?: boolean }>`
-  border: 0;
-  background: ${({ $primary, theme }) => ($primary ? theme.accent : 'transparent')};
-  width: ${({ $primary }) => ($primary ? '34px' : '28px')};
-  height: 34px;
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  cursor: pointer;
-  svg {
-    color: ${({ $primary, theme }) => ($primary ? theme.background : theme.textSecondary)};
-    width: 14px;
-    height: 14px;
-  }
-  &[aria-pressed='true'] svg {
-    color: ${({ theme }) => theme.accent};
-  }
-`;
 const CurrentTime = styled.div`
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  overflow: hidden;
-  clip-path: inset(50%);
-`;
-const Timeline = styled.div`
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  width: 100%;
-  time {
-    font-size: 9px;
-    color: ${({ theme }) => theme.textMuted};
-    font-variant-numeric: tabular-nums;
-  }
+  font-size: 12px;
+  font-family: monospace;
+  color: ${({ theme }) => theme.accent};
+  min-width: 90px;
+  text-align: center;
+  margin-top: -1.5rem;
+  margin-bottom: 10px;
 `;
 
 const Container = styled.div`
@@ -133,20 +105,8 @@ const Container = styled.div`
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 10px;
+  gap: 4px;
   width: 100%;
 `;
 
-export {
-  Timeline,
-  TransportButton,
-  ControlsContainer,
-  Shuffle,
-  Next,
-  Prev,
-  RepeatButton,
-  Play,
-  Pause,
-  CurrentTime,
-  Container,
-};
+export { ControlsContainer, Shuffle, Next, Prev, RepeatButton, Play, Pause, CurrentTime, Container };
