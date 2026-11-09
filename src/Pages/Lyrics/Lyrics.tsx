@@ -4,13 +4,18 @@ import { AppContext } from '../../Context/AppContext';
 import { parseLrc, getActiveIndex, LrcLine, LrcParseResult } from '../../utils/lrcParser';
 import StatusMessage from '../../Components/StatusMessage/StatusMessage';
 import { error as logError } from '../../logger';
-import { LyricsContainer, LyricLine, PlainLyricLine } from './styles';
+import { useLyricsSearchModal } from '../../Context/LyricsSearchModalContext';
+import { LYRICS_UPDATED_EVENT } from '../../lyricsEvents';
+import { useLyricsFontSize } from '../../hooks/useLyricsFontSize';
+import { LyricsPage, LyricsContainer, LyricLine, PlainLyricLine, EmptyLyricsState, FindLyricsButton } from './styles';
 
 const Lyrics = () => {
-  const { currentPath: path, progress, metadata, isPlaying } = useContext(AppContext);
+  const { currentPath: path, progress, metadata, isPlaying, library } = useContext(AppContext);
+  const { open: openLyricsSearch } = useLyricsSearchModal();
   const [lines, setLines] = useState<LrcLine[]>([]);
   const [isPlainText, setIsPlainText] = useState(false);
   const [hasLrc, setHasLrc] = useState<boolean | null>(null);
+  const { fontSize } = useLyricsFontSize();
   const activeRef = useRef<HTMLParagraphElement>(null);
 
   const durationSeconds = metadata?.duration?.duration_seconds ?? 0;
@@ -43,36 +48,41 @@ const Lyrics = () => {
   const activeIndex = getActiveIndex(lines, currentSeconds + 0.9);
 
   useEffect(() => {
-    if (!path) {
+    let disposed = false;
+    let request = 0;
+    const load = async () => {
+      const currentRequest = ++request;
       setLines([]);
       setIsPlainText(false);
       setHasLrc(null);
-      return;
-    }
-    invoke<string | null>('read_lrc_file', { path })
-      .then((content) => {
-        if (content == null) {
-          setHasLrc(false);
-          setLines([]);
-          setIsPlainText(false);
-          return;
-        }
-        const result: LrcParseResult = parseLrc(content);
-        setHasLrc(true);
+      if (!path) return;
+      try {
+        const content = await invoke<string | null>('read_lrc_file', { path });
+        if (disposed || currentRequest !== request) return;
+        const result: LrcParseResult = parseLrc(content ?? '');
+        setHasLrc(result.lines.length > 0);
         setIsPlainText(result.isPlainText);
         setLines(result.lines);
-      })
-      .catch((err) => {
+      } catch (err) {
+        if (disposed || currentRequest !== request) return;
         logError(`Failed to read LRC file: ${err}`).catch(() => {});
         setHasLrc(false);
-        setLines([]);
-        setIsPlainText(false);
-      });
+      }
+    };
+    const onLyricsUpdated = (event: Event) => {
+      if ((event as CustomEvent<string>).detail === path) void load();
+    };
+    window.addEventListener(LYRICS_UPDATED_EVENT, onLyricsUpdated);
+    void load();
+    return () => {
+      disposed = true;
+      window.removeEventListener(LYRICS_UPDATED_EVENT, onLyricsUpdated);
+    };
   }, [path]);
 
   useEffect(() => {
     activeRef.current?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-  }, [activeIndex]);
+  }, [activeIndex, fontSize]);
 
   const handleSeek = useCallback(
     (timeSeconds: number) => {
@@ -83,33 +93,42 @@ const Lyrics = () => {
     [path, durationSeconds],
   );
 
-  if (!path) return <StatusMessage>No song playing</StatusMessage>;
-  if (hasLrc === false) return <StatusMessage>No lyrics found for this song</StatusMessage>;
-  if (hasLrc === null || lines.length === 0) return null;
-
-  if (isPlainText) {
-    return (
-      <LyricsContainer>
-        {lines.map((line, i) => (
-          <PlainLyricLine key={`${line.time}-${i}`}>{line.text}</PlainLyricLine>
-        ))}
-      </LyricsContainer>
-    );
-  }
-
   return (
-    <LyricsContainer>
-      {lines.map((line, i) => (
-        <LyricLine
-          key={`${line.time}-${i}`}
-          $active={i === activeIndex}
-          ref={i === activeIndex ? activeRef : null}
-          onClick={() => handleSeek(line.time)}
-        >
-          {line.text}
-        </LyricLine>
-      ))}
-    </LyricsContainer>
+    <LyricsPage aria-label="Lyrics">
+      <LyricsContainer style={{ fontSize }}>
+        {!path ? (
+          <StatusMessage>No song playing</StatusMessage>
+        ) : hasLrc === false ? (
+          <EmptyLyricsState>
+            <StatusMessage>No lyrics found for this song</StatusMessage>
+            <p>Find and download synced or plain lyrics from LRCLIB.</p>
+            <FindLyricsButton
+              type="button"
+              onClick={() => openLyricsSearch(library.find((song) => song.path === path) ?? { ...metadata, path })}
+            >
+              Find lyrics
+            </FindLyricsButton>
+          </EmptyLyricsState>
+        ) : hasLrc === null ? (
+          <StatusMessage>Loading lyrics…</StatusMessage>
+        ) : (
+          lines.map((line, i) =>
+            isPlainText ? (
+              <PlainLyricLine key={`${line.time}-${i}`}>{line.text}</PlainLyricLine>
+            ) : (
+              <LyricLine
+                key={`${line.time}-${i}`}
+                $active={i === activeIndex}
+                ref={i === activeIndex ? activeRef : null}
+                onClick={() => handleSeek(line.time)}
+              >
+                {line.text}
+              </LyricLine>
+            ),
+          )
+        )}
+      </LyricsContainer>
+    </LyricsPage>
   );
 };
 

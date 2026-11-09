@@ -266,3 +266,14 @@ export const ThemeSelect = styled.select`
     border-color: ${({ theme }) => theme.primary};
   }
 `;
+
+export const LyricsPreviewText = styled.p`
+  margin: 0;
+  padding: 16px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+  background: ${({ theme }) => theme.surface};
+  border: 1px solid ${({ theme }) => theme.border};
+  border-radius: 8px;
+  color: ${({ theme }) => theme.textSecondary};
+`;
