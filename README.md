@@ -133,3 +133,13 @@ A special thanks to everyone who has contributed to this project:
 ## License
 
 [CC BY-NC-SA 4.0](./LICENSE)
+
+## Website
+
+O site institucional fica em [`website/`](website/README.md), com build independente
+e publicação no Cloudflare Pages em https://songbridge.kalec.io.
+
+```sh
+npm run website:dev
+npm run website:deploy
+```

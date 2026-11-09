@@ -1,0 +1,35 @@
+name: Website
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - 'website/**'
+      - 'scripts/build-website.mjs'
+      - 'wrangler.jsonc'
+      - 'package.json'
+      - 'package-lock.json'
+      - '.github/workflows/website.yml'
+permissions:
+  contents: read
+concurrency:
+  group: songbridge-website-production
+  cancel-in-progress: false
+jobs:
+  deploy:
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci
+      - run: npm run website:build
+      - name: Deploy to Cloudflare Pages
+        run: npx wrangler pages deploy dist-website --project-name=songbridge-website --branch=main
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
