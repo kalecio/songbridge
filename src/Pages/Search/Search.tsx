@@ -37,6 +37,8 @@ import {
   NoResults,
   ArtistImage,
   ArtistContainer,
+  SearchEyebrow,
+  SearchHeading,
 } from './styles';
 
 function normalize(s?: string) {
@@ -170,6 +172,10 @@ const Search = () => {
 
   return (
     <SearchContainer>
+      <div>
+        <SearchEyebrow>Your library</SearchEyebrow>
+        <SearchHeading>Results for &ldquo;{query}&rdquo;</SearchHeading>
+      </div>
       {artists.length > 0 && (
         <ResultsSection>
           <SectionTitle>Artists</SectionTitle>

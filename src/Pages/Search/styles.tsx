@@ -6,15 +6,33 @@ export const SearchContainer = styled.div`
   display: flex;
   flex-direction: column;
   width: 100%;
-  padding: 2rem 2.5rem;
-  gap: 2rem;
+  padding: 28px clamp(24px, 2.6vw, 48px) 48px;
+  gap: 1.75rem;
   overflow-y: auto;
+  min-height: 100%;
+  color: ${({ theme }) => theme.textPrimary};
+`;
+
+export const SearchEyebrow = styled.p`
+  color: ${({ theme }) => theme.textMuted};
+  font-size: 0.75rem;
+  letter-spacing: 0.16em;
+  margin-bottom: 0.5rem;
+  text-transform: uppercase;
+`;
+
+export const SearchHeading = styled.h1`
+  color: ${({ theme }) => theme.textPrimary};
+  font-size: clamp(1.75rem, 2.5vw, 2.5rem);
+  font-weight: 650;
+  letter-spacing: -0.05em;
+  overflow-wrap: anywhere;
 `;
 
 export const ResultsSection = styled.section`
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 0.35rem;
   flex-shrink: 3;
 `;
 
@@ -23,16 +41,18 @@ export const SectionTitle = styled.h2`
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.08em;
-  color: ${({ theme }) => theme.primary};
-  margin: 0 0 0.5rem;
+  color: ${({ theme }) => theme.textMuted};
+  margin: 0 0 0.35rem;
+  padding-bottom: 0.65rem;
+  border-bottom: 1px solid ${({ theme }) => theme.border};
 `;
 
 export const SongRow = styled.div`
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  padding: 0.5rem 0.75rem;
-  border-radius: 0.65rem;
+  padding: 0.65rem 0.75rem;
+  border-radius: 0.35rem;
   cursor: pointer;
   transition: background 0.15s;
   min-width: 0;
@@ -86,7 +106,8 @@ export const ArtistRow = styled.div`
   border-radius: 0.65rem;
   cursor: pointer;
   transition: background 0.15s;
-  max-width: 8rem;
+  width: 7.5rem;
+  max-width: 100%;
 
   &:hover {
     background: ${({ theme }) => theme.hover};
@@ -97,7 +118,7 @@ export const ArtistAvatar = styled.div`
   width: 3.5rem;
   height: 3.5rem;
   border-radius: 50%;
-  background: ${({ theme }) => theme.borderLight};
+  background: linear-gradient(135deg, ${({ theme }) => theme.primary}, ${({ theme }) => theme.mutedAccent});
   color: ${({ theme }) => theme.textPrimary};
   display: flex;
   align-items: center;

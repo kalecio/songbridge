@@ -1,15 +1,15 @@
 import { styled } from 'styled-components';
 
 export const LibraryHeading = styled.div`
-  padding: 4px 90px 24px 0;
+  padding: 4px 90px 28px 0;
   p {
-    font-size: 9px;
-    letter-spacing: 2px;
+    font-size: 0.75rem;
+    letter-spacing: 0.18em;
     color: ${({ theme }) => theme.textMuted};
     margin-bottom: 12px;
   }
   h1 {
-    font-size: clamp(25px, 2.3vw, 36px);
+    font-size: clamp(2rem, 2.5vw, 2.75rem);
     font-weight: 650;
     letter-spacing: -1.5px;
     line-height: 1.2;
@@ -18,16 +18,17 @@ export const LibraryHeading = styled.div`
 export const LibraryTabs = styled.nav`
   display: flex;
   align-items: center;
-  gap: 24px;
-  padding-bottom: 14px;
-  margin-bottom: 20px;
+  gap: 28px;
+  padding-bottom: 16px;
+  margin-bottom: 24px;
   border-bottom: 1px solid ${({ theme }) => theme.border};
   button {
     border: 0;
     background: none;
     color: ${({ theme }) => theme.textMuted};
     font: inherit;
-    font-size: 10px;
+    font-size: 0.9rem;
+    font-weight: 550;
     cursor: pointer;
   }
   button[aria-pressed='true'] {
@@ -35,15 +36,15 @@ export const LibraryTabs = styled.nav`
   }
   .collection {
     margin-left: auto;
-    font-size: 10px;
+    font-size: 0.85rem;
   }
 `;
 export const RecentTrack = styled.div`
   display: flex;
   align-items: center;
   gap: 20px;
-  margin-top: 24px;
-  padding: 15px 10px;
+  margin-top: 28px;
+  padding: 20px 10px;
   border-top: 1px solid ${({ theme }) => theme.border};
   .equalizer {
     color: ${({ theme }) => theme.accent};
@@ -56,16 +57,16 @@ export const RecentTrack = styled.div`
     color: ${({ theme }) => theme.textPrimary};
     cursor: pointer;
     font: inherit;
-    font-size: 10px;
+    font-size: 0.95rem;
     flex: 1;
   }
   small {
     display: block;
     color: ${({ theme }) => theme.textMuted};
-    font-size: 10px;
+    font-size: 0.85rem;
     margin-top: 5px;
   }
   time {
-    font-size: 11px;
+    font-size: 0.85rem;
   }
 `;

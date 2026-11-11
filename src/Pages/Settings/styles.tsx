@@ -5,15 +5,16 @@ export const SettingsContainer = styled.div`
   display: flex;
   flex-direction: column;
   width: 100%;
-  max-width: 720px;
-  padding: 2.5rem 2rem;
-  gap: 2rem;
+  max-width: 900px;
+  padding: 0;
+  gap: 2.25rem;
 `;
 
 export const Section = styled.section`
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  padding: 0 0 1.5rem;
 `;
 
 export const SectionTitle = styled.h2`
@@ -21,9 +22,9 @@ export const SectionTitle = styled.h2`
   font-weight: 600;
   color: ${({ theme }) => theme.textPrimary};
   margin: 0;
-  padding-bottom: 0.5rem;
-  border-bottom: 1px solid ${({ theme }) => theme.borderLight};
-  max-height: 1.5rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid ${({ theme }) => theme.border};
+  letter-spacing: -0.02em;
 `;
 
 export const PathList = styled.ul`
@@ -39,11 +40,11 @@ export const PathItem = styled.li`
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  background: ${({ theme }) => theme.surfaceRaised};
-  border: 1px solid ${({ theme }) => theme.borderLight};
-  border-radius: 0.5rem;
-  padding: 0.6rem 0.9rem;
-  max-height: 2.5rem;
+  background: ${({ theme }) => theme.surface};
+  border: 1px solid ${({ theme }) => theme.border};
+  border-radius: 0.4rem;
+  padding: 0.75rem 0.9rem;
+  min-height: 2.75rem;
 `;
 
 export const PathText = styled.span`
@@ -84,7 +85,7 @@ export const AddButton = styled.button`
   cursor: pointer;
   align-self: flex-start;
   transition: background 0.15s;
-  max-height: 2.5rem;
+  min-height: 2.5rem;
 
   &:hover {
     background: ${({ theme }) => theme.primaryDark};
@@ -124,7 +125,7 @@ export const ButtonRow = styled.div`
   justify-content: flex-start;
   flex-direction: column;
   gap: 0.75rem;
-  max-height: 12rem;
+  max-height: none;
 `;
 
 export const RescanButton = styled.button`
@@ -142,7 +143,7 @@ export const RescanButton = styled.button`
   transition:
     background 0.15s,
     color 0.15s;
-  max-height: 2.5rem;
+  min-height: 2.5rem;
 
   &:hover {
     background: ${({ theme }) => theme.surfaceRaised};
@@ -177,7 +178,7 @@ export const ThemeRow = styled.div`
   display: flex;
   align-items: center;
   gap: 1rem;
-  max-height: 2.5rem;
+  min-height: 2.5rem;
 `;
 
 export const ThemeLabel = styled.label`
@@ -199,10 +200,10 @@ export const ShortcutRow = styled.li`
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  background: ${({ theme }) => theme.surfaceRaised};
-  border: 1px solid ${({ theme }) => theme.borderLight};
-  border-radius: 0.5rem;
-  padding: 0.6rem 0.9rem;
+  background: ${({ theme }) => theme.surface};
+  border: 1px solid ${({ theme }) => theme.border};
+  border-radius: 0.4rem;
+  padding: 0.75rem 0.9rem;
 `;
 
 export const ShortcutLabel = styled.span`

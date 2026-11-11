@@ -4,10 +4,11 @@ const LyricsContainer = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 2rem 2rem 4rem;
+  padding: clamp(1.5rem, 4vw, 3rem) clamp(1rem, 4vw, 4rem) 5rem;
   overflow-y: auto;
   height: 100%;
-  gap: 0.1rem;
+  gap: 0.2rem;
+  color: ${({ theme }) => theme.textPrimary};
 `;
 
 interface LyricLineProps {
@@ -15,9 +16,9 @@ interface LyricLineProps {
 }
 
 const LyricLine = styled.p<LyricLineProps>`
-  font-size: ${({ $active }) => ($active ? '2.75rem' : '2.4rem')};
+  font-size: ${({ $active }) => ($active ? 'clamp(2rem, 4vw, 2.75rem)' : 'clamp(1.5rem, 3.5vw, 2.4rem)')};
   font-weight: ${({ $active }) => ($active ? '700' : '500')};
-  color: ${({ $active, theme }) => ($active ? theme.primary : theme.textSecondary)};
+  color: ${({ $active, theme }) => ($active ? theme.accent : theme.textSecondary)};
   text-align: center;
   margin: 0;
   padding: 0.4rem 1rem;
@@ -32,7 +33,7 @@ const LyricLine = styled.p<LyricLineProps>`
 `;
 
 const PlainLyricLine = styled.p`
-  font-size: 2.4rem;
+  font-size: clamp(1.5rem, 3.5vw, 2.4rem);
   font-weight: 500;
   color: ${({ theme }) => theme.textSecondary};
   text-align: center;

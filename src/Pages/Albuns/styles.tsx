@@ -4,7 +4,7 @@ import { selectable } from '../../styles/mixins';
 export const Grid = styled.div`
   display: grid;
   grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 24px;
+  gap: clamp(16px, 1.5vw, 28px);
   @media (max-width: 1050px) {
     gap: 16px;
   }
@@ -68,7 +68,7 @@ export const CardInfo = styled.div`
 export const CardTitle = styled.div`
   color: ${({ theme }) => theme.textPrimary};
   font-weight: 500;
-  font-size: 12px;
+  font-size: clamp(0.85rem, 0.9vw, 1rem);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -87,7 +87,7 @@ export const CardBottom = styled.div`
 
 export const CardArtist = styled.div`
   color: ${({ theme }) => theme.textMuted};
-  font-size: 10px;
+  font-size: clamp(0.75rem, 0.8vw, 0.875rem);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -98,7 +98,7 @@ export const CardArtist = styled.div`
 
 export const CardCount = styled.div`
   color: ${({ theme }) => theme.textMuted};
-  font-size: 10px;
+  font-size: 0.75rem;
   white-space: nowrap;
   flex-shrink: 0;
   max-width: 3rem;

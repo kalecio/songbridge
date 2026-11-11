@@ -2,6 +2,8 @@ import { useContext, useEffect, useRef, useState } from 'react';
 import { open } from '@tauri-apps/plugin-dialog';
 import { invoke } from '@tauri-apps/api/core';
 import { AppContext } from '../../Context/AppContext';
+import Page from '../../Components/Page/Page';
+import PageHeader from '../../Components/PageHeader/PageHeader';
 import { themes } from '../../theme';
 import { DEFAULT_SHORTCUTS, SHORTCUT_LABELS, ShortcutAction, eventToBinding, formatBinding } from '../../keyboard';
 import {
@@ -95,72 +97,77 @@ const Settings = () => {
   };
 
   return (
-    <SettingsContainer>
-      <Section>
-        <SectionTitle>Appearance</SectionTitle>
-        <ThemeRow>
-          <ThemeLabel htmlFor="theme-select">Theme</ThemeLabel>
-          <ThemeSelect id="theme-select" value={currentTheme} onChange={(e) => setCurrentTheme?.(e.target.value)}>
-            {Object.keys(themes).map((name) => (
-              <option key={name} value={name}>
-                {name}
-              </option>
+    <Page>
+      <PageHeader>Settings</PageHeader>
+      <SettingsContainer>
+        <Section>
+          <SectionTitle>Appearance</SectionTitle>
+          <ThemeRow>
+            <ThemeLabel htmlFor="theme-select">Theme</ThemeLabel>
+            <ThemeSelect id="theme-select" value={currentTheme} onChange={(e) => setCurrentTheme?.(e.target.value)}>
+              {Object.keys(themes).map((name) => (
+                <option key={name} value={name}>
+                  {name}
+                </option>
+              ))}
+            </ThemeSelect>
+          </ThemeRow>
+        </Section>
+
+        <Section>
+          <SectionTitle>Keyboard Shortcuts</SectionTitle>
+          <ShortcutList>
+            {(Object.keys(SHORTCUT_LABELS) as ShortcutAction[]).map((action) => (
+              <ShortcutRow key={action}>
+                <ShortcutLabel>{SHORTCUT_LABELS[action]}</ShortcutLabel>
+                <ShortcutKey
+                  aria-label={`Edit shortcut for ${SHORTCUT_LABELS[action]}`}
+                  $recording={recording === action}
+                  onClick={() => setRecording(action)}
+                >
+                  {recording === action ? 'Press a key…' : formatBinding(shortcuts[action]) || 'Unset'}
+                </ShortcutKey>
+              </ShortcutRow>
             ))}
-          </ThemeSelect>
-        </ThemeRow>
-      </Section>
+          </ShortcutList>
+          <ResetShortcutsButton onClick={() => setShortcuts?.(DEFAULT_SHORTCUTS)}>
+            Reset to defaults
+          </ResetShortcutsButton>
+        </Section>
 
-      <Section>
-        <SectionTitle>Keyboard Shortcuts</SectionTitle>
-        <ShortcutList>
-          {(Object.keys(SHORTCUT_LABELS) as ShortcutAction[]).map((action) => (
-            <ShortcutRow key={action}>
-              <ShortcutLabel>{SHORTCUT_LABELS[action]}</ShortcutLabel>
-              <ShortcutKey
-                aria-label={`Edit shortcut for ${SHORTCUT_LABELS[action]}`}
-                $recording={recording === action}
-                onClick={() => setRecording(action)}
-              >
-                {recording === action ? 'Press a key…' : formatBinding(shortcuts[action]) || 'Unset'}
-              </ShortcutKey>
-            </ShortcutRow>
-          ))}
-        </ShortcutList>
-        <ResetShortcutsButton onClick={() => setShortcuts?.(DEFAULT_SHORTCUTS)}>Reset to defaults</ResetShortcutsButton>
-      </Section>
+        <Section>
+          <SectionTitle>Music Library Paths</SectionTitle>
 
-      <Section>
-        <SectionTitle>Music Library Paths</SectionTitle>
+          {libraryPaths.length === 0 ? (
+            <EmptyNote>No folders added yet. The default system music directory will be scanned.</EmptyNote>
+          ) : (
+            <PathList>
+              {libraryPaths.map((path) => (
+                <PathItem key={path}>
+                  <PathText title={path}>{path}</PathText>
+                  <RemoveButton aria-label={`Remove ${path}`} onClick={() => handleRemove(path)}>
+                    <TrashIcon />
+                  </RemoveButton>
+                </PathItem>
+              ))}
+            </PathList>
+          )}
 
-        {libraryPaths.length === 0 ? (
-          <EmptyNote>No folders added yet. The default system music directory will be scanned.</EmptyNote>
-        ) : (
-          <PathList>
-            {libraryPaths.map((path) => (
-              <PathItem key={path}>
-                <PathText title={path}>{path}</PathText>
-                <RemoveButton aria-label={`Remove ${path}`} onClick={() => handleRemove(path)}>
-                  <TrashIcon />
-                </RemoveButton>
-              </PathItem>
-            ))}
-          </PathList>
-        )}
-
-        <ButtonRow>
-          <AddButton onClick={handleAddFolder} disabled={isScanning}>
-            <FolderPlusIcon />
-            Add folder
-          </AddButton>
-          <RescanButton onClick={handleRescan} disabled={isScanning || libraryPaths.length === 0}>
-            <RescanIcon $spinning={isScanning} />
-            Rescan library
-          </RescanButton>
-          {isScanning && <ScanningBadge>Scanning…</ScanningBadge>}
-          {!isScanning && scanSuccess && <SuccessBadge>Library scan complete!</SuccessBadge>}
-        </ButtonRow>
-      </Section>
-    </SettingsContainer>
+          <ButtonRow>
+            <AddButton onClick={handleAddFolder} disabled={isScanning}>
+              <FolderPlusIcon />
+              Add folder
+            </AddButton>
+            <RescanButton onClick={handleRescan} disabled={isScanning || libraryPaths.length === 0}>
+              <RescanIcon $spinning={isScanning} />
+              Rescan library
+            </RescanButton>
+            {isScanning && <ScanningBadge>Scanning…</ScanningBadge>}
+            {!isScanning && scanSuccess && <SuccessBadge>Library scan complete!</SuccessBadge>}
+          </ButtonRow>
+        </Section>
+      </SettingsContainer>
+    </Page>
   );
 };
 

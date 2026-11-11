@@ -52,8 +52,8 @@ interface Props {
 // so unit tests (which run in a zero-height JSDOM viewport where the
 // virtualizer can't measure anything) keep working as before.
 const VIRTUALIZE_THRESHOLD = 100;
-// Approximate row height (3rem image + 0.75rem*2 padding + 1rem gap ≈ 80px).
-const ROW_HEIGHT = 80;
+// Approximate row height (3rem artwork + 0.5rem*2 vertical padding ≈ 64px).
+const ROW_HEIGHT = 64;
 
 const Playlist = ({
   songs,
