@@ -4,11 +4,16 @@ import { invoke } from '@tauri-apps/api/core';
 import { AppContext } from '../../Context/AppContext';
 import Page from '../../Components/Page/Page';
 import PageHeader from '../../Components/PageHeader/PageHeader';
-import { themes } from '../../theme';
+import { AppTheme, createCustomTheme, defaultTheme, ThemeColorOverrides, themes } from '../../theme';
 import { DEFAULT_SHORTCUTS, SHORTCUT_LABELS, ShortcutAction, eventToBinding, formatBinding } from '../../keyboard';
 import {
   AddButton,
   ButtonRow,
+  CancelThemeButton,
+  CreateThemeButton,
+  CreateThemeActions,
+  CreateThemeHeader,
+  CreateThemePanel,
   EmptyNote,
   FolderPlusIcon,
   PathItem,
@@ -28,10 +33,35 @@ import {
   ShortcutRow,
   SuccessBadge,
   ThemeLabel,
+  ThemeColorField,
+  ThemeColorGrid,
+  ThemeColorInput,
+  ThemeNameError,
+  ThemeNameInput,
   ThemeRow,
   ThemeSelect,
+  ThemeSourceField,
+  ThemeTextField,
   TrashIcon,
 } from './styles';
+
+const themeColorFields: { key: keyof ThemeColorOverrides; label: string }[] = [
+  { key: 'primary', label: 'Primary' },
+  { key: 'accent', label: 'Accent' },
+  { key: 'background', label: 'Background' },
+  { key: 'surface', label: 'Surface' },
+  { key: 'textPrimary', label: 'Text' },
+  { key: 'textSecondary', label: 'Secondary text' },
+];
+
+const getThemeColorDraft = (theme: AppTheme): ThemeColorOverrides => ({
+  primary: theme.primary,
+  accent: theme.accent,
+  background: theme.background,
+  surface: theme.surface,
+  textPrimary: theme.textPrimary,
+  textSecondary: theme.textSecondary,
+});
 
 const Settings = () => {
   const {
@@ -40,13 +70,25 @@ const Settings = () => {
     scanLibrary,
     isScanning,
     currentTheme,
+    customThemes = {},
     setCurrentTheme,
+    setCustomThemes,
     shortcuts,
     setShortcuts,
   } = useContext(AppContext);
   const [scanSuccess, setScanSuccess] = useState(false);
   const successTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [recording, setRecording] = useState<ShortcutAction | null>(null);
+  const themeCatalog = { ...themes, ...customThemes };
+  const [creatingTheme, setCreatingTheme] = useState(false);
+  const [themeName, setThemeName] = useState('');
+  const [baseThemeName, setBaseThemeName] = useState(currentTheme);
+  const [themeColors, setThemeColors] = useState<ThemeColorOverrides>(() =>
+    getThemeColorDraft(themeCatalog[currentTheme] ?? defaultTheme),
+  );
+  const duplicateThemeName = Object.keys(themeCatalog).some(
+    (name) => name.toLocaleLowerCase() === themeName.trim().toLocaleLowerCase(),
+  );
 
   useEffect(() => {
     if (!recording) return;
@@ -96,6 +138,24 @@ const Settings = () => {
     showSuccess();
   };
 
+  const startCreatingTheme = () => {
+    const base = themeCatalog[currentTheme] ?? defaultTheme;
+    setThemeName(`${currentTheme} Custom`);
+    setBaseThemeName(currentTheme);
+    setThemeColors(getThemeColorDraft(base));
+    setCreatingTheme(true);
+  };
+
+  const handleCreateTheme = () => {
+    const trimmedName = themeName.trim();
+    const base = themeCatalog[baseThemeName] ?? defaultTheme;
+    if (!trimmedName || duplicateThemeName || !setCustomThemes) return;
+    const customTheme = createCustomTheme(trimmedName, base, themeColors);
+    setCustomThemes((previous) => ({ ...previous, [trimmedName]: customTheme }));
+    setCurrentTheme?.(trimmedName);
+    setCreatingTheme(false);
+  };
+
   return (
     <Page>
       <PageHeader>Settings</PageHeader>
@@ -105,13 +165,79 @@ const Settings = () => {
           <ThemeRow>
             <ThemeLabel htmlFor="theme-select">Theme</ThemeLabel>
             <ThemeSelect id="theme-select" value={currentTheme} onChange={(e) => setCurrentTheme?.(e.target.value)}>
-              {Object.keys(themes).map((name) => (
+              {Object.keys(themeCatalog).map((name) => (
                 <option key={name} value={name}>
                   {name}
                 </option>
               ))}
             </ThemeSelect>
+            <CreateThemeButton type="button" onClick={startCreatingTheme}>
+              Create theme
+            </CreateThemeButton>
           </ThemeRow>
+          {creatingTheme && (
+            <CreateThemePanel aria-label="Create a custom theme">
+              <CreateThemeHeader>Clone and customize a theme</CreateThemeHeader>
+              <ThemeRow>
+                <ThemeTextField>
+                  <span>Name</span>
+                  <ThemeNameInput
+                    autoComplete="off"
+                    maxLength={40}
+                    value={themeName}
+                    onChange={(event) => setThemeName(event.target.value)}
+                    placeholder="My theme"
+                  />
+                </ThemeTextField>
+                <ThemeSourceField>
+                  <span>Clone from</span>
+                  <ThemeSelect
+                    aria-label="Clone from theme"
+                    value={baseThemeName}
+                    onChange={(event) => {
+                      const name = event.target.value;
+                      setBaseThemeName(name);
+                      setThemeColors(getThemeColorDraft(themeCatalog[name] ?? defaultTheme));
+                    }}
+                  >
+                    {Object.keys(themeCatalog).map((name) => (
+                      <option key={name} value={name}>
+                        {name}
+                      </option>
+                    ))}
+                  </ThemeSelect>
+                </ThemeSourceField>
+              </ThemeRow>
+              {duplicateThemeName && themeName.trim() && (
+                <ThemeNameError role="alert">A theme with this name already exists.</ThemeNameError>
+              )}
+              <ThemeColorGrid>
+                {themeColorFields.map(({ key, label }) => (
+                  <ThemeColorField key={key}>
+                    <span>{label}</span>
+                    <ThemeColorInput
+                      aria-label={label}
+                      type="color"
+                      value={themeColors[key]}
+                      onChange={(event) => setThemeColors((previous) => ({ ...previous, [key]: event.target.value }))}
+                    />
+                  </ThemeColorField>
+                ))}
+              </ThemeColorGrid>
+              <CreateThemeActions>
+                <CancelThemeButton type="button" onClick={() => setCreatingTheme(false)}>
+                  Cancel
+                </CancelThemeButton>
+                <CreateThemeButton
+                  type="button"
+                  onClick={handleCreateTheme}
+                  disabled={!themeName.trim() || duplicateThemeName || !setCustomThemes}
+                >
+                  Save theme
+                </CreateThemeButton>
+              </CreateThemeActions>
+            </CreateThemePanel>
+          )}
         </Section>
 
         <Section>
