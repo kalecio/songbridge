@@ -90,6 +90,7 @@ const HistoryControls = styled.nav`
   display: flex;
   align-items: center;
   gap: 4px;
+  flex-shrink: 0;
 `;
 const HistoryButton = styled.button`
   display: grid;
@@ -129,6 +130,9 @@ const SearchWrapper = styled.div<{ $expanded?: boolean }>`
   display: flex;
   align-items: center;
   width: ${({ $expanded }) => ($expanded ? '250px' : '26px')};
+  min-width: 26px;
+  max-width: calc(100% - 120px);
+  flex-shrink: 1;
   &:focus-within {
     width: min(300px, 45vw);
   }
@@ -143,6 +147,7 @@ const SearchIcon = styled(FaMagnifyingGlass)`
 `;
 const SearchInput = styled.input`
   width: 100%;
+  min-width: 0;
   height: 32px;
   padding: 6px 28px 6px 10px;
   background: ${({ theme }) => theme.background};
@@ -167,6 +172,7 @@ const SettingsButton = styled.button.attrs({ type: 'button', children: <FaGear /
   align-items: center;
   width: 16px;
   height: 16px;
+  flex: 0 0 16px;
   color: ${({ theme }) => theme.textMuted};
   cursor: pointer;
   &:hover {
