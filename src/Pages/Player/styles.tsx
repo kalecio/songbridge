@@ -97,6 +97,7 @@ const HistoryButton = styled.button`
   place-items: center;
   width: 30px;
   height: 30px;
+  flex: 0 0 30px;
   padding: 0;
   border: 1px solid transparent;
   border-radius: 5px;
@@ -131,7 +132,7 @@ const SearchWrapper = styled.div<{ $expanded?: boolean }>`
   align-items: center;
   width: ${({ $expanded }) => ($expanded ? '250px' : '26px')};
   min-width: 26px;
-  max-width: calc(100% - 120px);
+  max-width: min(300px, calc(100% - 136px));
   flex-shrink: 1;
   &:focus-within {
     width: min(300px, 45vw);
@@ -170,11 +171,19 @@ const SettingsButton = styled.button.attrs({ type: 'button', children: <FaGear /
   background: none;
   display: flex;
   align-items: center;
-  width: 16px;
-  height: 16px;
-  flex: 0 0 16px;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
+  flex: 0 0 32px;
+  position: relative;
+  z-index: 1;
   color: ${({ theme }) => theme.textMuted};
   cursor: pointer;
+  svg {
+    width: 18px;
+    height: 18px;
+    flex-shrink: 0;
+  }
   &:hover {
     color: ${({ theme }) => theme.accent};
   }
