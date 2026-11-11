@@ -27,7 +27,7 @@ export const Card = styled.div`
   display: flex;
   flex-direction: column;
   background: ${({ theme }) => theme.cardBackground};
-  border-radius: 0;
+  border-radius: 8px;
   overflow: hidden;
   cursor: pointer;
 
@@ -44,9 +44,10 @@ export const Card = styled.div`
 export const ArtWrapper = styled.div`
   flex: 1;
   min-height: 0;
+  border-radius: 8px;
   & img,
   & svg {
-    border-radius: 0;
+    border-radius: 8px;
   }
   overflow: hidden;
 `;
