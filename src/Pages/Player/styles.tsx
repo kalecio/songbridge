@@ -73,13 +73,18 @@ const NowPlaying = styled.div`
   min-width: 180px;
 `;
 const AppHeader = styled.header`
-  position: absolute;
-  top: 30px;
-  right: clamp(24px, 2.6vw, 48px);
+  position: sticky;
+  top: 0;
   z-index: 2;
   display: flex;
   align-items: center;
+  justify-content: flex-end;
   gap: 12px;
+  flex: 0 0 64px;
+  min-height: 64px;
+  padding: 0 clamp(24px, 2.6vw, 48px);
+  background: ${({ theme }) => theme.background};
+  border-bottom: 1px solid ${({ theme }) => theme.border};
 `;
 const HistoryControls = styled.nav`
   display: flex;
