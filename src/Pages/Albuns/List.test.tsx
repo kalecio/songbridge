@@ -60,15 +60,11 @@ describe('Albums', () => {
     expect(names[1]).toBe('Second Album');
   });
 
-  it('filters the home gallery by recently played tracks and can return to all albums', () => {
-    const { getByRole, queryByText, getByText } = renderWithContext(<Albums home recentPaths={['/music/3.mp3']} />, {
-      library,
-    });
-    fireEvent.click(getByRole('button', { name: 'Recentes' }));
-    expect(queryByText('First Album')).not.toBeInTheDocument();
-    expect(getByText('Second Album')).toBeInTheDocument();
-    fireEvent.click(getByRole('button', { name: 'Seus álbuns' }));
+  it('shows the full album gallery on the home page without a tab bar', () => {
+    const { queryByRole, getByText } = renderWithContext(<Albums home />, { library });
+    expect(queryByRole('navigation', { name: 'Biblioteca' })).not.toBeInTheDocument();
     expect(getByText('First Album')).toBeInTheDocument();
+    expect(getByText('Second Album')).toBeInTheDocument();
   });
 
   it('opens library settings from the empty home screen', () => {

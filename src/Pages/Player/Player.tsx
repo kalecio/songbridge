@@ -1,5 +1,6 @@
 import { useCallback, useContext, useEffect, useRef, useState } from 'react';
-import { useNavigate, useLocation, Route, Routes } from 'react-router';
+import { useNavigate, useLocation, useNavigationType, Route, Routes } from 'react-router';
+import { FaArrowLeft, FaArrowRight } from 'react-icons/fa6';
 import { error as logError } from '../../logger';
 import Controls from '../../Components/Controls/Controls';
 import ProgressBar from '../../Components/ProgressBar/ProgressBar';
@@ -14,6 +15,8 @@ import {
   Container,
   ContentContainer,
   ControlsWrapper,
+  HistoryButton,
+  HistoryControls,
   NowPlaying,
   Main,
   MainWrapper,
@@ -33,7 +36,6 @@ import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts';
 import { useMediaKeys } from '../../hooks/useMediaKeys';
 import Sidebar from '../../Components/Sidebar/Sidebar';
 import FavouriteButton from '../../Components/Song/FavouriteButton';
-import { useRecentTracks } from '../../hooks/useRecentTracks';
 import PlaylistRoute from '../Playlist/Detail';
 import Songs from '../Songs/List';
 import Albums from '../Albuns/List';
@@ -48,6 +50,9 @@ import CreatePlaylist from '../Playlist/Create';
 const Player = () => {
   const navigate = useNavigate();
   const location = useLocation();
+  const navigationType = useNavigationType();
+  const navigationHistoryRef = useRef({ entries: [location.key], index: 0 });
+  const [historyAvailability, setHistoryAvailability] = useState({ canGoBack: false, canGoForward: false });
   const context = useContext(AppContext);
   const {
     currentPath: path,
@@ -64,7 +69,6 @@ const Player = () => {
     setCurrentPlaylist,
     setProgress,
   } = context;
-  const recentPaths = useRecentTracks(path);
   const intervalRef = useRef<number | null>(null);
   const animationFrameRef = useRef<number | null>(null);
   const endedRef = useRef(false);
@@ -75,6 +79,32 @@ const Player = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const debounceTimeoutRef = useRef<number | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const history = navigationHistoryRef.current;
+    if (history.entries[history.index] === location.key) return;
+
+    if (navigationType === 'PUSH') {
+      history.entries = history.entries.slice(0, history.index + 1);
+      history.entries.push(location.key);
+      history.index = history.entries.length - 1;
+    } else if (navigationType === 'REPLACE') {
+      history.entries[history.index] = location.key;
+    } else {
+      const previousIndex = history.entries.lastIndexOf(location.key);
+      if (previousIndex >= 0) {
+        history.index = previousIndex;
+      } else {
+        history.index = Math.max(0, Math.min(history.entries.length - 1, history.index - 1));
+        history.entries[history.index] = location.key;
+      }
+    }
+
+    setHistoryAvailability({
+      canGoBack: history.index > 0,
+      canGoForward: history.index < history.entries.length - 1,
+    });
+  }, [location.key, navigationType]);
 
   const handleSeek = useCallback(
     async (progressRatio: number) => {
@@ -293,6 +323,26 @@ const Player = () => {
         <Sidebar />
         <MainWrapper>
           <AppHeader>
+            <HistoryControls aria-label="Page navigation">
+              <HistoryButton
+                type="button"
+                aria-label="Go back"
+                title="Go back"
+                disabled={!historyAvailability.canGoBack}
+                onClick={() => navigate(-1)}
+              >
+                <FaArrowLeft />
+              </HistoryButton>
+              <HistoryButton
+                type="button"
+                aria-label="Go forward"
+                title="Go forward"
+                disabled={!historyAvailability.canGoForward}
+                onClick={() => navigate(1)}
+              >
+                <FaArrowRight />
+              </HistoryButton>
+            </HistoryControls>
             <SearchWrapper $expanded={location.pathname === '/search'}>
               <SearchIcon />
               <SearchInput
@@ -321,7 +371,7 @@ const Player = () => {
           )}
           <Main>
             <Routes>
-              <Route path="/" element={<Albums home recentPaths={recentPaths} />} />
+              <Route path="/" element={<Albums home />} />
               <Route path="/artists" element={<Artists />} />
               <Route path="/artists/:id" element={<ArtistDetail />} />
               <Route path="/albums" element={<Albums />} />

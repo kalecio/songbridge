@@ -79,7 +79,45 @@ const AppHeader = styled.header`
   z-index: 2;
   display: flex;
   align-items: center;
-  gap: 16px;
+  gap: 12px;
+`;
+const HistoryControls = styled.nav`
+  display: flex;
+  align-items: center;
+  gap: 4px;
+`;
+const HistoryButton = styled.button`
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: 1px solid transparent;
+  border-radius: 5px;
+  background: transparent;
+  color: ${({ theme }) => theme.textSecondary};
+  cursor: pointer;
+  transition:
+    background 0.15s,
+    color 0.15s,
+    border-color 0.15s;
+
+  svg {
+    width: 13px;
+    height: 13px;
+  }
+
+  &:hover:not(:disabled) {
+    border-color: ${({ theme }) => theme.border};
+    background: ${({ theme }) => theme.hover};
+    color: ${({ theme }) => theme.accent};
+  }
+
+  &:disabled {
+    color: ${({ theme }) => theme.textMuted};
+    cursor: default;
+    opacity: 0.45;
+  }
 `;
 const SearchWrapper = styled.div<{ $expanded?: boolean }>`
   position: relative;
@@ -184,6 +222,8 @@ export {
   MainWrapper,
   AppHeader,
   SearchWrapper,
+  HistoryControls,
+  HistoryButton,
   SearchIcon,
   SearchInput,
   ContentContainer,

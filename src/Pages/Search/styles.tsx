@@ -6,7 +6,7 @@ export const SearchContainer = styled.div`
   display: flex;
   flex-direction: column;
   width: 100%;
-  padding: 28px clamp(24px, 2.6vw, 48px) 48px;
+  padding: 76px clamp(24px, 2.6vw, 48px) 48px;
   gap: 1.75rem;
   overflow-y: auto;
   min-height: 100%;

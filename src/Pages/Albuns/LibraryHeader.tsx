@@ -15,30 +15,6 @@ export const LibraryHeading = styled.div`
     line-height: 1.2;
   }
 `;
-export const LibraryTabs = styled.nav`
-  display: flex;
-  align-items: center;
-  gap: 28px;
-  padding-bottom: 16px;
-  margin-bottom: 24px;
-  border-bottom: 1px solid ${({ theme }) => theme.border};
-  button {
-    border: 0;
-    background: none;
-    color: ${({ theme }) => theme.textMuted};
-    font: inherit;
-    font-size: 0.9rem;
-    font-weight: 550;
-    cursor: pointer;
-  }
-  button[aria-pressed='true'] {
-    color: ${({ theme }) => theme.accent};
-  }
-  .collection {
-    margin-left: auto;
-    font-size: 0.85rem;
-  }
-`;
 export const RecentTrack = styled.div`
   display: flex;
   align-items: center;

@@ -16,7 +16,7 @@ import { useQueueActions } from '../../hooks/useQueueActions';
 import { useMetadataActions } from '../../hooks/useMetadataActions';
 import { Grid, GridItem, Card, ArtWrapper, CardInfo, CardTitle, CardBottom, CardArtist, CardCount } from './styles';
 
-import { LibraryHeading, LibraryTabs, RecentTrack } from './LibraryHeader';
+import { LibraryHeading, RecentTrack } from './LibraryHeader';
 import FavouriteButton from '../../Components/Song/FavouriteButton';
 import { displayTitle } from '../../songDisplay';
 
@@ -52,8 +52,7 @@ function groupByAlbum(library: MetadataType[], alphabetical = true): AlbumEntry[
   return alphabetical ? result.sort((a, b) => a.name.localeCompare(b.name)) : result;
 }
 
-const Albums = ({ home = false, recentPaths = [] }: { home?: boolean; recentPaths?: string[] }) => {
-  const [recentOnly, setRecentOnly] = useState(false);
+const Albums = ({ home = false }: { home?: boolean }) => {
   const { library, isScanning, metadata, currentPath } = useContext(AppContext);
   const navigate = useNavigate();
   const [menu, setMenu] = useState<{ x: number; y: number; album: AlbumEntry } | null>(null);
@@ -79,15 +78,7 @@ const Albums = ({ home = false, recentPaths = [] }: { home?: boolean; recentPath
   }
 
   const allAlbums = groupByAlbum(library, !home);
-  const albums = recentOnly
-    ? [...allAlbums]
-        .filter((album) => album.songs.some((song) => song.path && recentPaths.includes(song.path)))
-        .sort(
-          (a, b) =>
-            Math.min(...a.songs.map((song) => recentPaths.indexOf(song.path ?? '')).filter((i) => i >= 0)) -
-            Math.min(...b.songs.map((song) => recentPaths.indexOf(song.path ?? '')).filter((i) => i >= 0)),
-        )
-    : allAlbums;
+  const albums = allAlbums;
   const currentTrack =
     library.find((song) => song.path === currentPath) ?? (currentPath ? { ...metadata, path: currentPath } : undefined);
 
@@ -120,26 +111,10 @@ const Albums = ({ home = false, recentPaths = [] }: { home?: boolean; recentPath
   return (
     <Page>
       {home ? (
-        <>
-          <LibraryHeading>
-            <p>BOM TE VER POR AQUI</p>
-            <h1>Encontre seu ritmo.</h1>
-          </LibraryHeading>
-          <LibraryTabs aria-label="Biblioteca">
-            <button type="button" aria-pressed={!recentOnly} onClick={() => setRecentOnly(false)}>
-              Seus álbuns
-            </button>
-            <button type="button" onClick={() => navigate('/artists')}>
-              Artistas
-            </button>
-            <button type="button" aria-pressed={recentOnly} onClick={() => setRecentOnly(true)}>
-              Recentes
-            </button>
-            <button type="button" className="collection" onClick={() => navigate('/settings')}>
-              Sua coleção ↗
-            </button>
-          </LibraryTabs>
-        </>
+        <LibraryHeading>
+          <p>BOM TE VER POR AQUI</p>
+          <h1>Encontre seu ritmo.</h1>
+        </LibraryHeading>
       ) : (
         <PageHeader>
           Albums <Count>{albums.length}</Count>
@@ -149,9 +124,7 @@ const Albums = ({ home = false, recentPaths = [] }: { home?: boolean; recentPath
         <StatusMessage>
           {isScanning
             ? 'Carregando sua biblioteca…'
-            : recentOnly
-              ? 'Os álbuns que você ouvir aparecerão aqui.'
-              : 'Sua coleção começa aqui. Adicione suas pastas nas configurações.'}
+            : 'Sua coleção começa aqui. Adicione suas pastas nas configurações.'}
         </StatusMessage>
       )}
       {!allAlbums.length && home && (
