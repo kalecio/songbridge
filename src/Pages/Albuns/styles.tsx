@@ -3,8 +3,14 @@ import { selectable } from '../../styles/mixins';
 
 export const Grid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-  gap: 1.25rem;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: clamp(16px, 1.5vw, 28px);
+  @media (max-width: 1050px) {
+    gap: 16px;
+  }
+  @media (max-width: 760px) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
   align-items: start;
 `;
 
@@ -12,19 +18,19 @@ export const GridItem = styled.div`
   display: flex;
   flex-direction: column;
   cursor: pointer;
-  max-height: 18rem;
+  min-width: 0;
 `;
 
 export const Card = styled.div`
-  height: 200px;
-  width: 200px;
+  aspect-ratio: 1;
+  width: 100%;
   display: flex;
   flex-direction: column;
   background: ${({ theme }) => theme.cardBackground};
-  border-radius: 1rem;
+  border-radius: 8px;
   overflow: hidden;
   cursor: pointer;
-  box-shadow: 0 2px 8px ${({ theme }) => theme.cardShadow};
+
   transition:
     transform 0.15s,
     box-shadow 0.15s;
@@ -38,11 +44,16 @@ export const Card = styled.div`
 export const ArtWrapper = styled.div`
   flex: 1;
   min-height: 0;
+  border-radius: 8px;
+  & img,
+  & svg {
+    border-radius: 8px;
+  }
   overflow: hidden;
 `;
 
 export const CardInfo = styled.div`
-  padding: 0.6rem 0.75rem;
+  padding: 9px 0 0;
   flex-shrink: 0;
   max-height: 5rem;
   display: flex;
@@ -50,15 +61,15 @@ export const CardInfo = styled.div`
   justify-content: space-between;
   align-items: stretch;
   gap: 0.25rem;
-  width: 200px;
+  width: 100%;
   min-width: 0;
   box-sizing: border-box;
 `;
 
 export const CardTitle = styled.div`
   color: ${({ theme }) => theme.textPrimary};
-  font-weight: 700;
-  font-size: 0.9rem;
+  font-weight: 500;
+  font-size: clamp(0.85rem, 0.9vw, 1rem);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -76,8 +87,8 @@ export const CardBottom = styled.div`
 `;
 
 export const CardArtist = styled.div`
-  color: ${({ theme }) => theme.primary};
-  font-size: 0.75rem;
+  color: ${({ theme }) => theme.textMuted};
+  font-size: clamp(0.75rem, 0.8vw, 0.875rem);
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -87,7 +98,7 @@ export const CardArtist = styled.div`
 `;
 
 export const CardCount = styled.div`
-  color: ${({ theme }) => theme.primary};
+  color: ${({ theme }) => theme.textMuted};
   font-size: 0.75rem;
   white-space: nowrap;
   flex-shrink: 0;

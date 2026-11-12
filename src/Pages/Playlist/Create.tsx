@@ -5,6 +5,7 @@ import { AppContext } from '../../Context/AppContext';
 import { MetadataType, PlaylistType } from '../../types';
 import { isFavouritesPlaylist, sortFavouritesFirst } from '../../hooks/useFavourites';
 import { displayTitle } from '../../songDisplay';
+import { useI18n } from '../../i18n/I18nProvider';
 import {
   AddIcon,
   Column,
@@ -37,6 +38,7 @@ import {
 } from './styles';
 
 const CreatePlaylist = () => {
+  const { t, tc } = useI18n();
   const { playlists = [], setPlaylists, library } = useContext(AppContext);
   const [selectedId, setSelectedId] = useState<string | null>(null);
   const [editingName, setEditingName] = useState('');
@@ -54,12 +56,12 @@ const CreatePlaylist = () => {
     if (!seed || preAddedRef.current) return;
     preAddedRef.current = true;
     const id = crypto.randomUUID();
-    const pl: PlaylistType = { id, name: 'New Playlist', songs: seed.path ? [seed] : [] };
+    const pl: PlaylistType = { id, name: t('playlist.new').replace(/^\+\s*/, ''), songs: seed.path ? [seed] : [] };
     setPlaylists?.((prev) => [...prev, pl]);
     setSelectedId(pl.id);
     setEditingName(pl.name);
     navigate(location.pathname, { replace: true });
-  }, [location.state, location.pathname, navigate, setPlaylists]);
+  }, [location.state, location.pathname, navigate, setPlaylists, t]);
 
   const selected = playlists.find((p) => p.id === selectedId) ?? null;
 
@@ -74,7 +76,7 @@ const CreatePlaylist = () => {
 
   const handleNew = () => {
     const id = crypto.randomUUID();
-    const name = 'New Playlist';
+    const name = t('playlist.new').replace(/^\+\s*/, '');
     const pl: PlaylistType = { id, name, songs: [] };
     setPlaylists?.([...playlists, pl]);
     select(pl);
@@ -115,7 +117,7 @@ const CreatePlaylist = () => {
   return (
     <Container>
       <LeftPanel>
-        <NewButton onClick={handleNew}>+ New Playlist</NewButton>
+        <NewButton onClick={handleNew}>{t('playlist.new')}</NewButton>
         {sortFavouritesFirst(playlists).map((pl) => {
           const fav = isFavouritesPlaylist(pl.id);
           return (
@@ -125,11 +127,11 @@ const CreatePlaylist = () => {
                   {fav && <FavouriteBadge aria-hidden="true" />}
                   {pl.name}
                 </PlaylistItemName>
-                <PlaylistItemCount>{pl.songs.length} songs</PlaylistItemCount>
+                <PlaylistItemCount>{tc('count.song', pl.songs.length)}</PlaylistItemCount>
               </PlaylistItemInfo>
               {!fav && (
                 <DeleteBtn
-                  aria-label={`Delete ${pl.name}`}
+                  aria-label={t('playlist.deleteNamed', { name: pl.name })}
                   onClick={(e) => {
                     e.stopPropagation();
                     handleDelete(pl.id);
@@ -141,32 +143,32 @@ const CreatePlaylist = () => {
             </PlaylistItem>
           );
         })}
-        {playlists.length === 0 && <EmptyColumn style={{ padding: '0 0.75rem' }}>No playlists yet</EmptyColumn>}
+        {playlists.length === 0 && <EmptyColumn style={{ padding: '0 0.75rem' }}>{t('playlist.none')}</EmptyColumn>}
       </LeftPanel>
 
       <RightPanel>
         {!selected ? (
-          <EmptyState>Select a playlist on the left or create a new one</EmptyState>
+          <EmptyState>{t('playlist.selectOrCreate')}</EmptyState>
         ) : (
           <>
             <EditorHeader>
               <NameInput
-                aria-label="Playlist name"
+                aria-label={t('playlist.name')}
                 value={editingName}
                 readOnly={isFavouritesPlaylist(selected.id)}
                 onChange={(e) => setEditingName(e.target.value)}
                 onBlur={handleRename}
                 onKeyDown={(e) => e.key === 'Enter' && handleRename()}
               />
-              <SongCount>{selected.songs.length} songs</SongCount>
+              <SongCount>{tc('count.song', selected.songs.length)}</SongCount>
             </EditorHeader>
 
             <TwoColumn>
               <Column>
-                <ColumnTitle>In playlist</ColumnTitle>
+                <ColumnTitle>{t('playlist.inPlaylist')}</ColumnTitle>
                 <SongScroll>
                   {selected.songs.length === 0 ? (
-                    <EmptyColumn>Add songs from your library →</EmptyColumn>
+                    <EmptyColumn>{t('playlist.addFromLibrary')}</EmptyColumn>
                   ) : (
                     selected.songs.map((song) => {
                       const title = displayTitle(song);
@@ -176,7 +178,10 @@ const CreatePlaylist = () => {
                             <SongTitle title={title}>{title}</SongTitle>
                             <SongArtist>{song.artist}</SongArtist>
                           </SongMeta>
-                          <IconButton aria-label={`Remove ${title}`} onClick={() => handleRemoveSong(song.path!)}>
+                          <IconButton
+                            aria-label={t('playlist.removeSong', { title })}
+                            onClick={() => handleRemoveSong(song.path!)}
+                          >
                             <RemoveIcon />
                           </IconButton>
                         </SongRow>
@@ -187,11 +192,15 @@ const CreatePlaylist = () => {
               </Column>
 
               <Column>
-                <ColumnTitle>Library</ColumnTitle>
-                <SearchInput placeholder="Search songs…" value={search} onChange={(e) => setSearch(e.target.value)} />
+                <ColumnTitle>{t('playlist.library')}</ColumnTitle>
+                <SearchInput
+                  placeholder={t('playlist.searchSongs')}
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
                 <SongScroll>
                   {filtered.length === 0 ? (
-                    <EmptyColumn>{search ? 'No matches' : 'All library songs are in this playlist'}</EmptyColumn>
+                    <EmptyColumn>{search ? t('playlist.noMatches') : t('playlist.allSongsAdded')}</EmptyColumn>
                   ) : (
                     filtered.map((song) => {
                       const title = displayTitle(song);

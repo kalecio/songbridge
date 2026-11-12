@@ -8,8 +8,10 @@ import { useLyricsSearchModal } from '../../Context/LyricsSearchModalContext';
 import { LYRICS_UPDATED_EVENT } from '../../lyricsEvents';
 import { useLyricsFontSize } from '../../hooks/useLyricsFontSize';
 import { LyricsPage, LyricsContainer, LyricLine, PlainLyricLine, EmptyLyricsState, FindLyricsButton } from './styles';
+import { useI18n } from '../../i18n/I18nProvider';
 
 const Lyrics = () => {
+  const { t } = useI18n();
   const { currentPath: path, progress, metadata, isPlaying, library } = useContext(AppContext);
   const { open: openLyricsSearch } = useLyricsSearchModal();
   const [lines, setLines] = useState<LrcLine[]>([]);
@@ -94,23 +96,23 @@ const Lyrics = () => {
   );
 
   return (
-    <LyricsPage aria-label="Lyrics">
+    <LyricsPage aria-label={t('common.lyrics')}>
       <LyricsContainer style={{ fontSize }}>
         {!path ? (
-          <StatusMessage>No song playing</StatusMessage>
+          <StatusMessage>{t('lyrics.noSongPlaying')}</StatusMessage>
         ) : hasLrc === false ? (
           <EmptyLyricsState>
-            <StatusMessage>No lyrics found for this song</StatusMessage>
-            <p>Find and download synced or plain lyrics from LRCLIB.</p>
+            <StatusMessage>{t('lyrics.notFound')}</StatusMessage>
+            <p>{t('lyrics.findAndDownload')}</p>
             <FindLyricsButton
               type="button"
               onClick={() => openLyricsSearch(library.find((song) => song.path === path) ?? { ...metadata, path })}
             >
-              Find lyrics
+              {t('lyrics.find')}
             </FindLyricsButton>
           </EmptyLyricsState>
         ) : hasLrc === null ? (
-          <StatusMessage>Loading lyrics…</StatusMessage>
+          <StatusMessage>{t('common.loading')}</StatusMessage>
         ) : (
           lines.map((line, i) =>
             isPlainText ? (

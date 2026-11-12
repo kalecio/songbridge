@@ -87,32 +87,32 @@ export const midnightTheme: AppTheme = {
   primary: '#3F3BD1',
   primaryDark: '#2F2CC3',
   primaryDeep: '#2320A0',
-  background: '#0F1115',
-  surface: '#1A1D24',
-  surfaceAlt: '#232733',
-  surfaceRaised: '#232733',
-  textPrimary: '#FFFFFF',
-  textSecondary: '#B8BCC8',
-  textMuted: '#7A8194',
-  textOnPrimary: '#FFFFFF',
-  textOnPlayer: '#FFFFFF',
+  background: '#13151c',
+  surface: '#1a1c27',
+  surfaceAlt: '#1a1c27',
+  surfaceRaised: '#1a1c27',
+  textPrimary: '#f3f2f7',
+  textSecondary: '#a7a9b8',
+  textMuted: '#858997',
+  textOnPrimary: '#f3f2f7',
+  textOnPlayer: '#f3f2f7',
   hover: '#1F2330',
-  hoverActive: '#252836',
-  active: '#2A2D3E',
-  border: '#2A2D3A',
-  borderLight: '#323645',
+  hoverActive: '#2b2a47',
+  active: '#2b2a47',
+  border: '#2b2d3a',
+  borderLight: '#414453',
   accent: '#AEB3FF',
   accentBg: 'rgba(174, 179, 255, 0.12)',
   accentBgHover: 'rgba(174, 179, 255, 0.22)',
   accentHover: 'rgba(174, 179, 255, 0.07)',
   mutedAccent: '#4A4E6E',
-  cardBackground: '#1A1D24',
+  cardBackground: '#1a1c27',
   cardShadow: 'rgba(0, 0, 0, 0.25)',
   cardShadowHover: 'rgba(0, 0, 0, 0.45)',
   success: '#4CAF50',
   warning: '#F2C94C',
   error: '#EB5757',
-  playerBar: '#1A1D24',
+  playerBar: '#1a1c27',
 };
 
 // Deep purple base with an electric lime-green accent — like a humming
@@ -264,3 +264,92 @@ export const themes: Record<string, AppTheme> = {
 };
 
 export const defaultTheme = midnightTheme;
+
+export type ThemeColorOverrides = Pick<
+  AppTheme,
+  'primary' | 'accent' | 'background' | 'surface' | 'textPrimary' | 'textSecondary'
+>;
+
+const CUSTOM_THEMES_KEY = 'songbridge.customThemes';
+
+export function createCustomTheme(name: string, base: AppTheme, colors: ThemeColorOverrides): AppTheme {
+  const mix = (foreground: string, background: string, amount: number) => {
+    const foregroundRgb = hexToRgb(foreground);
+    const backgroundRgb = hexToRgb(background);
+    if (!foregroundRgb || !backgroundRgb) return foreground;
+    const values = foregroundRgb.map((value, index) =>
+      Math.round(value * (1 - amount) + backgroundRgb[index] * amount),
+    );
+    return `#${values.map((value) => value.toString(16).padStart(2, '0')).join('')}`;
+  };
+  const rgba = (color: string, alpha: number) => {
+    const rgb = hexToRgb(color);
+    return rgb ? `rgba(${rgb.join(', ')}, ${alpha})` : color;
+  };
+
+  return {
+    ...base,
+    name: name.trim(),
+    ...colors,
+    primaryDark: mix(colors.primary, '#000000', 0.2),
+    primaryDeep: mix(colors.primary, '#000000', 0.4),
+    surfaceAlt: mix(colors.surface, colors.textPrimary, 0.04),
+    surfaceRaised: mix(colors.surface, colors.textPrimary, 0.09),
+    textMuted: mix(colors.textSecondary, colors.background, 0.32),
+    textOnPrimary: getContrastColor(colors.primary),
+    textOnPlayer: colors.textPrimary,
+    hover: mix(colors.surface, colors.textPrimary, 0.07),
+    hoverActive: mix(colors.surface, colors.accent, 0.15),
+    active: mix(colors.surface, colors.accent, 0.24),
+    border: mix(colors.surface, colors.textPrimary, 0.12),
+    borderLight: mix(colors.surface, colors.textPrimary, 0.2),
+    accentBg: rgba(colors.accent, 0.14),
+    accentBgHover: rgba(colors.accent, 0.24),
+    accentHover: rgba(colors.accent, 0.08),
+    mutedAccent: mix(colors.background, colors.accent, 0.45),
+    cardBackground: colors.surface,
+    cardShadow: 'rgba(0, 0, 0, 0.25)',
+    cardShadowHover: rgba(colors.accent, 0.3),
+    playerBar: base.playerBar === base.background ? colors.background : mix(base.playerBar, colors.background, 0.5),
+  };
+}
+
+export function loadCustomThemes(): Record<string, AppTheme> {
+  try {
+    const stored: unknown = JSON.parse(localStorage.getItem(CUSTOM_THEMES_KEY) ?? '{}');
+    if (!stored || typeof stored !== 'object' || Array.isArray(stored)) return {};
+
+    return Object.fromEntries(
+      Object.entries(stored).filter(([name, value]) => {
+        if (themes[name] || !value || typeof value !== 'object' || Array.isArray(value)) return false;
+        const theme = value as Record<string, unknown>;
+        return theme.name === name && Object.values(theme).every((item) => typeof item === 'string');
+      }),
+    ) as Record<string, AppTheme>;
+  } catch {
+    return {};
+  }
+}
+
+export function saveCustomThemes(customThemes: Record<string, AppTheme>) {
+  try {
+    localStorage.setItem(CUSTOM_THEMES_KEY, JSON.stringify(customThemes));
+  } catch {
+    // Storage may be unavailable or full; keep the theme active for this session.
+  }
+}
+
+function hexToRgb(color: string): [number, number, number] | null {
+  const match = /^#([\da-f]{2})([\da-f]{2})([\da-f]{2})$/i.exec(color);
+  return match ? [parseInt(match[1], 16), parseInt(match[2], 16), parseInt(match[3], 16)] : null;
+}
+
+function getContrastColor(color: string): string {
+  const rgb = hexToRgb(color);
+  if (!rgb) return '#ffffff';
+  const luminance = rgb.reduce((total, value) => {
+    const normalized = value / 255;
+    return total + (normalized <= 0.03928 ? normalized / 12.92 : ((normalized + 0.055) / 1.055) ** 2.4);
+  }, 0);
+  return luminance / 3 > 0.45 ? '#15151a' : '#ffffff';
+}

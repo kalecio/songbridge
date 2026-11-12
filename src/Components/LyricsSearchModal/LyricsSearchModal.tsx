@@ -4,6 +4,7 @@ import Modal from '../Modal/Modal';
 import { MetadataType, LyricsTrackResponse } from '../../types';
 import { useLrclibLyrics, SearchLyricsParams } from '../../hooks/useLrclibLyrics';
 import { error as logError } from '../../logger';
+import { useI18n } from '../../i18n/I18nProvider';
 import {
   ModalContainer,
   SearchSection,
@@ -28,6 +29,7 @@ interface Props {
 }
 
 export const LyricsSearchModal = ({ isOpen, onClose, song }: Props) => {
+  const { t } = useI18n();
   const { searchLyrics, downloadLyrics } = useLrclibLyrics();
   const [query, setQuery] = useState('');
   const [results, setResults] = useState<LyricsTrackResponse[]>([]);
@@ -54,12 +56,12 @@ export const LyricsSearchModal = ({ isOpen, onClose, song }: Props) => {
       const data = await searchLyrics(searchParams);
       setResults(data);
     } catch (err) {
-      setError(`Search failed: ${err}`);
+      setError(t('lyrics.searchFailed', { error: String(err) }));
       logError(`Lyrics search failed: ${err}`).catch(() => {});
     } finally {
       setLoading(false);
     }
-  }, [query, song.title, song.artist, song.album, searchLyrics]);
+  }, [query, song.title, song.artist, song.album, searchLyrics, t]);
 
   // Initial search when modal opens - only run once
   useEffect(() => {
@@ -91,7 +93,7 @@ export const LyricsSearchModal = ({ isOpen, onClose, song }: Props) => {
       });
       onClose();
     } catch (err) {
-      setError(`Download failed: ${err}`);
+      setError(t('lyrics.downloadFailed', { error: String(err) }));
       logError(`Lyrics download failed: ${err}`).catch(() => {});
     } finally {
       setDownloading(null);
@@ -106,7 +108,7 @@ export const LyricsSearchModal = ({ isOpen, onClose, song }: Props) => {
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title="Search Lyrics (lrclib.net)" dismissible={!loading} maxWidth="900px">
+    <Modal isOpen={isOpen} onClose={onClose} title={t('lyrics.searchTitle')} dismissible={!loading} maxWidth="900px">
       <ModalContainer>
         <SearchSection>
           <SearchInput
@@ -114,19 +116,19 @@ export const LyricsSearchModal = ({ isOpen, onClose, song }: Props) => {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={(e) => e.key === 'Enter' && performSearch()}
-            placeholder="Track, artist, album..."
+            placeholder={t('lyrics.trackArtistAlbum')}
             disabled={loading}
           />
           <SearchButton onClick={performSearch} disabled={loading || !query.trim()}>
-            <FaSearchengin /> {loading ? 'Searching...' : 'Search'}
+            <FaSearchengin /> {loading ? t('lyrics.searching') : t('lyrics.search')}
           </SearchButton>
         </SearchSection>
 
         {error && <ErrorMessage>{error}</ErrorMessage>}
 
-        {searched && !loading && results.length === 0 && <NoResults>No lyrics found for this search</NoResults>}
+        {searched && !loading && results.length === 0 && <NoResults>{t('lyrics.noSearchResults')}</NoResults>}
 
-        {loading && <LoadingSpinner>Searching...</LoadingSpinner>}
+        {loading && <LoadingSpinner>{t('lyrics.searching')}</LoadingSpinner>}
 
         <ResultsList>
           {results.map((track) => {
@@ -137,16 +139,16 @@ export const LyricsSearchModal = ({ isOpen, onClose, song }: Props) => {
             return (
               <ResultItem key={track.id}>
                 <ResultInfo>
-                  <strong>{track.trackName || 'Unknown Track'}</strong>
+                  <strong>{track.trackName || t('lyrics.unknownTrack')}</strong>
                   <ResultMeta>
                     {track.artistName && <span>{track.artistName}</span>}
                     {track.albumName && <span>{track.albumName}</span>}
                     {track.duration && <span>{formatDuration(track.duration)}</span>}
-                    {isInstrumental && <TrackTypeBadge instrumental>Instrumental</TrackTypeBadge>}
+                    {isInstrumental && <TrackTypeBadge instrumental>{t('lyrics.instrumental')}</TrackTypeBadge>}
                   </ResultMeta>
                   <TrackTypeBadge synced={hasSynced} plain={hasPlain}>
-                    {hasSynced && <FaClock />} {hasSynced && 'Synced'}
-                    {hasPlain && <FaMusic />} {hasPlain && 'Plain'}
+                    {hasSynced && <FaClock />} {hasSynced && t('lyrics.synced')}
+                    {hasPlain && <FaMusic />} {hasPlain && t('lyrics.plain')}
                   </TrackTypeBadge>
                 </ResultInfo>
                 <ResultActions>
@@ -160,7 +162,7 @@ export const LyricsSearchModal = ({ isOpen, onClose, song }: Props) => {
                         <FaClock className="spinning" />
                       ) : (
                         <>
-                          <FaDownload /> Synced
+                          <FaDownload /> {t('lyrics.synced')}
                         </>
                       )}
                     </DownloadButton>
@@ -175,14 +177,14 @@ export const LyricsSearchModal = ({ isOpen, onClose, song }: Props) => {
                         <FaClock className="spinning" />
                       ) : (
                         <>
-                          <FaDownload /> Plain
+                          <FaDownload /> {t('lyrics.plain')}
                         </>
                       )}
                     </DownloadButton>
                   )}
                   {isInstrumental && !hasSynced && !hasPlain && (
                     <DownloadButton variant="disabled" disabled>
-                      <FaBan /> Instrumental only
+                      <FaBan /> {t('lyrics.instrumentalOnly')}
                     </DownloadButton>
                   )}
                 </ResultActions>

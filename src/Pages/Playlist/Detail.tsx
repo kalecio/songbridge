@@ -5,9 +5,11 @@ import { MetadataType, PlaylistType } from '../../types';
 import Playlist from '../../Components/Playlist/Playlist';
 import { usePlaylistActions } from '../../hooks/usePlaylistActions';
 import { usePlayHistory } from '../../hooks/usePlayHistory';
+import { useI18n } from '../../i18n/I18nProvider';
 
 const Detail = ({ playlists }: { playlists?: PlaylistType[] }) => {
   const { id } = useParams<{ id: string }>();
+  const { t } = useI18n();
   const { currentPath, setCurrentPath, setCurrentPlaylist, library } = useContext(AppContext);
   const { removeSongFromPlaylist, reorderSongsInPlaylist } = usePlaylistActions();
   const { recordPlaylistPlay } = usePlayHistory();
@@ -35,7 +37,7 @@ const Detail = ({ playlists }: { playlists?: PlaylistType[] }) => {
     <Playlist
       songs={songs}
       name={playlist?.name ?? ''}
-      type="Playlist"
+      type={t('playlist.type')}
       activePath={currentPath}
       onSongClick={(song) => playSong(song)}
       onPlayAll={() => songs[0] && playSong(songs[0])}

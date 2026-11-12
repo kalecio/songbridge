@@ -5,19 +5,21 @@ import { ContextMenuItem } from '../Components/ContextMenu/ContextMenu';
 import { MetadataType } from '../types';
 import { error as logError } from '../logger';
 import { useLyricsSearchModal } from '../Context/LyricsSearchModalContext';
+import { useI18n } from '../i18n/I18nProvider';
 
 export const useLyricsMenu = () => {
   const { open: openLyricsSearch } = useLyricsSearchModal();
+  const { t } = useI18n();
 
   return (song: MetadataType): ContextMenuItem => ({
     type: 'submenu',
-    label: 'Lyrics',
+    label: t('common.lyrics'),
     icon: <FaFileLines />,
     disabled: !song.path,
     items: [
       {
         type: 'item',
-        label: 'Add local lyrics file',
+        label: t('lyrics.addLocalFile'),
         icon: <FaFileLines />,
         disabled: !song.path,
         onSelect: () => {
@@ -37,14 +39,14 @@ export const useLyricsMenu = () => {
       },
       {
         type: 'item',
-        label: 'Search & download from lrclib.net',
+        label: t('lyrics.searchAndDownload'),
         icon: <FaCloudArrowDown />,
         disabled: !song.path,
         onSelect: () => openLyricsSearch(song),
       },
       {
         type: 'item',
-        label: 'Search by custom query',
+        label: t('lyrics.customSearch'),
         icon: <FaSearchengin />,
         disabled: !song.path,
         onSelect: () => openLyricsSearch(song),

@@ -3,29 +3,35 @@ import { selectable } from '../../styles/mixins';
 
 export const Grid = styled.div`
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
-  gap: 1.5rem;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: clamp(16px, 1.5vw, 24px);
+  @media (max-width: 1050px) {
+    gap: 16px;
+  }
+  @media (max-width: 760px) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 `;
 
 export const Card = styled.div`
   display: flex;
   flex-direction: column;
-  align-items: center;
-  gap: 0.6rem;
+  align-items: flex-start;
+  gap: 0.75rem;
   cursor: pointer;
-  padding: 0.75rem;
-  border-radius: 1rem;
-  max-height: 180px;
-  transition: background 0.15s;
+  padding: 0;
+  min-width: 0;
+  transition: transform 0.15s;
 
   &:hover {
-    background: ${({ theme }) => theme.surfaceRaised};
+    transform: translateY(-2px);
   }
 `;
 
 export const Avatar = styled.div`
-  width: 100px;
-  height: 100px;
+  width: 100%;
+  max-width: 180px;
+  height: auto;
   aspect-ratio: 1 / 1;
   flex-shrink: 0;
   border-radius: 50%;
@@ -34,7 +40,7 @@ export const Avatar = styled.div`
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 2.5rem;
+  font-size: clamp(2rem, 4vw, 3.5rem);
   font-weight: 700;
 `;
 
@@ -49,7 +55,7 @@ export const ArtistName = styled.div`
   color: ${({ theme }) => theme.textPrimary};
   font-weight: 600;
   font-size: 0.9rem;
-  text-align: center;
+  text-align: left;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -58,7 +64,7 @@ export const ArtistName = styled.div`
 `;
 
 export const ArtistMeta = styled.div`
-  color: ${({ theme }) => theme.primary};
+  color: ${({ theme }) => theme.textMuted};
   font-size: 0.75rem;
-  text-align: center;
+  text-align: left;
 `;

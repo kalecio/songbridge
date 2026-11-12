@@ -4,6 +4,7 @@ import { AppContext } from '../Context/AppContext';
 import { useModal } from '../Context/ModalContext';
 import { MetadataType, PlaylistType } from '../types';
 import { isFavouritesPlaylist } from './useFavourites';
+import { useI18n } from '../i18n/I18nProvider';
 
 const persist = (pl: PlaylistType) =>
   invoke('db_upsert_playlist', {
@@ -15,13 +16,14 @@ const persist = (pl: PlaylistType) =>
 export const usePlaylistActions = () => {
   const { setPlaylists } = useContext(AppContext);
   const { confirm, prompt } = useModal();
+  const { t } = useI18n();
 
   const renamePlaylist = async (playlist: PlaylistType) => {
     if (isFavouritesPlaylist(playlist.id)) return;
     const raw = await prompt({
-      title: 'Rename playlist',
+      title: t('playlist.renameTitle'),
       defaultValue: playlist.name,
-      confirmLabel: 'Rename',
+      confirmLabel: t('common.rename'),
     });
     const next = raw?.trim();
     if (!next || next === playlist.name) return;
@@ -33,9 +35,9 @@ export const usePlaylistActions = () => {
   const deletePlaylist = async (playlist: PlaylistType) => {
     if (isFavouritesPlaylist(playlist.id)) return;
     const ok = await confirm({
-      title: 'Delete playlist',
-      message: `Delete "${playlist.name}"? This cannot be undone.`,
-      confirmLabel: 'Delete',
+      title: t('playlist.deleteTitle'),
+      message: t('playlist.confirmDelete', { name: playlist.name }),
+      confirmLabel: t('common.delete'),
       danger: true,
     });
     if (!ok) return;
