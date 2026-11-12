@@ -1,3 +1,4 @@
+import LastfmImport, { LastfmImportButton } from '../Lastfm/LastfmImport';
 import { useEffect, useState } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { open } from '@tauri-apps/plugin-dialog';
@@ -46,6 +47,7 @@ const EditGroupMetadataModal = ({ groupType, songs, onClose, onSave }: Props) =>
   const [previewLoading, setPreviewLoading] = useState(false);
 
   const [saving, setSaving] = useState(false);
+  const [importing, setImporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -59,6 +61,7 @@ const EditGroupMetadataModal = ({ groupType, songs, onClose, onSave }: Props) =>
     setPreviewUrl(null);
     setPreviewLoading(false);
     setSaving(false);
+    setImporting(false);
     setError(null);
   }, [songs]);
 
@@ -137,61 +140,86 @@ const EditGroupMetadataModal = ({ groupType, songs, onClose, onSave }: Props) =>
       title={modalTitle}
       dismissible={!saving}
       footer={
-        <>
-          <Button $variant="ghost" onClick={onClose} disabled={saving}>
-            {t('common.cancel')}
-          </Button>
-          <Button $variant="primary" onClick={handleSave} disabled={saving}>
-            {saving ? t('common.saving') : t('common.save')}
-          </Button>
-        </>
+        importing ? undefined : (
+          <>
+            <Button $variant="ghost" onClick={onClose} disabled={saving}>
+              {t('common.cancel')}
+            </Button>
+            <Button $variant="primary" onClick={handleSave} disabled={saving}>
+              {saving ? t('common.saving') : t('common.save')}
+            </Button>
+          </>
+        )
       }
     >
-      <SubtitleText>{tc('count.trackWillUpdate', count)}</SubtitleText>
-
-      {groupType === 'album' && (
-        <CoverArtSection>
-          <CoverArtPreview $hasImage={hasArt}>
-            {displayedArt ? <img src={displayedArt} alt={t('metadata.coverArt')} /> : <FaImage />}
-          </CoverArtPreview>
-          <CoverArtActions>
-            <CoverArtButton onClick={handleChangeCover} disabled={saving || previewLoading}>
-              {previewLoading ? t('common.loading') : t('common.changeCover')}
-            </CoverArtButton>
-            {(hasArt || coverArtPath) && (
-              <RemoveCoverButton onClick={handleRemoveCover} disabled={saving}>
-                {t('common.removeCover')}
-              </RemoveCoverButton>
-            )}
-          </CoverArtActions>
-        </CoverArtSection>
-      )}
-
-      <FieldGroup>
-        <Label htmlFor="egm-artist">{t('metadata.artist')}</Label>
-        <Input id="egm-artist" value={artist} onChange={(e) => setArtist(e.target.value)} onKeyDown={handleKeyDown} />
-      </FieldGroup>
-
-      {groupType === 'album' && (
+      {importing && songs ? (
+        <LastfmImport
+          songs={songs}
+          kind="album"
+          onBack={() => setImporting(false)}
+          onClose={onClose}
+          onBusy={setSaving}
+        />
+      ) : (
         <>
+          {groupType === 'album' && <LastfmImportButton onClick={() => setImporting(true)} />}
+          <SubtitleText>{tc('count.trackWillUpdate', count)}</SubtitleText>
+
+          {groupType === 'album' && (
+            <CoverArtSection>
+              <CoverArtPreview $hasImage={hasArt}>
+                {displayedArt ? <img src={displayedArt} alt={t('metadata.coverArt')} /> : <FaImage />}
+              </CoverArtPreview>
+              <CoverArtActions>
+                <CoverArtButton onClick={handleChangeCover} disabled={saving || previewLoading}>
+                  {previewLoading ? t('common.loading') : t('common.changeCover')}
+                </CoverArtButton>
+                {(hasArt || coverArtPath) && (
+                  <RemoveCoverButton onClick={handleRemoveCover} disabled={saving}>
+                    {t('common.removeCover')}
+                  </RemoveCoverButton>
+                )}
+              </CoverArtActions>
+            </CoverArtSection>
+          )}
+
           <FieldGroup>
-            <Label htmlFor="egm-album">{t('metadata.album')}</Label>
-            <Input id="egm-album" value={album} onChange={(e) => setAlbum(e.target.value)} onKeyDown={handleKeyDown} />
-          </FieldGroup>
-          <FieldGroup>
-            <Label htmlFor="egm-year">{t('metadata.year')}</Label>
+            <Label htmlFor="egm-artist">{t('metadata.artist')}</Label>
             <Input
-              id="egm-year"
-              value={year}
-              onChange={(e) => setYear(e.target.value)}
+              id="egm-artist"
+              value={artist}
+              onChange={(e) => setArtist(e.target.value)}
               onKeyDown={handleKeyDown}
-              maxLength={4}
             />
           </FieldGroup>
+
+          {groupType === 'album' && (
+            <>
+              <FieldGroup>
+                <Label htmlFor="egm-album">{t('metadata.album')}</Label>
+                <Input
+                  id="egm-album"
+                  value={album}
+                  onChange={(e) => setAlbum(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                />
+              </FieldGroup>
+              <FieldGroup>
+                <Label htmlFor="egm-year">{t('metadata.year')}</Label>
+                <Input
+                  id="egm-year"
+                  value={year}
+                  onChange={(e) => setYear(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  maxLength={4}
+                />
+              </FieldGroup>
+            </>
+          )}
+
+          {error && <ErrorText>{error}</ErrorText>}
         </>
       )}
-
-      {error && <ErrorText>{error}</ErrorText>}
     </Modal>
   );
 };

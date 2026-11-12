@@ -7,6 +7,7 @@ use tauri_plugin_log::{Target, TargetKind};
 mod audio;
 mod db;
 mod discord_presence;
+mod lastfm;
 mod lyrics_api;
 mod metadata;
 mod music_library;
@@ -53,11 +54,21 @@ pub fn run() {
             let db_state = db::state::DbState::new(&db_path)
                 .map_err(|e| format!("Failed to open database: {e}"))?;
             app.manage(db_state);
+            lastfm::init(app.handle())?;
             now_playing::init(app.handle());
             let _discord = discord_presence::init(app.handle());
             Ok(())
         })
         .invoke_handler(tauri::generate_handler![
+            lastfm::lastfm_status,
+            lastfm::lastfm_connect,
+            lastfm::lastfm_cancel_connection,
+            lastfm::lastfm_complete_connection,
+            lastfm::lastfm_set_enabled,
+            lastfm::lastfm_disconnect,
+            lastfm::metadata::lastfm_search,
+            lastfm::metadata::lastfm_details,
+            lastfm::metadata::lastfm_artwork,
             audio::commands::load_song,
             audio::commands::play_song,
             audio::commands::pause,

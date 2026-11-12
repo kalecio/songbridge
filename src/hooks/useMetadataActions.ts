@@ -142,19 +142,42 @@ export const useMetadataActions = () => {
    * library snapshot) never occurs.
    */
   const batchUpdateSongsMetadata = useCallback(
-    async (paths: string[], fields: EditFields): Promise<void> => {
+    async (
+      paths: string[],
+      fields: EditFields,
+      options?: {
+        perTrack?: Record<string, EditFields>;
+        reportFailures?: boolean;
+      },
+    ): Promise<Array<{ path: string; error?: string }>> => {
       const updates: SongUpdate[] = [];
+      const results: Array<{ path: string; error?: string }> = [];
 
       for (const path of paths) {
-        const existingImage = library.find((s) => s.path === path)?.image;
-        const result = await invoke<MetadataType>('update_track_metadata', buildInvokeArgs(path, fields));
-        const newPath = result.path ?? path;
-        const pathChanged = newPath !== path;
-        const newLibraryImage = resolveImageUpdate(fields, result, path, newPath, pathChanged, existingImage);
-        updates.push({ oldPath: path, newPath, pathChanged, result, newLibraryImage });
+        const trackFields = options?.perTrack?.[path] ?? fields;
+        try {
+          const existingImage = library.find((s) => s.path === path)?.image;
+          const result = await invoke<MetadataType>('update_track_metadata', buildInvokeArgs(path, trackFields));
+          const newPath = result.path ?? path;
+          const pathChanged = newPath !== path;
+          const newLibraryImage = resolveImageUpdate(trackFields, result, path, newPath, pathChanged, existingImage);
+          updates.push({ oldPath: path, newPath, pathChanged, result, newLibraryImage });
+          results.push({ path });
+        } catch (error) {
+          results.push({ path, error: String(error) });
+        }
       }
 
-      if (updates.length === 0) return;
+      if (updates.length === 0) {
+        if (!options?.reportFailures && results.some((r) => r.error))
+          throw new Error(
+            results
+              .filter((r) => r.error)
+              .map((r) => r.path + ': ' + r.error)
+              .join('\n'),
+          );
+        return results;
+      }
 
       // One library update covering all songs
       setLibrary?.(
@@ -168,7 +191,7 @@ export const useMetadataActions = () => {
       const nowPlayingUpdate = updates.find((u) => u.oldPath === metadata?.path);
       if (nowPlayingUpdate && metadata) {
         let nowPlayingImage = metadata.image;
-        if (fields.removeCoverArt) nowPlayingImage = undefined;
+        if ((options?.perTrack?.[nowPlayingUpdate.oldPath] ?? fields).removeCoverArt) nowPlayingImage = undefined;
         else if (nowPlayingUpdate.result.image) nowPlayingImage = nowPlayingUpdate.result.image;
         setMetadata?.({
           ...metadata,
@@ -186,7 +209,7 @@ export const useMetadataActions = () => {
       }
 
       // Playlists
-      if (playlists && setPlaylists && anyRenamed) {
+      if (playlists && setPlaylists) {
         setPlaylists((prev) =>
           prev.map((pl) => ({
             ...pl,
@@ -197,6 +220,14 @@ export const useMetadataActions = () => {
           })),
         );
       }
+      if (!options?.reportFailures && results.some((r) => r.error))
+        throw new Error(
+          results
+            .filter((r) => r.error)
+            .map((r) => r.path + ': ' + r.error)
+            .join('\n'),
+        );
+      return results;
     },
     // eslint-disable-next-line react-hooks/exhaustive-deps
     [
