@@ -1,6 +1,7 @@
 import { styled } from 'styled-components';
 import { FaHeart } from 'react-icons/fa6';
 import { selectable } from '../../styles/mixins';
+import TextMarquee from '../../Components/TextMarquee/TextMarquee';
 
 export const SearchContainer = styled.div`
   display: flex;
@@ -76,23 +77,21 @@ export const SongInfo = styled.div`
   overflow: hidden;
 `;
 
-export const SongTitle = styled.span`
+export const SongTitle = styled(TextMarquee)`
   font-size: 0.9rem;
   color: ${({ theme }) => theme.textPrimary};
   max-width: 100%;
   white-space: nowrap;
   overflow: hidden;
-  text-overflow: ellipsis;
   ${selectable}
 `;
 
-export const SongArtist = styled.span`
+export const SongArtist = styled(TextMarquee)`
   font-size: 0.8rem;
   color: ${({ theme }) => theme.primary};
   max-width: 100%;
   white-space: nowrap;
   overflow: hidden;
-  text-overflow: ellipsis;
   ${selectable}
 `;
 
@@ -141,14 +140,13 @@ export const ArtistImage = styled.img`
   border-radius: 50%;
 `;
 
-export const ArtistName = styled.span`
+export const ArtistName = styled(TextMarquee)`
   font-size: 0.9rem;
   color: ${({ theme }) => theme.textPrimary};
   text-align: center;
   max-width: 100%;
   white-space: nowrap;
   overflow: hidden;
-  text-overflow: ellipsis;
   ${selectable}
 `;
 
@@ -183,23 +181,21 @@ export const AlbumInfo = styled.div`
   overflow: hidden;
 `;
 
-export const AlbumTitle = styled.span`
+export const AlbumTitle = styled(TextMarquee)`
   font-size: 0.9rem;
   color: ${({ theme }) => theme.textPrimary};
   max-width: 100%;
   white-space: nowrap;
   overflow: hidden;
-  text-overflow: ellipsis;
   ${selectable}
 `;
 
-export const AlbumArtist = styled.span`
+export const AlbumArtist = styled(TextMarquee)`
   font-size: 0.8rem;
   color: ${({ theme }) => theme.primary};
   max-width: 100%;
   white-space: nowrap;
   overflow: hidden;
-  text-overflow: ellipsis;
   ${selectable}
 `;
 

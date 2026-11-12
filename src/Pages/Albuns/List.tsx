@@ -187,9 +187,14 @@ const Albums = ({ home = false }: { home?: boolean }) => {
               </ArtWrapper>
             </Card>
             <CardInfo>
-              <CardTitle title={album.name}>{album.name}</CardTitle>
+              <CardTitle hoverOnly title={album.name}>
+                {album.name}
+              </CardTitle>
               <CardBottom>
-                <CardArtist title={[album.artist ?? t('album.unknownArtist'), album.year].filter(Boolean).join(' · ')}>
+                <CardArtist
+                  hoverOnly
+                  title={[album.artist ?? t('album.unknownArtist'), album.year].filter(Boolean).join(' · ')}
+                >
                   {album.artist ?? t('album.unknownArtist')}
                   {album.year && ` · ${album.year}`}
                 </CardArtist>

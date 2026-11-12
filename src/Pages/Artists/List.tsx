@@ -133,7 +133,9 @@ const Artists = () => {
             }}
           >
             <ArtistAvatar artist={artist} />
-            <ArtistName title={artist.name}>{artist.name}</ArtistName>
+            <ArtistName hoverOnly title={artist.name}>
+              {artist.name}
+            </ArtistName>
             <ArtistMeta>
               {artist.albumCount} {artist.albumCount === 1 ? 'album' : 'albums'}
             </ArtistMeta>

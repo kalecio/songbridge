@@ -39,6 +39,7 @@ import {
   TrashIcon,
   TwoColumn,
 } from './styles';
+import TextMarquee from '../../Components/TextMarquee/TextMarquee';
 
 const CreatePlaylist = () => {
   const { t, tc } = useI18n();
@@ -130,7 +131,7 @@ const CreatePlaylist = () => {
               <PlaylistItemInfo>
                 <PlaylistItemName>
                   {fav && <FavouriteBadge aria-hidden="true" />}
-                  {pl.name}
+                  <TextMarquee title={pl.name}>{pl.name}</TextMarquee>
                 </PlaylistItemName>
                 <PlaylistItemCount>{tc('count.song', pl.songs.length)}</PlaylistItemCount>
               </PlaylistItemInfo>

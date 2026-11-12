@@ -26,9 +26,6 @@ const SidebarContent = styled.div`
   overflow-x: hidden;
   .sidebar-item-label {
     min-width: 0;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
   }
   button > svg {
     flex-shrink: 0;
@@ -173,7 +170,6 @@ const PlaylistItem = styled.button<{ $active?: boolean }>`
     color 0.15s;
   white-space: nowrap;
   overflow: hidden;
-  text-overflow: ellipsis;
   flex-shrink: 0;
 
   &:hover {

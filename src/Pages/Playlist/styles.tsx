@@ -1,5 +1,6 @@
 import { styled } from 'styled-components';
 import { FaHeart, FaTrash, FaMinus, FaPlus } from 'react-icons/fa6';
+import TextMarquee from '../../Components/TextMarquee/TextMarquee';
 
 export const Container = styled.div`
   display: flex;
@@ -67,12 +68,13 @@ export const PlaylistItemName = styled.div`
   font-size: 0.85rem;
   font-weight: 500;
   color: ${({ theme }) => theme.textPrimary};
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
   display: flex;
   align-items: center;
   gap: 0.4rem;
+
+  > span {
+    flex: 1;
+  }
 `;
 
 export const FavouriteBadge = styled(FaHeart)`
@@ -224,21 +226,19 @@ export const SongMeta = styled.div`
   justify-content: center;
 `;
 
-export const SongTitle = styled.div`
+export const SongTitle = styled(TextMarquee)`
   font-size: 0.82rem;
   font-weight: 500;
   color: ${({ theme }) => theme.textPrimary};
   white-space: nowrap;
   overflow: hidden;
-  text-overflow: ellipsis;
 `;
 
-export const SongArtist = styled.div`
+export const SongArtist = styled(TextMarquee)`
   font-size: 0.72rem;
   color: ${({ theme }) => theme.primary};
   white-space: nowrap;
   overflow: hidden;
-  text-overflow: ellipsis;
 `;
 
 export const IconButton = styled.button`
