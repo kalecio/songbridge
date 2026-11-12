@@ -165,12 +165,20 @@ export const Column = styled.div`
   overflow: hidden;
 `;
 
+export const ColumnHeader = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  min-height: 2rem;
+`;
+
 export const ColumnTitle = styled.h3`
   font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: ${({ theme }) => theme.textMuted};
-  margin: 0 0 0.25rem;
+  margin: 0;
 `;
 
 export const SearchInput = styled.input`

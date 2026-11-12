@@ -6,9 +6,12 @@ import { MetadataType, PlaylistType } from '../../types';
 import { isFavouritesPlaylist, sortFavouritesFirst } from '../../hooks/useFavourites';
 import { displayTitle } from '../../songDisplay';
 import { useI18n } from '../../i18n/I18nProvider';
+import { useSongSort } from '../../hooks/useSongSort';
+import SongSortControl from '../../Components/SongSortControl/SongSortControl';
 import {
   AddIcon,
   Column,
+  ColumnHeader,
   ColumnTitle,
   Container,
   DeleteBtn,
@@ -64,6 +67,7 @@ const CreatePlaylist = () => {
   }, [location.state, location.pathname, navigate, setPlaylists, t]);
 
   const selected = playlists.find((p) => p.id === selectedId) ?? null;
+  const selectedSongSort = useSongSort(selected?.songs ?? []);
 
   const select = (pl: PlaylistType) => {
     setSelectedId(pl.id);
@@ -113,6 +117,7 @@ const CreatePlaylist = () => {
         s.title?.toLowerCase().includes(search.toLowerCase()) ||
         s.artist?.toLowerCase().includes(search.toLowerCase())),
   );
+  const librarySongSort = useSongSort(filtered, 'title');
 
   return (
     <Container>
@@ -165,12 +170,22 @@ const CreatePlaylist = () => {
 
             <TwoColumn>
               <Column>
-                <ColumnTitle>{t('playlist.inPlaylist')}</ColumnTitle>
+                <ColumnHeader>
+                  <ColumnTitle>{t('playlist.inPlaylist')}</ColumnTitle>
+                  {selectedSongSort.sortedSongs.length > 1 && (
+                    <SongSortControl
+                      sortField={selectedSongSort.sortField}
+                      sortDirection={selectedSongSort.sortDirection}
+                      onSortFieldChange={selectedSongSort.setSortField}
+                      onSortDirectionChange={selectedSongSort.setSortDirection}
+                    />
+                  )}
+                </ColumnHeader>
                 <SongScroll>
                   {selected.songs.length === 0 ? (
                     <EmptyColumn>{t('playlist.addFromLibrary')}</EmptyColumn>
                   ) : (
-                    selected.songs.map((song) => {
+                    selectedSongSort.sortedSongs.map((song) => {
                       const title = displayTitle(song);
                       return (
                         <SongRow key={song.path}>
@@ -192,7 +207,17 @@ const CreatePlaylist = () => {
               </Column>
 
               <Column>
-                <ColumnTitle>{t('playlist.library')}</ColumnTitle>
+                <ColumnHeader>
+                  <ColumnTitle>{t('playlist.library')}</ColumnTitle>
+                  {librarySongSort.sortedSongs.length > 1 && (
+                    <SongSortControl
+                      sortField={librarySongSort.sortField}
+                      sortDirection={librarySongSort.sortDirection}
+                      onSortFieldChange={librarySongSort.setSortField}
+                      onSortDirectionChange={librarySongSort.setSortDirection}
+                    />
+                  )}
+                </ColumnHeader>
                 <SearchInput
                   placeholder={t('playlist.searchSongs')}
                   value={search}
@@ -202,7 +227,7 @@ const CreatePlaylist = () => {
                   {filtered.length === 0 ? (
                     <EmptyColumn>{search ? t('playlist.noMatches') : t('playlist.allSongsAdded')}</EmptyColumn>
                   ) : (
-                    filtered.map((song) => {
+                    librarySongSort.sortedSongs.map((song) => {
                       const title = displayTitle(song);
                       return (
                         <SongRow key={song.path} onClick={() => handleAddSong(song)} style={{ cursor: 'pointer' }}>

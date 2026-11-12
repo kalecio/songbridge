@@ -16,7 +16,11 @@ import { useQueueActions } from '../../hooks/useQueueActions';
 import { useMetadataActions } from '../../hooks/useMetadataActions';
 import { splitArtists } from '../../utils/artistUtils';
 import { useI18n } from '../../i18n/I18nProvider';
-import { Grid, Card, Avatar, ArtistName, ArtistMeta, AvatarImage } from './styles';
+import SongSortControl from '../../Components/SongSortControl/SongSortControl';
+import type { SongSortDirection } from '../../hooks/useSongSort';
+import { Grid, Card, Avatar, ArtistName, ArtistMeta, AvatarImage, ArtistSortRow } from './styles';
+
+const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' });
 
 interface ArtistEntry {
   name: string;
@@ -57,6 +61,7 @@ const Artists = () => {
   const navigate = useNavigate();
   const [menu, setMenu] = useState<{ x: number; y: number; artist: ArtistEntry } | null>(null);
   const [editArtist, setEditArtist] = useState<ArtistEntry | null>(null);
+  const [sortDirection, setSortDirection] = useState<SongSortDirection>('asc');
   const { playSongs, addToQueue } = useQueueActions();
   const { batchUpdateSongsMetadata } = useMetadataActions();
 
@@ -73,7 +78,10 @@ const Artists = () => {
     return <StatusMessage>{t('album.scanning')}</StatusMessage>;
   }
 
-  const artists = groupByArtist(library);
+  const artists = groupByArtist(library).sort((left, right) => {
+    const comparison = collator.compare(left.name, right.name);
+    return sortDirection === 'asc' ? comparison : -comparison;
+  });
 
   if (artists.length === 0) {
     return <StatusMessage>{t('artist.noArtists')}</StatusMessage>;
@@ -102,6 +110,18 @@ const Artists = () => {
       <PageHeader>
         {t('sidebar.artists')} <Count>{artists.length}</Count>
       </PageHeader>
+      {artists.length > 1 && (
+        <ArtistSortRow>
+          <SongSortControl
+            sortField="artist"
+            sortDirection={sortDirection}
+            sortFields={['artist']}
+            includeOriginalOrder={false}
+            onSortFieldChange={() => {}}
+            onSortDirectionChange={setSortDirection}
+          />
+        </ArtistSortRow>
+      )}
       <Grid>
         {artists.map((artist) => (
           <Card

@@ -9,6 +9,8 @@ import { useAddToPlaylistMenu } from '../../hooks/useAddToPlaylistMenu';
 import { useMetadataActions } from '../../hooks/useMetadataActions';
 import { useLyricsMenu } from '../../hooks/useLyricsMenu';
 import { useI18n } from '../../i18n/I18nProvider';
+import { useSongSort, type SongSortField } from '../../hooks/useSongSort';
+import SongSortControl from '../SongSortControl/SongSortControl';
 import EditMetadataModal from '../EditMetadataModal/EditMetadataModal';
 import AlbumImage from '../AlbumImage/AlbumImage';
 import ContextMenu, { ContextMenuItem } from '../ContextMenu/ContextMenu';
@@ -31,6 +33,7 @@ import {
   MissingIcon,
   RemoveMissingButton,
   RemoveMissingIcon,
+  SortRow,
 } from './styles';
 
 interface Props {
@@ -39,8 +42,9 @@ interface Props {
   type?: string;
   activePath?: string;
   scroll?: boolean;
-  onSongClick?: (_song: MetadataType) => void;
-  onPlayAll?: () => void;
+  defaultSort?: SongSortField;
+  onSongClick?: (_song: MetadataType, _orderedSongs?: MetadataType[]) => void;
+  onPlayAll?: (_orderedSongs?: MetadataType[]) => void;
   onRemoveMissing?: (_song: MetadataType) => void;
   onRemoveSong?: (_song: MetadataType) => void;
   /** When provided, song rows become draggable to reorder. `to` is the index
@@ -62,6 +66,7 @@ const Playlist = ({
   type,
   activePath,
   scroll = true,
+  defaultSort = 'original',
   onSongClick,
   onPlayAll,
   onRemoveMissing,
@@ -73,6 +78,7 @@ const Playlist = ({
   const [editSong, setEditSong] = useState<MetadataType | null>(null);
   const [dragFromIndex, setDragFromIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const { sortedSongs, sortField, setSortField, sortDirection, setSortDirection } = useSongSort(songs, defaultSort);
   const { t, tc } = useI18n();
   const { playNext, addToQueue } = useQueueActions();
   const buildAddToPlaylistItem = useAddToPlaylistMenu();
@@ -103,7 +109,7 @@ const Playlist = ({
   const renderRow = (song: MetadataType, key: string | number, index: number) => {
     const isMissing = Boolean(song.path && missingPaths.has(song.path));
     const title = displayTitle(song);
-    const reorderable = Boolean(onReorder);
+    const reorderable = Boolean(onReorder) && sortField === 'original';
     const isDragging = reorderable && dragFromIndex === index;
     const showIndicator = reorderable && dragFromIndex !== null && dragOverIndex === index && dragFromIndex !== index;
     const dropAbove = showIndicator && (dragFromIndex as number) > index;
@@ -118,7 +124,11 @@ const Playlist = ({
         $dropAbove={dropAbove}
         $dropBelow={dropBelow}
         draggable={reorderable || undefined}
-        onClick={() => !isMissing && onSongClick?.(song)}
+        onClick={() => {
+          if (isMissing) return;
+          if (sortField === 'original') onSongClick?.(song);
+          else onSongClick?.(song, sortedSongs);
+        }}
         onContextMenu={(e) => {
           e.preventDefault();
           setMenuState({ x: e.clientX, y: e.clientY, song });
@@ -187,7 +197,7 @@ const Playlist = ({
 
   // DnD relies on every drop target being mounted; virtualization can unmount
   // rows the user is dragging toward, so we disable it when reorder is wired.
-  const useVirtualization = scroll && songs.length > VIRTUALIZE_THRESHOLD && !onReorder;
+  const useVirtualization = scroll && sortedSongs.length > VIRTUALIZE_THRESHOLD && !onReorder;
 
   const menuItems = (song: MetadataType): ContextMenuItem[] => {
     const isMissing = Boolean(song.path && missingPaths.has(song.path));
@@ -222,16 +232,33 @@ const Playlist = ({
             <Type>{type ?? t('playlist.type')}</Type>
             <PlaylistName>{name}</PlaylistName>
             <SongsQuantity>{tc('count.song', songs.length)}</SongsQuantity>
-            <PlayNowButton onClick={onPlayAll}>
+            <PlayNowButton
+              onClick={() => {
+                if (sortField === 'original') onPlayAll?.();
+                else onPlayAll?.(sortedSongs);
+              }}
+            >
               <Play /> {t('common.playNow')}
             </PlayNowButton>
           </PlaylistDetails>
         </PlaylistInfo>
       </Header>
+      {songs.length > 1 && (
+        <SortRow>
+          <SongSortControl
+            sortField={sortField}
+            sortDirection={sortDirection}
+            onSortFieldChange={setSortField}
+            onSortDirectionChange={setSortDirection}
+          />
+        </SortRow>
+      )}
       {useVirtualization ? (
-        <VirtualSongList songs={songs} renderRow={renderRow} />
+        <VirtualSongList songs={sortedSongs} renderRow={renderRow} />
       ) : (
-        <SongList $scroll={scroll}>{songs.map((song, index) => renderRow(song, song.path ?? index, index))}</SongList>
+        <SongList $scroll={scroll}>
+          {sortedSongs.map((song, index) => renderRow(song, song.path ?? index, index))}
+        </SongList>
       )}
       {menuState && (
         <ContextMenu

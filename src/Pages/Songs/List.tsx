@@ -17,8 +17,8 @@ const Songs = () => {
     return <StatusMessage>{t('song.noSongs')}</StatusMessage>;
   }
 
-  const playSong = (song: MetadataType) => {
-    const paths = library.map((s) => s.path).filter((p): p is string => Boolean(p));
+  const playSong = (song: MetadataType, orderedSongs: MetadataType[] = library) => {
+    const paths = orderedSongs.map((s) => s.path).filter((p): p is string => Boolean(p));
     setCurrentPlaylist?.(paths);
     setCurrentPath?.(song.path);
   };
@@ -28,9 +28,13 @@ const Songs = () => {
       songs={library}
       name={t('sidebar.songs')}
       type={t('sidebar.library')}
+      defaultSort="title"
       activePath={currentPath}
       onSongClick={playSong}
-      onPlayAll={() => library[0] && playSong(library[0])}
+      onPlayAll={(orderedSongs) => {
+        const list = orderedSongs ?? library;
+        if (list[0]) playSong(list[0], list);
+      }}
     />
   );
 };
