@@ -38,14 +38,21 @@ pub fn signature(params: &BTreeMap<String, String>, secret: &str) -> String {
 
 impl Client {
     pub fn new() -> Result<Self, reqwest::Error> {
+        let key = option_env!("LASTFM_API_KEY").unwrap_or("").trim();
+        let secret = option_env!("LASTFM_API_SECRET").unwrap_or("").trim();
+        log::info!(
+            "Last.fm credentials at build time: api_key_present={}, api_secret_present={}",
+            !key.is_empty(),
+            !secret.is_empty()
+        );
         Ok(Self {
             http: reqwest::Client::builder()
                 .timeout(Duration::from_secs(20))
                 .redirect(reqwest::redirect::Policy::none())
                 .user_agent(concat!("Songbridge/", env!("CARGO_PKG_VERSION")))
                 .build()?,
-            key: option_env!("LASTFM_API_KEY").unwrap_or("").trim().into(),
-            secret: option_env!("LASTFM_API_SECRET").unwrap_or("").trim().into(),
+            key: key.into(),
+            secret: secret.into(),
             next_request: Mutex::new(Instant::now()),
         })
     }
@@ -96,7 +103,15 @@ impl Client {
             .form(&params)
             .send()
             .await
-            .map_err(|_| ApiError::new("offline"))?;
+            .map_err(|error| {
+                log::warn!(
+                    "Last.fm request transport failure: method={}, timeout={}, connect={}",
+                    method,
+                    error.is_timeout(),
+                    error.is_connect()
+                );
+                ApiError::new("offline")
+            })?;
         let http_status = response.status();
         let retry_after = response
             .headers()
@@ -104,7 +119,21 @@ impl Client {
             .and_then(|s| s.to_str().ok())
             .and_then(|s| s.parse().ok());
         let body = response.json::<Value>().await.ok();
+        let api_error_code = body.as_ref().and_then(|value| {
+            value.get("error").and_then(|error| {
+                error
+                    .as_u64()
+                    .or_else(|| error.as_str()?.parse::<u64>().ok())
+            })
+        });
         let code = response_error(method, http_status.as_u16(), body.as_ref());
+        log::info!(
+            "Last.fm response: method={}, http_status={}, api_error_code={}, classification={}",
+            method,
+            http_status.as_u16(),
+            api_error_code.map_or_else(|| "none".to_string(), |code| code.to_string()),
+            code.unwrap_or("ok")
+        );
         if let Some(code) = code {
             let retry_after = if code == "rate_limited" {
                 let delay = retry_after.unwrap_or(60).clamp(60, u32::MAX as u64);
