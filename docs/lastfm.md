@@ -9,17 +9,23 @@ Songbridge can connect a Last.fm account from Settings, submit qualifying plays,
 3. Songbridge uses [desktop authentication](https://www.last.fm/api/desktopauth): a temporary token, browser authorization, then an explicit **Complete connection** action. It does not require a callback server or custom URL scheme. Leave the callback URL blank where optional.
 4. Save the API key and shared secret in your secret manager. Do not put them in source control, issue comments, screenshots, or chat.
 
-No application has been registered as part of this implementation. A build without both credentials remains usable, but Settings explains that Last.fm is unavailable.
+The application credentials are used by the Cloudflare Worker in `worker/lastfm`. The Worker stores the API key and shared secret as encrypted Worker secrets and signs a small allowlist of Last.fm calls. The app contains the public API key (needed to open Last.fm's authorization page) and the Worker URL; the shared secret is never compiled into desktop builds.
 
 ## Build credentials
 
-The Rust backend reads **LASTFM_API_KEY** and **LASTFM_API_SECRET** from the environment **at build time**.
+The Rust backend reads **LASTFM_API_KEY** and **LASTFM_WORKER_URL** from the environment **at build time**.
 
-For local development, inject both variables into the environment that launches `npm run tauri dev`. For a local packaged build, inject them before `npm run tauri build`. Use a secret manager or private shell environment; do not prefix them with `VITE_`. Changing them requires restarting/rebuilding the Rust application. A frontend .env file alone does not configure the Rust compiler.
+For local development, inject both variables into the environment that launches `npm run tauri dev`. `LASTFM_API_KEY` is public app configuration; `LASTFM_WORKER_URL` is the deployed Worker endpoint. Changing them requires restarting/rebuilding the Rust application. A frontend .env file alone does not configure the Rust compiler. To run the Worker locally, copy `worker/lastfm/.dev.vars.example` to `worker/lastfm/.dev.vars`, enter the Last.fm credentials, then run `npm run lastfm:worker:dev`. Never commit `.dev.vars`.
 
-For official releases, add repository Actions secrets with those exact names under **Settings → Secrets and variables → Actions**. The release workflow passes them to the Tauri build step on macOS, Windows, and Linux. Fork PRs and ordinary CI need no credentials; tests never contact Last.fm.
+For official releases, configure the repository variable **LASTFM_WORKER_URL** and Actions secret **LASTFM_API_KEY**. The release workflow passes them to the Tauri build step on macOS, Windows, and Linux. For Worker deployment, also configure Actions secrets **CLOUDFLARE_API_TOKEN**, **CLOUDFLARE_ACCOUNT_ID**, and **LASTFM_API_SECRET**. The Worker deployment workflow sets the Last.fm credentials as Worker secrets; the shared secret is not passed to the desktop build. Fork PRs and ordinary CI need no credentials; tests never contact Last.fm.
 
-These are desktop application credentials. Keeping them out of JavaScript, logs, and the repository avoids accidental exposure, but a secret compiled into a distributed native application cannot be made impossible to extract. An extracted key/secret can be used to impersonate the application and consume its API access, potentially causing rate limits or suspension for all users. These credentials alone do not expose other users' authorized session keys. Hiding the shared secret from recipients requires a hosted backend with authenticated sessions, fixed allowed operations, and abuse controls; an unrestricted signing proxy is not sufficient. Follow Last.fm's [API terms](https://www.last.fm/api/tos), monitor usage, and rotate compromised application credentials.
+The Worker is a constrained signing proxy, not proof that a request came from an unmodified Songbridge binary. It only forwards the app's required methods and validates parameter names, sizes, and payload limits; it does not accept a caller-provided URL or signature. Last.fm session keys remain in the desktop OS keyring and travel to the Worker only over HTTPS for the requested account action. Follow Last.fm's [API terms](https://www.last.fm/api/tos), monitor usage, and rotate compromised application credentials.
+
+## Deploy the Worker
+
+The Worker lives in this repository at `worker/lastfm`. Create it once in Cloudflare as `songbridge-lastfm-api` before using a token scoped to that Worker. For this existing Worker, **Workers → Editor** is sufficient for deployments and secret updates. If you instead want the first workflow run to create it, that initial token needs **Workers → Admin** at the account scope; replace it with a Worker-scoped Editor token afterward. If you attach a custom domain or route as part of deployment, add **Zone → Workers Routes → Write** scoped to the zone. No KV, R2, Tail, build settings, or account settings permissions are used.
+
+Add the required Cloudflare and Last.fm values to repository Actions secrets, then run **Deploy Last.fm Worker** from Actions (or push a change under `worker/lastfm` to `main`). Set the resulting HTTPS Worker endpoint in the repository variable **LASTFM_WORKER_URL**; that URL is embedded in subsequent desktop release builds. `wrangler deploy` enables the `workers.dev` endpoint by default, so no zone permission is needed unless you choose a custom domain. The included rate limit is approximate and per Cloudflare location; it reduces casual abuse but is not a strict global quota or proof that requests came from Songbridge.
 
 ## Connect and manage an account
 

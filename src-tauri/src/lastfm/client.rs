@@ -20,30 +20,18 @@ impl ApiError {
 pub struct Client {
     http: reqwest::Client,
     key: String,
-    secret: String,
+    worker_url: String,
     next_request: Mutex<Instant>,
-}
-
-pub fn signature(params: &BTreeMap<String, String>, secret: &str) -> String {
-    let mut input = String::new();
-    for (key, value) in params {
-        if !matches!(key.as_str(), "format" | "callback" | "api_sig") {
-            input.push_str(key);
-            input.push_str(value);
-        }
-    }
-    input.push_str(secret);
-    format!("{:x}", md5::compute(input.as_bytes()))
 }
 
 impl Client {
     pub fn new() -> Result<Self, reqwest::Error> {
         let key = option_env!("LASTFM_API_KEY").unwrap_or("").trim();
-        let secret = option_env!("LASTFM_API_SECRET").unwrap_or("").trim();
+        let worker_url = option_env!("LASTFM_WORKER_URL").unwrap_or("").trim();
         log::info!(
-            "Last.fm credentials at build time: api_key_present={}, api_secret_present={}",
+            "Last.fm configuration at build time: api_key_present={}, worker_url_present={}",
             !key.is_empty(),
-            !secret.is_empty()
+            !worker_url.is_empty()
         );
         Ok(Self {
             http: reqwest::Client::builder()
@@ -52,12 +40,17 @@ impl Client {
                 .user_agent(concat!("Songbridge/", env!("CARGO_PKG_VERSION")))
                 .build()?,
             key: key.into(),
-            secret: secret.into(),
+            worker_url: worker_url.trim_end_matches('/').into(),
             next_request: Mutex::new(Instant::now()),
         })
     }
     pub fn configured(&self) -> bool {
-        !self.key.is_empty() && !self.secret.is_empty()
+        !self.key.is_empty()
+            && url::Url::parse(&self.worker_url).is_ok_and(|url| {
+                (url.scheme() == "https" && url.host_str().is_some())
+                    || (url.scheme() == "http"
+                        && matches!(url.host_str(), Some("localhost" | "127.0.0.1" | "::1")))
+            })
     }
     pub fn auth_url(&self, token: &str) -> String {
         let mut url = url::Url::parse("https://www.last.fm/api/auth/").expect("static URL");
@@ -74,6 +67,9 @@ impl Client {
     ) -> Result<Value, ApiError> {
         if !self.configured() {
             return Err(ApiError::new("not_configured"));
+        }
+        if !allowed_method(method) {
+            return Err(ApiError::new("invalid_request"));
         }
         // Local pacing policy, not a claimed Last.fm quota. All API calls share it.
         let mut next = self.next_request.lock().await;
@@ -95,12 +91,11 @@ impl Client {
         if let Some(key) = session {
             params.insert("sk".into(), key.into());
         }
-        params.insert("api_sig".into(), signature(&params, &self.secret));
         params.insert("format".into(), "json".into());
         let response = self
             .http
-            .post("https://ws.audioscrobbler.com/2.0/")
-            .form(&params)
+            .post(&self.worker_url)
+            .json(&serde_json::json!({ "params": params }))
             .send()
             .await
             .map_err(|error| {
@@ -119,14 +114,18 @@ impl Client {
             .and_then(|s| s.to_str().ok())
             .and_then(|s| s.parse().ok());
         let body = response.json::<Value>().await.ok();
-        let api_error_code = body.as_ref().and_then(|value| {
+        let lastfm_body = body
+            .as_ref()
+            .and_then(|value| value.get("lastfm"))
+            .or(body.as_ref());
+        let api_error_code = lastfm_body.and_then(|value| {
             value.get("error").and_then(|error| {
                 error
                     .as_u64()
                     .or_else(|| error.as_str()?.parse::<u64>().ok())
             })
         });
-        let code = response_error(method, http_status.as_u16(), body.as_ref());
+        let code = response_error(method, http_status.as_u16(), lastfm_body);
         log::info!(
             "Last.fm response: method={}, http_status={}, api_error_code={}, classification={}",
             method,
@@ -147,9 +146,28 @@ impl Client {
                 retry_after,
             });
         }
-        let body = body.ok_or_else(|| ApiError::new("invalid_response"))?;
-        Ok(body)
+        body.ok_or_else(|| ApiError::new("invalid_response"))
+            .and_then(|response| {
+                response
+                    .get("lastfm")
+                    .cloned()
+                    .ok_or_else(|| ApiError::new("invalid_response"))
+            })
     }
+}
+
+fn allowed_method(method: &str) -> bool {
+    matches!(
+        method,
+        "auth.getToken"
+            | "auth.getSession"
+            | "track.updateNowPlaying"
+            | "track.scrobble"
+            | "track.search"
+            | "album.search"
+            | "track.getInfo"
+            | "album.getInfo"
+    )
 }
 
 fn response_error(method: &str, http_status: u16, body: Option<&Value>) -> Option<&'static str> {
@@ -178,19 +196,6 @@ fn response_error(method: &str, http_status: u16, body: Option<&Value>) -> Optio
 #[cfg(test)]
 mod tests {
     use super::*;
-    #[test]
-    fn signs_raw_utf8_in_ascii_parameter_order_and_excludes_transport_fields() {
-        let p = BTreeMap::from([
-            ("artist[1]".into(), "Björk & X".into()),
-            ("artist[10]".into(), "A".into()),
-            ("format".into(), "json".into()),
-            ("callback".into(), "ignored".into()),
-        ]);
-        assert_eq!(
-            signature(&p, "secret"),
-            format!("{:x}", md5::compute("artist[10]Aartist[1]Björk & Xsecret"))
-        );
-    }
     #[test]
     fn respects_errors_even_with_http_success_or_non_json_responses() {
         assert_eq!(
