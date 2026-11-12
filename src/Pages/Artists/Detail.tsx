@@ -41,7 +41,7 @@ function groupByAlbum(songs: MetadataType[]): AlbumGroup[] {
 }
 
 const ArtistDetail = () => {
-  const { t } = useI18n();
+  const { t, tc } = useI18n();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { library, currentPath, setCurrentPath, setCurrentPlaylist } = useContext(AppContext);
@@ -76,8 +76,7 @@ const ArtistDetail = () => {
         <HeroBottom>
           <HeroTitle title={artistName}>{artistName}</HeroTitle>
           <HeroStats>
-            {albums.length} {albums.length === 1 ? 'album' : 'albums'} · {artistSongs.length}{' '}
-            {artistSongs.length === 1 ? 'song' : 'songs'}
+            {tc('count.album', albums.length)} · {tc('count.song', artistSongs.length)}
           </HeroStats>
         </HeroBottom>
       </Hero>
@@ -88,7 +87,7 @@ const ArtistDetail = () => {
             key={album.name}
             songs={album.songs}
             name={album.name}
-            type="Album"
+            type={t('sidebar.albums')}
             activePath={currentPath}
             scroll={false}
             onSongClick={(song) => playSong(song, album.songs)}

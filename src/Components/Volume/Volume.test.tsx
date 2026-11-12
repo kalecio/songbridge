@@ -19,21 +19,21 @@ describe('Volume', () => {
 
   it('shows the VolumeHigh icon at the default volume (70)', () => {
     const { getByLabelText } = renderWithContext(<Volume />);
-    expect(getByLabelText('volume-high')).toBeInTheDocument();
+    expect(getByLabelText('High volume')).toBeInTheDocument();
   });
 
   it('shows VolumeOff icon when volume is below 33', () => {
     const { getByRole, getByLabelText } = renderWithContext(<Volume />);
     const slider = getByRole('slider');
     fireEvent.change(slider, { target: { value: '10' } });
-    expect(getByLabelText('volume-off')).toBeInTheDocument();
+    expect(getByLabelText('Volume off')).toBeInTheDocument();
   });
 
   it('shows VolumeLow icon when volume is between 33 and 65', () => {
     const { getByRole, getByLabelText } = renderWithContext(<Volume />);
     const slider = getByRole('slider');
     fireEvent.change(slider, { target: { value: '50' } });
-    expect(getByLabelText('volume-low')).toBeInTheDocument();
+    expect(getByLabelText('Low volume')).toBeInTheDocument();
   });
 
   it('calls set_volume with value / 100 when slider changes', () => {
@@ -44,36 +44,36 @@ describe('Volume', () => {
 
   it('shows VolumeXmark and calls toggle_mute when volume icon is clicked', async () => {
     const { getByLabelText } = renderWithContext(<Volume />);
-    fireEvent.click(getByLabelText('volume-high'));
+    fireEvent.click(getByLabelText('High volume'));
     await waitFor(() => {
       expect(mockInvoke).toHaveBeenCalledWith('toggle_mute');
-      expect(getByLabelText('volume-muted')).toBeInTheDocument();
+      expect(getByLabelText('Muted')).toBeInTheDocument();
     });
   });
 
   it('restores the volume icon when VolumeXmark is clicked again', async () => {
     const { getByLabelText } = renderWithContext(<Volume />);
-    fireEvent.click(getByLabelText('volume-high'));
-    await waitFor(() => expect(getByLabelText('volume-muted')).toBeInTheDocument());
-    fireEvent.click(getByLabelText('volume-muted'));
-    await waitFor(() => expect(getByLabelText('volume-high')).toBeInTheDocument());
+    fireEvent.click(getByLabelText('High volume'));
+    await waitFor(() => expect(getByLabelText('Muted')).toBeInTheDocument());
+    fireEvent.click(getByLabelText('Muted'));
+    await waitFor(() => expect(getByLabelText('High volume')).toBeInTheDocument());
   });
 
   it('toggles mute when the AUDIO_EVENTS.mute event is dispatched', async () => {
     const { getByLabelText } = renderWithContext(<Volume />);
-    expect(getByLabelText('volume-high')).toBeInTheDocument();
+    expect(getByLabelText('High volume')).toBeInTheDocument();
     act(() => {
       window.dispatchEvent(new CustomEvent(AUDIO_EVENTS.mute));
     });
     await waitFor(() => {
       expect(mockInvoke).toHaveBeenCalledWith('toggle_mute');
-      expect(getByLabelText('volume-muted')).toBeInTheDocument();
+      expect(getByLabelText('Muted')).toBeInTheDocument();
     });
   });
 
   it('marks the heart as disabled when no song is playing', () => {
     const { getByLabelText } = renderWithContext(<Volume />);
-    expect(getByLabelText('add to favourites')).toHaveAttribute('aria-disabled', 'true');
+    expect(getByLabelText('Add to favourites')).toHaveAttribute('aria-disabled', 'true');
   });
 
   it('adds the current song to the Favourites playlist on first click', () => {
@@ -88,7 +88,7 @@ describe('Volume', () => {
       setPlaylists,
     });
 
-    fireEvent.click(getByLabelText('add to favourites'));
+    fireEvent.click(getByLabelText('Add to favourites'));
 
     expect(setPlaylists).toHaveBeenCalled();
     const favs = playlists.find((p) => p.id === FAVOURITES_PLAYLIST_ID);
@@ -117,10 +117,10 @@ describe('Volume', () => {
       setPlaylists,
     });
 
-    expect(getByLabelText('remove from favourites')).toHaveAttribute('aria-pressed', 'true');
+    expect(getByLabelText('Remove from favourites')).toHaveAttribute('aria-pressed', 'true');
 
     act(() => {
-      fireEvent.click(getByLabelText('remove from favourites'));
+      fireEvent.click(getByLabelText('Remove from favourites'));
     });
 
     expect(setPlaylists).toHaveBeenCalled();

@@ -10,7 +10,6 @@ import { themes, defaultTheme, AppTheme, loadCustomThemes, saveCustomThemes } fr
 import { ShortcutBindings, loadShortcuts, saveShortcuts } from './keyboard';
 import { ModalProvider } from './Context/ModalContext';
 import { LyricsSearchModalProvider } from './Context/LyricsSearchModalContext';
-import { I18nProvider } from './i18n/I18nProvider';
 
 const GlobalStyle = createGlobalStyle`
   body {
@@ -235,13 +234,11 @@ function App() {
     >
       <ThemeProvider theme={activeTheme}>
         <GlobalStyle />
-        <I18nProvider>
-          <ModalProvider>
-            <LyricsSearchModalProvider>
-              <Player />
-            </LyricsSearchModalProvider>
-          </ModalProvider>
-        </I18nProvider>
+        <ModalProvider>
+          <LyricsSearchModalProvider>
+            <Player />
+          </LyricsSearchModalProvider>
+        </ModalProvider>
       </ThemeProvider>
     </AppContext.Provider>
   );

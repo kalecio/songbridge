@@ -21,7 +21,7 @@ import Playlist from '../../Components/Playlist/Playlist';
 import { useI18n } from '../../i18n/I18nProvider';
 
 const AlbumDetail = () => {
-  const { t } = useI18n();
+  const { t, tc } = useI18n();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { library, currentPath, setCurrentPath, setCurrentPlaylist } = useContext(AppContext);
@@ -69,7 +69,7 @@ const AlbumDetail = () => {
           <HeroStats>
             {artist && <>{artist} · </>}
             {year && <>{year} · </>}
-            {songs.length} {songs.length === 1 ? 'song' : 'songs'}
+            {tc('count.song', songs.length)}
           </HeroStats>
         </HeroBottom>
       </Hero>
@@ -78,7 +78,7 @@ const AlbumDetail = () => {
         <Playlist
           songs={songs}
           name={albumName}
-          type="Album"
+          type={t('sidebar.albums')}
           scroll={false}
           activePath={currentPath}
           onSongClick={playSong}

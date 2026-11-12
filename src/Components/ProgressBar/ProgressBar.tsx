@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { ProgressBarInner, CustomProgressBar, Slider } from './styles';
+import { useI18n } from '../../i18n/I18nProvider';
 
 interface ProgressBarProps {
   progress: number;
@@ -8,6 +9,7 @@ interface ProgressBarProps {
 }
 
 const ProgressBar = ({ progress = 0, max, onSeek }: ProgressBarProps) => {
+  const { t } = useI18n();
   const [progressValue, setProgressValue] = useState(progress);
   const isDraggingRef = useRef(false);
 
@@ -47,7 +49,7 @@ const ProgressBar = ({ progress = 0, max, onSeek }: ProgressBarProps) => {
     <CustomProgressBar>
       <ProgressBarInner style={{ width: `${progressValue}%` }} />
       <Slider
-        aria-label="Playback position"
+        aria-label={t('common.playbackPosition')}
         value={progressValue}
         onChange={handleProgressChange}
         onMouseDown={handleMouseDown}

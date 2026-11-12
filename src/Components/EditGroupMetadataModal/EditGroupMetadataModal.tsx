@@ -109,7 +109,7 @@ const EditGroupMetadataModal = ({ groupType, songs, onClose, onSave }: Props) =>
         album: groupType === 'album' ? album.trim() || undefined : undefined,
         year: groupType === 'album' ? year.trim() || undefined : undefined,
         coverArtPath: coverArtPath ?? undefined,
-        removeCoverArt,
+        removeCoverArt: groupType === 'album' ? removeCoverArt : undefined,
         updateFields,
       };
       await onSave(fields);

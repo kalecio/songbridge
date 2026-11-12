@@ -66,8 +66,8 @@ describe('Playlist', () => {
 
   it('calls onPlayAll when the Play Now button is clicked', () => {
     const onPlayAll = vi.fn();
-    const { getByText } = renderWithContext(<Playlist songs={songs} name="Test" onPlayAll={onPlayAll} />);
-    fireEvent.click(getByText('Play Now'));
+    const { getByRole } = renderWithContext(<Playlist songs={songs} name="Test" onPlayAll={onPlayAll} />);
+    fireEvent.click(getByRole('button', { name: /play now/i }));
     expect(onPlayAll).toHaveBeenCalledTimes(1);
   });
 

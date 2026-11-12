@@ -49,10 +49,10 @@ describe('Sidebar', () => {
   describe('navigation menu', () => {
     it('renders all menu items when not showing queue', () => {
       const { getByText } = renderWithContext(<Sidebar />, { showQueue: false });
-      expect(getByText('Sua biblioteca')).toBeInTheDocument();
-      expect(getByText('Artistas')).toBeInTheDocument();
-      expect(getByText('Álbuns')).toBeInTheDocument();
-      expect(getByText('Músicas')).toBeInTheDocument();
+      expect(getByText('Your library')).toBeInTheDocument();
+      expect(getByText('Artists')).toBeInTheDocument();
+      expect(getByText('Albums')).toBeInTheDocument();
+      expect(getByText('Songs')).toBeInTheDocument();
     });
 
     it('hides the navigation menu when the queue is open', () => {
@@ -118,7 +118,7 @@ describe('Sidebar', () => {
         showQueue: true,
         setShowQueue,
       });
-      fireEvent.click(getByLabelText('close queue'));
+      fireEvent.click(getByLabelText('Close queue'));
       expect(setShowQueue).toHaveBeenCalledWith(false);
     });
 

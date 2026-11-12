@@ -31,7 +31,7 @@ log = "0.4"
 crossbeam-channel = "0.5"
 dirs = "5"
 walkdir = "2"
-rusqlite = { version = "0.31", features = ["bundled"] }
+rusqlite = { version = "0.41", features = ["bundled"] }
 souvlaki = "0.8"
 url = "2"
 lofty = "0.24"

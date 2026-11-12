@@ -254,7 +254,7 @@ const Sidebar = () => {
       <ResizeHandle
         role="separator"
         tabIndex={0}
-        aria-label="Largura da navegação lateral"
+        aria-label={t('sidebar.width')}
         aria-orientation="vertical"
         aria-valuemin={SIDEBAR_MIN_WIDTH}
         aria-valuemax={maxWidth}

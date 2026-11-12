@@ -127,11 +127,11 @@ const CreatePlaylist = () => {
                   {fav && <FavouriteBadge aria-hidden="true" />}
                   {pl.name}
                 </PlaylistItemName>
-                <PlaylistItemCount>{pl.songs.length} songs</PlaylistItemCount>
+                <PlaylistItemCount>{tc('count.song', pl.songs.length)}</PlaylistItemCount>
               </PlaylistItemInfo>
               {!fav && (
                 <DeleteBtn
-                  aria-label={`Delete ${pl.name}`}
+                  aria-label={t('playlist.deleteNamed', { name: pl.name })}
                   onClick={(e) => {
                     e.stopPropagation();
                     handleDelete(pl.id);

@@ -16,7 +16,7 @@ afterEach(() => {
 });
 it('supports keyboard resizing, clamps both limits, and restores the saved width', () => {
   const first = renderWithContext(<Sidebar />);
-  const divider = first.getByRole('separator', { name: 'Largura da navegação lateral' });
+  const divider = first.getByRole('separator', { name: 'Sidebar width' });
   fireEvent.keyDown(divider, { key: 'Home' });
   expect(divider).toHaveAttribute('aria-valuenow', '175');
   fireEvent.keyDown(divider, { key: 'ArrowLeft' });
