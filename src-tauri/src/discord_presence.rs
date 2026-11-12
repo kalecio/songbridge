@@ -29,6 +29,7 @@ pub struct DiscordPresence {
     client: Arc<Mutex<Option<DiscordIpcClient>>>,
     app_id: String,
     connected: Arc<Mutex<bool>>,
+    reconnecting: Arc<Mutex<bool>>,
 }
 
 impl DiscordPresence {
@@ -37,6 +38,7 @@ impl DiscordPresence {
             client: Arc::new(Mutex::new(None)),
             app_id,
             connected: Arc::new(Mutex::new(false)),
+            reconnecting: Arc::new(Mutex::new(false)),
         }
     }
 
@@ -44,9 +46,10 @@ impl DiscordPresence {
         let client = self.client.clone();
         let app_id = self.app_id.clone();
         let connected = self.connected.clone();
+        let reconnecting = self.reconnecting.clone();
 
         std::thread::spawn(move || {
-            Self::connect_loop(client, app_id, connected);
+            Self::connect_loop(client, app_id, connected, reconnecting, None);
         });
     }
 
@@ -54,14 +57,28 @@ impl DiscordPresence {
         client: Arc<Mutex<Option<DiscordIpcClient>>>,
         app_id: String,
         connected: Arc<Mutex<bool>>,
+        reconnecting: Arc<Mutex<bool>>,
+        pending_activity: Option<Activity>,
     ) {
         loop {
             let mut ipc = DiscordIpcClient::new(&app_id);
             match ipc.connect() {
                 Ok(()) => {
+                    if let Some(activity) = pending_activity.as_ref() {
+                        if let Err(error) = ipc.set_activity(activity.clone()) {
+                            debug!(
+                                "Discord reconnected but could not restore activity: {}",
+                                error
+                            );
+                            let _ = ipc.close();
+                            std::thread::sleep(Duration::from_secs(10));
+                            continue;
+                        }
+                    }
                     info!("Discord Rich Presence connected");
                     *connected.lock().unwrap() = true;
                     *client.lock().unwrap() = Some(ipc);
+                    *reconnecting.lock().unwrap() = false;
                     break;
                 }
                 Err(e) => {
@@ -150,9 +167,25 @@ impl DiscordPresence {
             "https://github.com/kalecio/songbridge/releases",
         )]);
 
-        if let Err(e) = client.set_activity(activity) {
+        if let Err(e) = client.set_activity(activity.clone()) {
             warn!("Failed to set Discord activity: {}", e);
             *self.connected.lock().unwrap() = false;
+            let mut stale_client = client_guard.take();
+            drop(client_guard);
+            if let Some(client) = stale_client.as_mut() {
+                let _ = client.close();
+            }
+            let mut reconnecting = self.reconnecting.lock().unwrap();
+            if !*reconnecting {
+                *reconnecting = true;
+                let client = self.client.clone();
+                let app_id = self.app_id.clone();
+                let connected = self.connected.clone();
+                let reconnecting = self.reconnecting.clone();
+                std::thread::spawn(move || {
+                    Self::connect_loop(client, app_id, connected, reconnecting, Some(activity));
+                });
+            }
         }
     }
 

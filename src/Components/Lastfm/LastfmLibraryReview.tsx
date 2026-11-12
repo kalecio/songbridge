@@ -6,7 +6,7 @@ import { useI18n } from '../../i18n/I18nProvider';
 import type { MetadataType } from '../../types';
 import { Button } from '../Modal/styles';
 import { useLastfm, useLastfmReason } from './LastfmProvider';
-import { Actions, History, Panel } from './styles';
+import { Actions, ApplySummary, History, Panel } from './styles';
 import type { Suggestion } from './importFields';
 import { getFilenameSearchName } from './searchQuery';
 
@@ -223,6 +223,11 @@ export default function LastfmLibraryReview() {
       }
       if (update.coverArtPath || update.updateFields?.length) perTrack[path] = update;
     }
+    if (!Object.keys(perTrack).length && !artworkFailures.length) {
+      setError('no_changes_selected');
+      setBusy(false);
+      return;
+    }
     try {
       const result = await batchUpdateSongsMetadata(
         Object.keys(perTrack),
@@ -232,7 +237,28 @@ export default function LastfmLibraryReview() {
           reportFailures: true,
         },
       );
-      setSaveResults([...result, ...artworkFailures]);
+      const verifiedResults = await Promise.all(
+        result.map(async (entry) => {
+          if (entry.error) return entry;
+          const fields = perTrack[entry.path];
+          if (!fields) return entry;
+          try {
+            const saved = await invoke<MetadataType>('get_metadata', { path: entry.path });
+            const mismatched = (fields.updateFields ?? []).some((field) => {
+              const expected = fields[field];
+              const actual = saved[field];
+              return expected != null && comparable(expected) !== comparable(actual ?? '');
+            });
+            if (mismatched) {
+              return { ...entry, error: 'write_verification_failed' };
+            }
+          } catch (cause) {
+            return { ...entry, error: String(cause) };
+          }
+          return entry;
+        }),
+      );
+      setSaveResults([...verifiedResults, ...artworkFailures]);
     } catch (cause) {
       setError(String(cause));
     } finally {
@@ -252,6 +278,8 @@ export default function LastfmLibraryReview() {
   const selectedCount = Object.values(selected).reduce((count, value) => count + value.length, 0);
   const diffCount = items?.filter((item) => item.changes.length).length ?? 0;
   const availableChangeCount = items?.reduce((count, item) => count + (item.error ? 0 : item.changes.length), 0) ?? 0;
+  const savedTrackCount = saveResults?.filter((result) => !result.error).length ?? 0;
+  const failedTrackCount = saveResults?.filter((result) => Boolean(result.error)).length ?? 0;
   const approveAll = () => {
     if (!items) return;
     setSelected(
@@ -308,6 +336,12 @@ export default function LastfmLibraryReview() {
                 changed: diffCount,
               })}
         </p>
+      )}
+      {saveResults && (
+        <ApplySummary role="status" aria-live="polite" data-failed={failedTrackCount > 0}>
+          <strong>{t('lastfm.libraryReviewApplyComplete')}</strong>
+          <span>{t('lastfm.libraryReviewApplySummary', { saved: savedTrackCount, failed: failedTrackCount })}</span>
+        </ApplySummary>
       )}
       {items && items.length > 0 && (
         <History aria-label={t('lastfm.libraryReviewResults')}>
@@ -370,7 +404,11 @@ export default function LastfmLibraryReview() {
           </Button>
         </Actions>
       )}
-      {error && <p role="alert">{reason(error)}</p>}
+      {error && (
+        <p role="alert">
+          {error === 'no_changes_selected' ? t('lastfm.libraryReviewNoChangesSelected') : reason(error)}
+        </p>
+      )}
     </Panel>
   );
 }

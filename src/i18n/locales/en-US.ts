@@ -40,9 +40,15 @@ const enUS = {
   'lastfm.libraryReviewSummary': 'Checked {checked} of {total} tracks; {changed} have proposed changes.',
   'lastfm.libraryReviewResults': 'Metadata changes suggested for your library',
   'lastfm.libraryReviewNoDifferences': 'No metadata changes were suggested.',
+  'lastfm.libraryReviewNoChangesSelected':
+    'No approved metadata changes could be applied. Review the selected fields and try again.',
+  'lastfm.reason.write_verification_failed':
+    'The file was saved, but its metadata did not match the approved values when checked. Please retry or inspect the file.',
   'lastfm.libraryReviewApprove': 'Approve the {field} change',
   'lastfm.libraryReviewApproveAll': 'Approve all changes',
   'lastfm.libraryReviewApply': 'Apply {count} approved changes',
+  'lastfm.libraryReviewApplyComplete': 'Metadata update finished',
+  'lastfm.libraryReviewApplySummary': '{saved} tracks saved successfully · {failed} failed',
   'lastfm.artworkFailed': 'Tags updated, but the cover could not be saved: {error}',
   'lastfm.albumHelp':
     'Album fields and cover art apply to the selected tracks. Individual song titles and track numbers are preserved. Review the artist carefully for compilation albums.',

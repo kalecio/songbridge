@@ -44,6 +44,22 @@ export const History = styled.ul`
     margin-top: 0.25rem;
   }
 `;
+export const ApplySummary = styled.div`
+  border: 1px solid ${({ theme }) => theme.border};
+  border-left: 4px solid ${({ theme }) => theme.primary};
+  border-radius: 0.5rem;
+  background: ${({ theme }) => theme.surface};
+  padding: 0.8rem 1rem;
+  color: ${({ theme }) => theme.textPrimary};
+  line-height: 1.5;
+  strong {
+    display: block;
+    margin-bottom: 0.15rem;
+  }
+  &[data-failed='true'] {
+    border-left-color: ${({ theme }) => theme.error};
+  }
+`;
 export const StatusButton = styled.button`
   display: inline-flex;
   align-items: center;

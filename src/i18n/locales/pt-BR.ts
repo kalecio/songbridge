@@ -42,9 +42,15 @@ const ptBR: Record<TranslationKey, string> = {
   'lastfm.libraryReviewSummary': '{checked} de {total} músicas verificadas; {changed} têm alterações sugeridas.',
   'lastfm.libraryReviewResults': 'Alterações de metadados sugeridas para a biblioteca',
   'lastfm.libraryReviewNoDifferences': 'Nenhuma alteração de metadados foi sugerida.',
+  'lastfm.libraryReviewNoChangesSelected':
+    'Nenhuma alteração aprovada pôde ser aplicada. Revise os campos selecionados e tente novamente.',
+  'lastfm.reason.write_verification_failed':
+    'O arquivo foi salvo, mas os metadados não corresponderam aos valores aprovados na verificação. Tente novamente ou confira o arquivo.',
   'lastfm.libraryReviewApprove': 'Aprovar alteração de {field}',
   'lastfm.libraryReviewApproveAll': 'Aprovar todas as alterações',
   'lastfm.libraryReviewApply': 'Aplicar {count} alterações aprovadas',
+  'lastfm.libraryReviewApplyComplete': 'Atualização de metadados concluída',
+  'lastfm.libraryReviewApplySummary': '{saved} músicas salvas com sucesso · {failed} falharam',
   'lastfm.artworkFailed': 'Tags atualizadas, mas a capa não pôde ser salva: {error}',
   'lastfm.albumHelp':
     'Os campos do álbum e a capa serão aplicados às faixas selecionadas. Títulos e números das faixas serão preservados. Confira o artista em coletâneas.',

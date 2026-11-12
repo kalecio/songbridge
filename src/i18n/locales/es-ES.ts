@@ -42,9 +42,15 @@ const esES: Record<TranslationKey, string> = {
   'lastfm.libraryReviewSummary': '{checked} de {total} canciones comprobadas; {changed} tienen cambios propuestos.',
   'lastfm.libraryReviewResults': 'Cambios de metadatos sugeridos para la biblioteca',
   'lastfm.libraryReviewNoDifferences': 'No se sugirieron cambios de metadatos.',
+  'lastfm.libraryReviewNoChangesSelected':
+    'No se pudo aplicar ningún cambio aprobado. Revisa los campos seleccionados e inténtalo de nuevo.',
+  'lastfm.reason.write_verification_failed':
+    'El archivo se guardó, pero los metadatos no coincidieron con los valores aprobados al comprobarlos. Inténtalo de nuevo o revisa el archivo.',
   'lastfm.libraryReviewApprove': 'Aprobar el cambio de {field}',
   'lastfm.libraryReviewApproveAll': 'Aprobar todos los cambios',
   'lastfm.libraryReviewApply': 'Aplicar {count} cambios aprobados',
+  'lastfm.libraryReviewApplyComplete': 'Actualización de metadatos completada',
+  'lastfm.libraryReviewApplySummary': '{saved} canciones guardadas correctamente · {failed} fallidas',
   'lastfm.artworkFailed': 'Etiquetas actualizadas, pero no se pudo guardar la portada: {error}',
   'lastfm.albumHelp':
     'Los campos del álbum y la portada se aplican a las pistas seleccionadas. Se conservan los títulos y números de pista. Revisa el artista en los álbumes recopilatorios.',
