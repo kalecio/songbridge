@@ -8,6 +8,7 @@ import { useQueueActions } from '../../hooks/useQueueActions';
 import { useAddToPlaylistMenu } from '../../hooks/useAddToPlaylistMenu';
 import { useMetadataActions } from '../../hooks/useMetadataActions';
 import { useLyricsMenu } from '../../hooks/useLyricsMenu';
+import { useI18n } from '../../i18n/I18nProvider';
 import EditMetadataModal from '../EditMetadataModal/EditMetadataModal';
 import AlbumImage from '../AlbumImage/AlbumImage';
 import ContextMenu, { ContextMenuItem } from '../ContextMenu/ContextMenu';
@@ -52,13 +53,13 @@ interface Props {
 // so unit tests (which run in a zero-height JSDOM viewport where the
 // virtualizer can't measure anything) keep working as before.
 const VIRTUALIZE_THRESHOLD = 100;
-// Approximate row height (3rem image + 0.75rem*2 padding + 1rem gap ≈ 80px).
-const ROW_HEIGHT = 80;
+// Approximate row height (3rem artwork + 0.5rem*2 vertical padding ≈ 64px).
+const ROW_HEIGHT = 64;
 
 const Playlist = ({
   songs,
   name,
-  type = 'Playlist',
+  type,
   activePath,
   scroll = true,
   onSongClick,
@@ -72,6 +73,7 @@ const Playlist = ({
   const [editSong, setEditSong] = useState<MetadataType | null>(null);
   const [dragFromIndex, setDragFromIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const { t, tc } = useI18n();
   const { playNext, addToQueue } = useQueueActions();
   const buildAddToPlaylistItem = useAddToPlaylistMenu();
   const { updateSongMetadata } = useMetadataActions();
@@ -163,10 +165,10 @@ const Playlist = ({
         </SongInfo>
         {isMissing ? (
           <>
-            <MissingIcon title="File not found on disk" />
+            <MissingIcon title={t('common.fileNotFound')} />
             {onRemoveMissing && (
               <RemoveMissingButton
-                aria-label={`Remove missing track ${title}`}
+                aria-label={t('common.removeMissingTrack', { title })}
                 onClick={(e) => {
                   e.stopPropagation();
                   onRemoveMissing(song);
@@ -190,12 +192,12 @@ const Playlist = ({
   const menuItems = (song: MetadataType): ContextMenuItem[] => {
     const isMissing = Boolean(song.path && missingPaths.has(song.path));
     const items: ContextMenuItem[] = [
-      { label: 'Play next', icon: <FaPlay />, onSelect: () => playNext(song), disabled: isMissing },
-      { label: 'Add to queue', icon: <FaListUl />, onSelect: () => addToQueue([song]), disabled: isMissing },
+      { label: t('common.playNext'), icon: <FaPlay />, onSelect: () => playNext(song), disabled: isMissing },
+      { label: t('common.addToQueue'), icon: <FaListUl />, onSelect: () => addToQueue([song]), disabled: isMissing },
       buildAddToPlaylistItem(song),
       { type: 'divider' },
       {
-        label: 'Edit metadata',
+        label: t('common.editMetadata'),
         icon: <FaPenToSquare />,
         onSelect: () => setEditSong(song),
         disabled: isMissing,
@@ -205,7 +207,7 @@ const Playlist = ({
     if (onRemoveSong) {
       items.push(
         { type: 'divider' },
-        { label: 'Remove from playlist', icon: <FaTrash />, onSelect: () => onRemoveSong(song), danger: true },
+        { label: t('common.removeFromPlaylist'), icon: <FaTrash />, onSelect: () => onRemoveSong(song), danger: true },
       );
     }
     return items;
@@ -217,11 +219,11 @@ const Playlist = ({
         <PlaylistInfo>
           {type !== 'Library' && <AlbumImage metadata={songs[0]} height="10rem" width="10rem" />}
           <PlaylistDetails>
-            <Type>{type}</Type>
+            <Type>{type ?? t('playlist.type')}</Type>
             <PlaylistName>{name}</PlaylistName>
-            <SongsQuantity>{songs.length} songs</SongsQuantity>
+            <SongsQuantity>{tc('count.song', songs.length)}</SongsQuantity>
             <PlayNowButton onClick={onPlayAll}>
-              <Play /> Play Now
+              <Play /> {t('common.playNow')}
             </PlayNowButton>
           </PlaylistDetails>
         </PlaylistInfo>

@@ -17,14 +17,14 @@ describe('Controls', () => {
 
   it('shows the Play button when not playing', () => {
     const { getByLabelText, queryByLabelText } = renderWithContext(<Controls />, { isPlaying: false });
-    expect(getByLabelText('play')).toBeInTheDocument();
-    expect(queryByLabelText('pause')).not.toBeInTheDocument();
+    expect(getByLabelText(/^play$/i)).toBeInTheDocument();
+    expect(queryByLabelText(/^pause$/i)).not.toBeInTheDocument();
   });
 
   it('shows the Pause button when playing', () => {
     const { getByLabelText, queryByLabelText } = renderWithContext(<Controls />, { isPlaying: true });
-    expect(getByLabelText('pause')).toBeInTheDocument();
-    expect(queryByLabelText('play')).not.toBeInTheDocument();
+    expect(getByLabelText(/^pause$/i)).toBeInTheDocument();
+    expect(queryByLabelText(/^play$/i)).not.toBeInTheDocument();
   });
 
   it('advances to the next song in order when Next is clicked', async () => {
@@ -35,7 +35,7 @@ describe('Controls', () => {
       setCurrentPath,
     });
     await act(async () => {}); // flush playNewSong microtasks from path effect
-    fireEvent.click(getByLabelText('next'));
+    fireEvent.click(getByLabelText(/next/i));
     expect(setCurrentPath).toHaveBeenCalledWith('b.mp3');
   });
 
@@ -47,7 +47,7 @@ describe('Controls', () => {
       setCurrentPath,
     });
     await act(async () => {});
-    fireEvent.click(getByLabelText('next'));
+    fireEvent.click(getByLabelText(/next/i));
     expect(setCurrentPath).toHaveBeenCalledWith('a.mp3');
   });
 
@@ -59,7 +59,7 @@ describe('Controls', () => {
       setCurrentPath,
     });
     await act(async () => {});
-    fireEvent.click(getByLabelText('previous'));
+    fireEvent.click(getByLabelText(/previous/i));
     expect(setCurrentPath).toHaveBeenCalledWith('b.mp3');
   });
 
@@ -71,7 +71,7 @@ describe('Controls', () => {
       setCurrentPath,
     });
     await act(async () => {});
-    fireEvent.click(getByLabelText('previous'));
+    fireEvent.click(getByLabelText(/previous/i));
     expect(setCurrentPath).toHaveBeenCalledWith('b.mp3');
   });
 
@@ -86,7 +86,7 @@ describe('Controls', () => {
       onShuffle: true,
     });
     await act(async () => {});
-    fireEvent.click(getByLabelText('next'));
+    fireEvent.click(getByLabelText(/next/i));
     expect(setCurrentPath).toHaveBeenCalledWith('c.mp3');
     vi.restoreAllMocks();
   });
@@ -97,7 +97,7 @@ describe('Controls', () => {
       onShuffle: false,
       setOnShuffle,
     });
-    fireEvent.click(getByLabelText('shuffle'));
+    fireEvent.click(getByLabelText(/shuffle/i));
     expect(setOnShuffle).toHaveBeenCalledWith(true);
   });
 
@@ -107,7 +107,7 @@ describe('Controls', () => {
       onRepeat: 'none',
       setOnRepeat,
     });
-    fireEvent.click(getByLabelText('repeat'));
+    fireEvent.click(getByLabelText(/repeat/i));
     expect(setOnRepeat).toHaveBeenCalledWith('one');
   });
 
@@ -117,7 +117,7 @@ describe('Controls', () => {
       onRepeat: 'one',
       setOnRepeat,
     });
-    fireEvent.click(getByLabelText('repeat'));
+    fireEvent.click(getByLabelText(/repeat/i));
     expect(setOnRepeat).toHaveBeenCalledWith('all');
   });
 
@@ -127,7 +127,7 @@ describe('Controls', () => {
       onRepeat: 'all',
       setOnRepeat,
     });
-    fireEvent.click(getByLabelText('repeat'));
+    fireEvent.click(getByLabelText(/repeat/i));
     expect(setOnRepeat).toHaveBeenCalledWith('none');
   });
 
@@ -137,7 +137,7 @@ describe('Controls', () => {
       isPlaying: true,
       setIsPlaying,
     });
-    fireEvent.click(getByLabelText('pause'));
+    fireEvent.click(getByLabelText(/^pause$/i));
     await waitFor(() => {
       expect(mockInvoke).toHaveBeenCalledWith('pause');
       expect(setIsPlaying).toHaveBeenCalledWith(false);

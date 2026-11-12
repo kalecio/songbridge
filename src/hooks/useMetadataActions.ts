@@ -16,6 +16,8 @@ export interface EditFields {
   removeCoverArt?: boolean;
   /** Base name (no extension) for renaming the file. Omit to keep existing name. */
   newFilename?: string;
+  /** Metadata tags to write. Omit to preserve legacy behavior and write all tags. */
+  updateFields?: Array<'title' | 'artist' | 'album' | 'year' | 'track'>;
 }
 
 interface SongUpdate {
@@ -37,6 +39,7 @@ function buildInvokeArgs(path: string, fields: EditFields) {
     coverArtPath: fields.coverArtPath ?? null,
     removeCoverArt: fields.removeCoverArt ?? false,
     newFilename: fields.newFilename ?? null,
+    ...(fields.updateFields ? { updateFields: fields.updateFields } : {}),
   };
 }
 

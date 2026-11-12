@@ -44,8 +44,8 @@ describe('AlbumDetail', () => {
   });
 
   it('renders a back button to the albums list', () => {
-    const { getByText } = renderWithContext(<AlbumDetail />, { library });
-    expect(getByText('Albums')).toBeInTheDocument();
+    const { getByRole } = renderWithContext(<AlbumDetail />, { library });
+    expect(getByRole('button', { name: 'Albums' })).toBeInTheDocument();
   });
 
   describe('track ordering', () => {

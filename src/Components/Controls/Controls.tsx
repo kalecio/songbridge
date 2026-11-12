@@ -1,13 +1,28 @@
 import { useCallback, useContext, useEffect, useRef, useState } from 'react';
-import { ControlsContainer, Shuffle, Prev, Play, Next, RepeatButton, Pause, CurrentTime, Container } from './styles';
+import {
+  ControlsContainer,
+  Shuffle,
+  Prev,
+  Play,
+  Next,
+  RepeatButton,
+  Pause,
+  CurrentTime,
+  Container,
+  Timeline,
+  TransportButton,
+} from './styles';
 import { invoke } from '@tauri-apps/api/core';
 import { AppContext } from '../../Context/AppContext';
 import { error as logError } from '../../logger';
 import { MetadataType, RepeatMode } from '../../types';
 import { AUDIO_EVENTS } from '../../audioEvents';
+import ProgressBar from '../ProgressBar/ProgressBar';
 import { TbRepeat, TbRepeatOnce } from 'react-icons/tb';
+import { useI18n } from '../../i18n/I18nProvider';
 
-const Controls = () => {
+const Controls = ({ onSeek }: { onSeek?: (_ratio: number) => void }) => {
+  const { t } = useI18n();
   const [isSongLoaded, setIsSongLoaded] = useState(false);
 
   const context = useContext(AppContext);
@@ -157,20 +172,37 @@ const Controls = () => {
 
   return (
     <Container>
-      <CurrentTime>{currentTimeStr}</CurrentTime>
       <ControlsContainer>
-        <Shuffle aria-label="shuffle" $onShuffle={onShuffle} onClick={() => setOnShuffle?.(!onShuffle)} />
-        <Prev aria-label="previous" onClick={handlePreviousSong} />
-        {isPlaying ? (
-          <Pause aria-label="pause" onClick={pause} />
-        ) : (
-          <Play aria-label="play" onClick={isSongLoaded ? resume : playNewSong} />
-        )}
-        <Next aria-label="next" onClick={handleNextSong} />
-        <RepeatButton aria-label="repeat" $onRepeat={onRepeat} onClick={handleToggleRepeat}>
+        <TransportButton
+          aria-label={t('common.shuffle')}
+          aria-pressed={onShuffle}
+          onClick={() => setOnShuffle?.(!onShuffle)}
+        >
+          <Shuffle $onShuffle={onShuffle} />
+        </TransportButton>
+        <TransportButton aria-label={t('common.previous')} onClick={handlePreviousSong}>
+          <Prev />
+        </TransportButton>
+        <TransportButton
+          $primary
+          aria-label={isPlaying ? t('common.pause') : t('common.play')}
+          onClick={togglePlayPause}
+        >
+          {isPlaying ? <Pause /> : <Play />}
+        </TransportButton>
+        <TransportButton aria-label={t('common.next')} onClick={handleNextSong}>
+          <Next />
+        </TransportButton>
+        <RepeatButton aria-label={t('common.repeat')} $onRepeat={onRepeat} onClick={handleToggleRepeat}>
           {onRepeat === 'one' ? <TbRepeatOnce /> : <TbRepeat />}
         </RepeatButton>
       </ControlsContainer>
+      <CurrentTime>{currentTimeStr}</CurrentTime>
+      <Timeline>
+        <time>{formatTime(currentSeconds)}</time>
+        <ProgressBar progress={progress} max={100} onSeek={onSeek} />
+        <time>{formatTime(totalSeconds)}</time>
+      </Timeline>
     </Container>
   );
 };
