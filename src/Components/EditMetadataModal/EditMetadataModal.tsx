@@ -5,6 +5,7 @@ import { FaImage } from 'react-icons/fa6';
 import Modal from '../Modal/Modal';
 import { Button, Input } from '../Modal/styles';
 import { MetadataType } from '../../types';
+import { useI18n } from '../../i18n/I18nProvider';
 import {
   CheckboxRow,
   CoverArtActions,
@@ -46,6 +47,7 @@ function parsePath(fullPath: string) {
 }
 
 const EditMetadataModal = ({ song, onClose, onSave }: Props) => {
+  const { t } = useI18n();
   const [title, setTitle] = useState('');
   const [artist, setArtist] = useState('');
   const [album, setAlbum] = useState('');
@@ -161,49 +163,49 @@ const EditMetadataModal = ({ song, onClose, onSave }: Props) => {
     <Modal
       isOpen={song !== null}
       onClose={onClose}
-      title="Edit metadata"
+      title={t('metadata.editTitle')}
       dismissible={!saving}
       footer={
         <>
           <Button $variant="ghost" onClick={onClose} disabled={saving}>
-            Cancel
+            {t('common.cancel')}
           </Button>
           <Button $variant="primary" onClick={handleSave} disabled={saving}>
-            {saving ? 'Saving…' : 'Save'}
+            {saving ? t('common.saving') : t('common.save')}
           </Button>
         </>
       }
     >
       <CoverArtSection>
         <CoverArtPreview $hasImage={hasArt}>
-          {displayedArt ? <img src={displayedArt} alt="Cover art" /> : <FaImage />}
+          {displayedArt ? <img src={displayedArt} alt={t('metadata.coverArt')} /> : <FaImage />}
         </CoverArtPreview>
         <CoverArtActions>
           <CoverArtButton onClick={handleChangeCover} disabled={saving || previewLoading}>
-            {previewLoading ? 'Loading…' : 'Change cover'}
+            {previewLoading ? t('common.loading') : t('common.changeCover')}
           </CoverArtButton>
           {(hasArt || coverArtPath) && (
             <RemoveCoverButton onClick={handleRemoveCover} disabled={saving}>
-              Remove cover
+              {t('common.removeCover')}
             </RemoveCoverButton>
           )}
         </CoverArtActions>
       </CoverArtSection>
 
       <FieldGroup>
-        <Label htmlFor="em-title">Title</Label>
+        <Label htmlFor="em-title">{t('metadata.title')}</Label>
         <Input id="em-title" value={title} onChange={(e) => setTitle(e.target.value)} onKeyDown={handleKeyDown} />
       </FieldGroup>
       <FieldGroup>
-        <Label htmlFor="em-artist">Artist</Label>
+        <Label htmlFor="em-artist">{t('metadata.artist')}</Label>
         <Input id="em-artist" value={artist} onChange={(e) => setArtist(e.target.value)} onKeyDown={handleKeyDown} />
       </FieldGroup>
       <FieldGroup>
-        <Label htmlFor="em-album">Album</Label>
+        <Label htmlFor="em-album">{t('metadata.album')}</Label>
         <Input id="em-album" value={album} onChange={(e) => setAlbum(e.target.value)} onKeyDown={handleKeyDown} />
       </FieldGroup>
       <FieldGroup>
-        <Label htmlFor="em-year">Year</Label>
+        <Label htmlFor="em-year">{t('metadata.year')}</Label>
         <Input
           id="em-year"
           value={year}
@@ -213,7 +215,7 @@ const EditMetadataModal = ({ song, onClose, onSave }: Props) => {
         />
       </FieldGroup>
       <FieldGroup>
-        <Label htmlFor="em-track">Track number</Label>
+        <Label htmlFor="em-track">{t('metadata.trackNumber')}</Label>
         <Input
           id="em-track"
           type="number"
@@ -225,7 +227,7 @@ const EditMetadataModal = ({ song, onClose, onSave }: Props) => {
       </FieldGroup>
 
       <FieldGroup>
-        <Label htmlFor="em-filename">Filename</Label>
+        <Label htmlFor="em-filename">{t('metadata.filename')}</Label>
         <FilenameRow>
           <Input
             id="em-filename"
@@ -242,7 +244,7 @@ const EditMetadataModal = ({ song, onClose, onSave }: Props) => {
         </FilenameRow>
         <CheckboxRow>
           <input type="checkbox" checked={useAutoFilename} onChange={(e) => setUseAutoFilename(e.target.checked)} />
-          Use artist and title as filename
+          {t('metadata.autoFilename')}
         </CheckboxRow>
       </FieldGroup>
 

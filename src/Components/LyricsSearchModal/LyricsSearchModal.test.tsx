@@ -135,7 +135,7 @@ describe('LyricsSearchModal', () => {
     renderWithContext(<LyricsSearchModal isOpen onClose={vi.fn()} song={mockSong} />);
     await waitFor(() => expect(mockUseLrclibLyrics().searchLyrics).toHaveBeenCalled());
 
-    const input = screen.getByPlaceholderText('Track, artist, album...');
+    const input = screen.getByPlaceholderText('Track, artist, album…');
     act(() => {
       fireEvent.change(input, { target: { value: 'custom query' } });
     });

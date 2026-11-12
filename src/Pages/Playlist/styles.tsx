@@ -10,10 +10,11 @@ export const Container = styled.div`
 `;
 
 export const LeftPanel = styled.aside`
-  width: 220px;
+  width: 240px;
+  min-width: 210px;
   flex-shrink: 0;
-  background: ${({ theme }) => theme.surfaceRaised};
-  border-right: 1px solid ${({ theme }) => theme.borderLight};
+  background: ${({ theme }) => theme.background};
+  border-right: 1px solid ${({ theme }) => theme.border};
   display: flex;
   flex-direction: column;
   overflow-y: auto;
@@ -21,17 +22,17 @@ export const LeftPanel = styled.aside`
 `;
 
 export const NewButton = styled.button`
-  margin: 0.75rem;
+  margin: 1rem;
   padding: 0.5rem 0.75rem;
   background: ${({ theme }) => theme.primary};
   color: ${({ theme }) => theme.textOnPrimary};
   border: none;
-  border-radius: 2rem;
+  border-radius: 0.4rem;
   font-size: 0.8rem;
   cursor: pointer;
   transition: background 0.15s;
   max-height: 2.5rem;
-  max-width: 8rem;
+  max-width: none;
 
   &:hover {
     background: ${({ theme }) => theme.primaryDark};
@@ -42,10 +43,10 @@ export const PlaylistItem = styled.div<{ $active?: boolean }>`
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.6rem 0.75rem;
+  padding: 0.7rem 1rem;
   cursor: pointer;
   background: ${(p) => (p.$active ? p.theme.active : 'transparent')};
-  border-left: 3px solid ${(p) => (p.$active ? p.theme.primary : 'transparent')};
+  border-left: 3px solid ${(p) => (p.$active ? p.theme.accent : 'transparent')};
   transition: background 0.15s;
   width: 100%;
 
@@ -109,8 +110,9 @@ export const RightPanel = styled.main`
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  padding: 1.5rem 2rem;
-  gap: 1rem;
+  padding: 28px clamp(24px, 2.6vw, 48px);
+  gap: 1.5rem;
+  min-width: 0;
 `;
 
 export const EmptyState = styled.p`
@@ -167,14 +169,14 @@ export const ColumnTitle = styled.h3`
   font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: ${({ theme }) => theme.primaryDark};
+  color: ${({ theme }) => theme.textMuted};
   margin: 0 0 0.25rem;
 `;
 
 export const SearchInput = styled.input`
-  padding: 0.4rem 0.75rem;
-  border: 1px solid ${({ theme }) => theme.borderLight};
-  border-radius: 2rem;
+  padding: 0.65rem 0.85rem;
+  border: 1px solid ${({ theme }) => theme.border};
+  border-radius: 0.4rem;
   font-size: 0.8rem;
   outline: none;
   background: ${({ theme }) => theme.surface};

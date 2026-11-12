@@ -9,13 +9,18 @@ import Page from '../../Components/Page/Page';
 import PageHeader from '../../Components/PageHeader/PageHeader';
 import StatusMessage from '../../Components/StatusMessage/StatusMessage';
 import ContextMenu, { ContextMenuItem } from '../../Components/ContextMenu/ContextMenu';
-import LibraryControls from '../../Components/LibraryControls/LibraryControls';
 import EditGroupMetadataModal, {
   GroupEditFields,
 } from '../../Components/EditGroupMetadataModal/EditGroupMetadataModal';
 import { useQueueActions } from '../../hooks/useQueueActions';
 import { useMetadataActions } from '../../hooks/useMetadataActions';
 import { Grid, GridItem, Card, ArtWrapper, CardInfo, CardTitle, CardBottom, CardArtist, CardCount } from './styles';
+
+import { LibraryHeading, RecentTrack } from './LibraryHeader';
+import FavouriteButton from '../../Components/Song/FavouriteButton';
+import { displayTitle } from '../../songDisplay';
+import { useI18n } from '../../i18n/I18nProvider';
+import LibraryControls from '../../Components/LibraryControls/LibraryControls';
 
 interface AlbumEntry {
   name: string;
@@ -26,7 +31,7 @@ interface AlbumEntry {
   songs: MetadataType[];
 }
 
-function groupByAlbum(library: MetadataType[]): AlbumEntry[] {
+function groupByAlbum(library: MetadataType[], alphabetical = true): AlbumEntry[] {
   const map = new Map<string, AlbumEntry>();
   for (const song of library) {
     const key = song.album ?? 'Unknown Album';
@@ -45,11 +50,13 @@ function groupByAlbum(library: MetadataType[]): AlbumEntry[] {
     if (!entry.image && song.image) entry.image = song.image;
     if (!entry.coverPath && song.path) entry.coverPath = song.path;
   }
-  return Array.from(map.values()).sort((a, b) => a.name.localeCompare(b.name));
+  const result = Array.from(map.values());
+  return alphabetical ? result.sort((a, b) => a.name.localeCompare(b.name)) : result;
 }
 
-const Albums = () => {
-  const { library, isScanning } = useContext(AppContext);
+const Albums = ({ home = false }: { home?: boolean }) => {
+  const { t } = useI18n();
+  const { library, isScanning, metadata, currentPath } = useContext(AppContext);
   const navigate = useNavigate();
   const [menu, setMenu] = useState<{ x: number; y: number; album: AlbumEntry } | null>(null);
   const [editAlbum, setEditAlbum] = useState<AlbumEntry | null>(null);
@@ -67,29 +74,30 @@ const Albums = () => {
     [editAlbum, batchUpdateSongsMetadata],
   );
 
-  if (isScanning) {
+  if (isScanning && !library.length && !home) {
     return (
       <Page>
-        <StatusMessage>Scanning music library…</StatusMessage>
+        <StatusMessage>{t('album.scanning')}</StatusMessage>
       </Page>
     );
   }
 
-  const albums = (() => {
-    const normalizedQuery = query.trim().toLocaleLowerCase();
-    return groupByAlbum(library)
-      .filter((album) => !normalizedQuery || `${album.name} ${album.artist ?? ''}`.toLocaleLowerCase().includes(normalizedQuery))
-      .sort((a, b) => {
-        if (sortBy === 'tracks') return b.songs.length - a.songs.length || a.name.localeCompare(b.name);
-        if (sortBy === 'year') return (Number(b.year) || 0) - (Number(a.year) || 0) || a.name.localeCompare(b.name);
-        return a.name.localeCompare(b.name);
-      });
-  })();
+  const allAlbums = groupByAlbum(library, !home);
+  const normalizedQuery = query.trim().toLocaleLowerCase();
+  const albums = allAlbums
+    .filter((album) => !normalizedQuery || `${album.name} ${album.artist ?? ''}`.toLocaleLowerCase().includes(normalizedQuery))
+    .sort((a, b) => {
+      if (sortBy === 'tracks') return b.songs.length - a.songs.length || a.name.localeCompare(b.name);
+      if (sortBy === 'year') return (Number(b.year) || 0) - (Number(a.year) || 0) || a.name.localeCompare(b.name);
+      return a.name.localeCompare(b.name);
+    });
+  const currentTrack =
+    library.find((song) => song.path === currentPath) ?? (currentPath ? { ...metadata, path: currentPath } : undefined);
 
-  if (albums.length === 0 && !query) {
+  if (allAlbums.length === 0 && !home) {
     return (
       <Page>
-        <StatusMessage>No albums found in your music library.</StatusMessage>
+        <StatusMessage>{t('album.noAlbums')}</StatusMessage>
       </Page>
     );
   }
@@ -97,11 +105,11 @@ const Albums = () => {
   const albumMenuItems = (album: AlbumEntry): ContextMenuItem[] => {
     const empty = album.songs.length === 0;
     return [
-      { label: 'Play', icon: <FaPlay />, onSelect: () => playSongs(album.songs), disabled: empty },
-      { label: 'Add to queue', icon: <FaListUl />, onSelect: () => addToQueue(album.songs), disabled: empty },
+      { label: t('common.play'), icon: <FaPlay />, onSelect: () => playSongs(album.songs), disabled: empty },
+      { label: t('common.addToQueue'), icon: <FaListUl />, onSelect: () => addToQueue(album.songs), disabled: empty },
       { type: 'divider' },
       {
-        label: 'Edit metadata',
+        label: t('common.editMetadata'),
         icon: <FaPenToSquare />,
         onSelect: () => {
           setMenu(null);
@@ -114,18 +122,36 @@ const Albums = () => {
 
   return (
     <Page>
-      <PageHeader>
-        Albums <Count>{albums.length}</Count>
-      </PageHeader>
-      <LibraryControls
-        query={query}
-        onQueryChange={setQuery}
-        sortBy={sortBy}
-        onSortChange={setSortBy}
-        searchLabel="Search albums or artists"
-        sortOptions={[{ value: 'name', label: 'Name' }, { value: 'tracks', label: 'Track count' }, { value: 'year', label: 'Year' }]}
-      />
-      {albums.length === 0 ? <StatusMessage>No albums match your search.</StatusMessage> : null}
+      {home ? (
+        <LibraryHeading>
+          <p>{t('album.welcomeEyebrow')}</p>
+          <h1>{t('album.welcomeTitle')}</h1>
+        </LibraryHeading>
+      ) : (
+        <PageHeader>
+          {t('sidebar.albums')} <Count>{albums.length}</Count>
+        </PageHeader>
+      )}
+      {!home && (
+        <LibraryControls
+          query={query}
+          onQueryChange={setQuery}
+          sortBy={sortBy}
+          onSortChange={setSortBy}
+          searchLabel="Search albums or artists"
+          sortOptions={[{ value: 'name', label: 'Name' }, { value: 'tracks', label: 'Track count' }, { value: 'year', label: 'Year' }]}
+        />
+      )}
+      {!albums.length && (
+        <StatusMessage>
+          {normalizedQuery ? 'No albums match your search.' : isScanning ? t('album.scanning') : t('album.emptyCollection')}
+        </StatusMessage>
+      )}
+      {!allAlbums.length && home && (
+        <button type="button" onClick={() => navigate('/settings')}>
+          Adicionar músicas
+        </button>
+      )}
       <Grid>
         {albums.map((album) => (
           <GridItem
@@ -148,15 +174,34 @@ const Albums = () => {
             <CardInfo>
               <CardTitle title={album.name}>{album.name}</CardTitle>
               <CardBottom>
-                <CardArtist title={album.artist ?? 'Unknown Artist'}>{album.artist ?? 'Unknown Artist'}</CardArtist>
-                <CardCount>
-                  {album.songs.length} {album.songs.length === 1 ? 'song' : 'songs'}
-                </CardCount>
+                <CardArtist title={album.artist ?? t('album.unknownArtist')}>
+                  {album.artist ?? t('album.unknownArtist')}
+                </CardArtist>
+                {!home && (
+                  <CardCount>
+                    {album.songs.length} {album.songs.length === 1 ? 'song' : 'songs'}
+                  </CardCount>
+                )}
               </CardBottom>
             </CardInfo>
           </GridItem>
         ))}
       </Grid>
+      {home && currentTrack && (
+        <RecentTrack>
+          <span className="equalizer" aria-hidden="true">
+            ▂ ▆ ▃ ▇
+          </span>
+          <button type="button" className="track-title" onClick={() => playSongs([currentTrack])}>
+            {displayTitle(currentTrack)}
+            <small>
+              {currentTrack.artist} · {currentTrack.album}
+            </small>
+          </button>
+          <FavouriteButton song={currentTrack} />
+          <time>{currentTrack.duration?.duration_formatted ?? ''}</time>
+        </RecentTrack>
+      )}
       {menu && <ContextMenu x={menu.x} y={menu.y} items={albumMenuItems(menu.album)} onClose={() => setMenu(null)} />}
       <EditGroupMetadataModal
         groupType="album"

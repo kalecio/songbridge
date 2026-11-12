@@ -8,7 +8,6 @@ import Page from '../../Components/Page/Page';
 import PageHeader from '../../Components/PageHeader/PageHeader';
 import StatusMessage from '../../Components/StatusMessage/StatusMessage';
 import ContextMenu, { ContextMenuItem } from '../../Components/ContextMenu/ContextMenu';
-import LibraryControls from '../../Components/LibraryControls/LibraryControls';
 import EditGroupMetadataModal, {
   GroupEditFields,
 } from '../../Components/EditGroupMetadataModal/EditGroupMetadataModal';
@@ -16,6 +15,8 @@ import { useLazyAlbumArt } from '../../hooks/useLazyAlbumArt';
 import { useQueueActions } from '../../hooks/useQueueActions';
 import { useMetadataActions } from '../../hooks/useMetadataActions';
 import { splitArtists } from '../../utils/artistUtils';
+import { useI18n } from '../../i18n/I18nProvider';
+import LibraryControls from '../../Components/LibraryControls/LibraryControls';
 import { Grid, Card, Avatar, ArtistName, ArtistMeta, AvatarImage } from './styles';
 
 interface ArtistEntry {
@@ -52,6 +53,7 @@ const ArtistAvatar = ({ artist }: { artist: ArtistEntry }) => {
 };
 
 const Artists = () => {
+  const { t } = useI18n();
   const { library, isScanning } = useContext(AppContext);
   const navigate = useNavigate();
   const [menu, setMenu] = useState<{ x: number; y: number; artist: ArtistEntry } | null>(null);
@@ -65,41 +67,35 @@ const Artists = () => {
     async (fields: GroupEditFields) => {
       if (!editArtist) return;
       const paths = editArtist.songs.map((s) => s.path).filter((p): p is string => Boolean(p));
-      await batchUpdateSongsMetadata(paths, { artist: fields.artist });
+      await batchUpdateSongsMetadata(paths, fields);
     },
     [editArtist, batchUpdateSongsMetadata],
   );
 
   if (isScanning) {
-    return <StatusMessage>Scanning music library…</StatusMessage>;
+    return <StatusMessage>{t('album.scanning')}</StatusMessage>;
   }
 
-  const artists = (() => {
-    const normalizedQuery = query.trim().toLocaleLowerCase();
-    return groupByArtist(library)
-      .filter((artist) => !normalizedQuery || artist.name.toLocaleLowerCase().includes(normalizedQuery))
-      .sort((a, b) => {
-        if (sortBy === 'tracks') return b.songs.length - a.songs.length || a.name.localeCompare(b.name);
-        if (sortBy === 'year') {
-          const latestYear = (entry: ArtistEntry) => Math.max(0, ...entry.songs.map((song) => Number(song.year) || 0));
-          return latestYear(b) - latestYear(a) || a.name.localeCompare(b.name);
-        }
-        return a.name.localeCompare(b.name);
-      });
-  })();
-
-  if (artists.length === 0 && !query) {
-    return <StatusMessage>No artists found in your music library.</StatusMessage>;
-  }
+  const normalizedQuery = query.trim().toLocaleLowerCase();
+  const artists = groupByArtist(library)
+    .filter((artist) => !normalizedQuery || artist.name.toLocaleLowerCase().includes(normalizedQuery))
+    .sort((a, b) => {
+      if (sortBy === 'tracks') return b.songs.length - a.songs.length || a.name.localeCompare(b.name);
+      if (sortBy === 'year') {
+        const latestYear = (entry: ArtistEntry) => Math.max(0, ...entry.songs.map((song) => Number(song.year) || 0));
+        return latestYear(b) - latestYear(a) || a.name.localeCompare(b.name);
+      }
+      return a.name.localeCompare(b.name);
+    });
 
   const artistMenuItems = (artist: ArtistEntry): ContextMenuItem[] => {
     const empty = artist.songs.length === 0;
     return [
-      { label: 'Play', icon: <FaPlay />, onSelect: () => playSongs(artist.songs), disabled: empty },
-      { label: 'Add to queue', icon: <FaListUl />, onSelect: () => addToQueue(artist.songs), disabled: empty },
+      { label: t('common.play'), icon: <FaPlay />, onSelect: () => playSongs(artist.songs), disabled: empty },
+      { label: t('common.addToQueue'), icon: <FaListUl />, onSelect: () => addToQueue(artist.songs), disabled: empty },
       { type: 'divider' },
       {
-        label: 'Edit metadata',
+        label: t('common.editMetadata'),
         icon: <FaPenToSquare />,
         onSelect: () => {
           setMenu(null);
@@ -113,7 +109,7 @@ const Artists = () => {
   return (
     <Page>
       <PageHeader>
-        Artists <Count>{artists.length}</Count>
+        {t('sidebar.artists')} <Count>{artists.length}</Count>
       </PageHeader>
       <LibraryControls
         query={query}
@@ -123,7 +119,9 @@ const Artists = () => {
         searchLabel="Search artists"
         sortOptions={[{ value: 'name', label: 'Name' }, { value: 'tracks', label: 'Track count' }, { value: 'year', label: 'Year' }]}
       />
-      {artists.length === 0 ? <StatusMessage>No artists match your search.</StatusMessage> : null}
+      {!artists.length && (
+        <StatusMessage>{normalizedQuery ? 'No artists match your search.' : t('artist.noArtists')}</StatusMessage>
+      )}
       <Grid>
         {artists.map((artist) => (
           <Card

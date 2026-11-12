@@ -2,44 +2,44 @@ import { FaVolumeXmark, FaVolumeOff, FaVolumeLow, FaVolumeHigh, FaHeart, FaMicro
 import { styled } from 'styled-components';
 
 const VolumeXmark = styled(FaVolumeXmark)`
-  width: 25px;
-  height: 25px;
-  color: ${({ theme }) => theme.accent};
+  width: 16px;
+  height: 16px;
+  color: ${({ theme }) => theme.textSecondary};
   cursor: pointer;
 `;
 
 const VolumeOff = styled(FaVolumeOff)`
-  width: 25px;
-  height: 25px;
-  color: ${({ theme }) => theme.accent};
+  width: 16px;
+  height: 16px;
+  color: ${({ theme }) => theme.textSecondary};
   cursor: pointer;
 `;
 
 const VolumeLow = styled(FaVolumeLow)`
-  width: 25px;
-  height: 25px;
-  color: ${({ theme }) => theme.accent};
+  width: 16px;
+  height: 16px;
+  color: ${({ theme }) => theme.textSecondary};
   cursor: pointer;
 `;
 
 const VolumeHigh = styled(FaVolumeHigh)`
-  width: 25px;
-  height: 25px;
-  color: ${({ theme }) => theme.accent};
+  width: 16px;
+  height: 16px;
+  color: ${({ theme }) => theme.textSecondary};
   cursor: pointer;
 `;
 
 const Heart = styled(FaHeart)<{ $isFavorite: boolean }>`
-  width: 25px;
-  height: 25px;
-  color: ${(props) => (props.$isFavorite ? props.theme.accent : props.theme.primaryDark)};
+  width: 16px;
+  height: 16px;
+  color: ${(props) => (props.$isFavorite ? props.theme.textSecondary : props.theme.textSecondary)};
   cursor: pointer;
 `;
 
 const LyricsIcon = styled(FaMicrophone)<{ $active: boolean }>`
-  width: 25px;
-  height: 25px;
-  color: ${({ $active, theme }) => ($active ? theme.accent : theme.primaryDark)};
+  width: 16px;
+  height: 16px;
+  color: ${({ $active, theme }) => ($active ? theme.textSecondary : theme.textMuted)};
   cursor: pointer;
 `;
 
@@ -47,8 +47,16 @@ const VolumeContainer = styled.div`
   display: flex;
   justify-content: flex-end;
   align-items: center;
-  gap: 1rem;
-  min-width: 150px;
+  gap: 14px;
+  min-width: 180px;
+  width: 24%;
+  & > button {
+    display: inline-flex;
+    color: ${({ theme }) => theme.textPrimary};
+    background: none;
+    border: 0;
+    cursor: pointer;
+  }
   flex-shrink: 0;
 `;
 

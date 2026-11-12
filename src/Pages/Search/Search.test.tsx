@@ -164,7 +164,7 @@ describe('Search', () => {
     it('renders results when only a playlist matches and no songs do', () => {
       renderSearch('favourites', { playlists });
       expect(within(getPlaylistsSection()).getByText('Favourites')).toBeInTheDocument();
-      expect(screen.queryByText(/results for/i)).not.toBeInTheDocument();
+      expect(screen.getByText(/results for/i)).toBeInTheDocument();
     });
 
     it('navigates to the playlist when its row is clicked', () => {

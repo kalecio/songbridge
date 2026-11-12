@@ -1,6 +1,7 @@
 import React, { createContext } from 'react';
 import { MetadataType, PlaylistType, RepeatMode } from '../types';
 import { DEFAULT_SHORTCUTS, ShortcutBindings } from '../keyboard';
+import { AppTheme } from '../theme';
 
 export interface ScanProgress {
   current: number;
@@ -11,6 +12,7 @@ interface AppContext {
   currentPath?: string;
   currentPlaylist: string[];
   currentTheme: string;
+  customThemes?: Record<string, AppTheme>;
   isPlaying: boolean;
   isScanning: boolean;
   scanProgress: ScanProgress;
@@ -26,6 +28,7 @@ interface AppContext {
   setCurrentPath?: (_path?: string) => void;
   setCurrentPlaylist?: (_playlist: string[]) => void;
   setCurrentTheme?: (_theme: string) => void;
+  setCustomThemes?: React.Dispatch<React.SetStateAction<Record<string, AppTheme>>>;
   setIsScanning?: (_isScanning: boolean) => void;
   setShortcuts?: (_shortcuts: ShortcutBindings) => void;
   setLibrary?: (_library: MetadataType[]) => void;

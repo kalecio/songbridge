@@ -41,7 +41,7 @@ it.each([
 it('applies settings to lyrics without showing controls on the lyrics page', async () => {
   const settings = renderWithContext(<Settings />);
   fireEvent.change(screen.getByRole('slider', { name: 'Lyrics font size' }), { target: { value: '56' } });
-  expect(screen.getByText('Encontre seu ritmo.')).toHaveStyle({ fontSize: '56px' });
+  expect(screen.getByText('Find your rhythm.')).toHaveStyle({ fontSize: '56px' });
   settings.unmount();
   mockInvoke.mockResolvedValue('First line');
   const lyrics = renderWithContext(<Lyrics />, { currentPath: '/music/test.mp3' });
@@ -107,7 +107,7 @@ it('opens LRCLIB search from missing lyrics and displays the downloaded lyrics w
   renderWithContext(<Lyrics />, { currentPath: song.path, metadata: song });
   fireEvent.click(await screen.findByRole('button', { name: 'Find lyrics' }));
   expect(await screen.findByRole('dialog')).toBeInTheDocument();
-  expect(screen.getByPlaceholderText('Track, artist, album...')).toHaveValue('Test track Test artist');
+  expect(screen.getByPlaceholderText('Track, artist, album…')).toHaveValue('Test track Test artist');
   fireEvent.click(await screen.findByRole('button', { name: 'Synced' }));
   expect(await screen.findByText('Downloaded lyrics')).toBeInTheDocument();
   expect(screen.queryByRole('button', { name: 'Find lyrics' })).not.toBeInTheDocument();

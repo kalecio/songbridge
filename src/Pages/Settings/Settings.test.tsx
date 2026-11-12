@@ -18,7 +18,7 @@ describe('Settings', () => {
 
   it('renders the section title', () => {
     const { getByText } = renderWithContext(<Settings />);
-    expect(getByText('Music Library Paths')).toBeInTheDocument();
+    expect(getByText('Music library paths')).toBeInTheDocument();
   });
 
   describe('theme selector', () => {
@@ -29,13 +29,13 @@ describe('Settings', () => {
 
     it('shows the current theme as the selected option', () => {
       const { getByRole } = renderWithContext(<Settings />, { currentTheme: 'Pastel' });
-      expect(getByRole('combobox')).toHaveValue('Pastel');
+      expect(getByRole('combobox', { name: 'Theme' })).toHaveValue('Pastel');
     });
 
     it('calls setCurrentTheme when a different theme is selected', () => {
       const setCurrentTheme = vi.fn();
       const { getByRole } = renderWithContext(<Settings />, { currentTheme: 'Midnight', setCurrentTheme });
-      fireEvent.change(getByRole('combobox'), { target: { value: 'Pastel' } });
+      fireEvent.change(getByRole('combobox', { name: 'Theme' }), { target: { value: 'Pastel' } });
       expect(setCurrentTheme).toHaveBeenCalledWith('Pastel');
     });
   });
