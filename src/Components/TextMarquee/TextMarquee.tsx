@@ -3,6 +3,7 @@ import { styled } from 'styled-components';
 
 interface TextMarqueeProps extends HTMLAttributes<HTMLSpanElement> {
   children: ReactNode;
+  hoverOnly?: boolean;
 }
 
 const Viewport = styled.span`
@@ -19,12 +20,17 @@ const Viewport = styled.span`
     transform: translateX(0);
   }
 
-  &[data-overflow='true'] .text-marquee__track {
+  &[data-overflow='true'][data-hover-only='false'] .text-marquee__track {
     animation: text-marquee-scroll var(--marquee-duration) linear infinite;
   }
 
-  &:hover .text-marquee__track,
-  &:focus-within .text-marquee__track {
+  &[data-overflow='true'][data-hover-only='true']:hover .text-marquee__track,
+  &[data-overflow='true'][data-hover-only='true']:focus-within .text-marquee__track {
+    animation: text-marquee-scroll var(--marquee-duration) linear infinite;
+  }
+
+  &[data-hover-only='false']:hover .text-marquee__track,
+  &[data-hover-only='false']:focus-within .text-marquee__track {
     animation-play-state: paused;
   }
 
@@ -55,7 +61,7 @@ const Viewport = styled.span`
   }
 `;
 
-const TextMarquee = ({ children, className, style, ...props }: TextMarqueeProps) => {
+const TextMarquee = ({ children, className, style, hoverOnly = false, ...props }: TextMarqueeProps) => {
   const viewportRef = useRef<HTMLSpanElement>(null);
   const textRef = useRef<HTMLSpanElement>(null);
   const [metrics, setMetrics] = useState({ textWidth: 0, viewportWidth: 0 });
@@ -102,15 +108,12 @@ const TextMarquee = ({ children, className, style, ...props }: TextMarqueeProps)
       ref={viewportRef}
       style={marqueeStyle}
       data-overflow={isOverflowing}
+      data-hover-only={hoverOnly}
       className={className}
     >
       <span className="text-marquee__track">
         <span ref={textRef}>{children}</span>
-        {isOverflowing && (
-          <span aria-hidden="true">
-            {children}
-          </span>
-        )}
+        {isOverflowing && <span aria-hidden="true">{children}</span>}
       </span>
     </Viewport>
   );
