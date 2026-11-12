@@ -25,7 +25,7 @@ serde_json = "1"
 rodio = "0.21"
 symphonia = { version = "0.5", features = ["all-formats"] }
 base64 = "0.22"
-tauri-plugin-dialog = "2"
+tauri-plugin-dialog = { version = "2", default-features = false, features = ["xdg-portal"] }
 tauri-plugin-log = "2"
 log = "0.4"
 crossbeam-channel = "0.5"
