@@ -19,6 +19,7 @@ import { Grid, GridItem, Card, ArtWrapper, CardInfo, CardTitle, CardBottom, Card
 import { LibraryHeading, RecentTrack } from './LibraryHeader';
 import FavouriteButton from '../../Components/Song/FavouriteButton';
 import { displayTitle } from '../../songDisplay';
+import { useI18n } from '../../i18n/I18nProvider';
 
 interface AlbumEntry {
   name: string;
@@ -53,6 +54,7 @@ function groupByAlbum(library: MetadataType[], alphabetical = true): AlbumEntry[
 }
 
 const Albums = ({ home = false }: { home?: boolean }) => {
+  const { t } = useI18n();
   const { library, isScanning, metadata, currentPath } = useContext(AppContext);
   const navigate = useNavigate();
   const [menu, setMenu] = useState<{ x: number; y: number; album: AlbumEntry } | null>(null);
@@ -72,7 +74,7 @@ const Albums = ({ home = false }: { home?: boolean }) => {
   if (isScanning && !library.length && !home) {
     return (
       <Page>
-        <StatusMessage>Scanning music library…</StatusMessage>
+        <StatusMessage>{t('album.scanning')}</StatusMessage>
       </Page>
     );
   }
@@ -85,7 +87,7 @@ const Albums = ({ home = false }: { home?: boolean }) => {
   if (allAlbums.length === 0 && !home) {
     return (
       <Page>
-        <StatusMessage>No albums found in your music library.</StatusMessage>
+        <StatusMessage>{t('album.noAlbums')}</StatusMessage>
       </Page>
     );
   }
@@ -93,11 +95,11 @@ const Albums = ({ home = false }: { home?: boolean }) => {
   const albumMenuItems = (album: AlbumEntry): ContextMenuItem[] => {
     const empty = album.songs.length === 0;
     return [
-      { label: 'Play', icon: <FaPlay />, onSelect: () => playSongs(album.songs), disabled: empty },
-      { label: 'Add to queue', icon: <FaListUl />, onSelect: () => addToQueue(album.songs), disabled: empty },
+      { label: t('common.play'), icon: <FaPlay />, onSelect: () => playSongs(album.songs), disabled: empty },
+      { label: t('common.addToQueue'), icon: <FaListUl />, onSelect: () => addToQueue(album.songs), disabled: empty },
       { type: 'divider' },
       {
-        label: 'Edit metadata',
+        label: t('common.editMetadata'),
         icon: <FaPenToSquare />,
         onSelect: () => {
           setMenu(null);
@@ -112,21 +114,15 @@ const Albums = ({ home = false }: { home?: boolean }) => {
     <Page>
       {home ? (
         <LibraryHeading>
-          <p>BOM TE VER POR AQUI</p>
-          <h1>Encontre seu ritmo.</h1>
+          <p>{t('album.welcomeEyebrow')}</p>
+          <h1>{t('album.welcomeTitle')}</h1>
         </LibraryHeading>
       ) : (
         <PageHeader>
-          Albums <Count>{albums.length}</Count>
+          {t('sidebar.albums')} <Count>{albums.length}</Count>
         </PageHeader>
       )}
-      {!albums.length && (
-        <StatusMessage>
-          {isScanning
-            ? 'Carregando sua biblioteca…'
-            : 'Sua coleção começa aqui. Adicione suas pastas nas configurações.'}
-        </StatusMessage>
-      )}
+      {!albums.length && <StatusMessage>{isScanning ? t('album.scanning') : t('album.emptyCollection')}</StatusMessage>}
       {!allAlbums.length && home && (
         <button type="button" onClick={() => navigate('/settings')}>
           Adicionar músicas

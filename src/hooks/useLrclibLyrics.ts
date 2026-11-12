@@ -1,5 +1,6 @@
 import { useCallback } from 'react';
 import { invoke } from '@tauri-apps/api/core';
+import { notifyLyricsUpdated } from '../lyricsEvents';
 import { LyricsTrackResponse, LyricsPreview } from '../types';
 
 export interface SearchLyricsParams {
@@ -43,6 +44,7 @@ export function useLrclibLyrics() {
       plainLyrics: params.plainLyrics,
       syncedLyrics: params.syncedLyrics,
     });
+    notifyLyricsUpdated(params.songPath);
   }, []);
 
   return {

@@ -1,0 +1,6 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "songbridge-website",
+  "pages_build_output_dir": "./dist-website",
+  "compatibility_date": "2026-11-08",
+}

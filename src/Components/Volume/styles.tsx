@@ -52,13 +52,10 @@ const VolumeContainer = styled.div`
   width: 24%;
   & > button {
     display: inline-flex;
-    color: ${({ theme }) => theme.textSecondary};
+    color: ${({ theme }) => theme.textPrimary};
     background: none;
     border: 0;
     cursor: pointer;
-  }
-  & > button[aria-pressed='true'] {
-    color: ${({ theme }) => theme.accent};
   }
   flex-shrink: 0;
 `;

@@ -18,8 +18,10 @@ import {
   HeroContent,
 } from '../../Components/HeroSection/HeroSection';
 import Playlist from '../../Components/Playlist/Playlist';
+import { useI18n } from '../../i18n/I18nProvider';
 
 const AlbumDetail = () => {
+  const { t } = useI18n();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { library, currentPath, setCurrentPath, setCurrentPlaylist } = useContext(AppContext);
@@ -60,7 +62,7 @@ const AlbumDetail = () => {
         )}
         <HeroOverlay />
         <HeroTop>
-          <BackButton onClick={() => navigate('/albums')}>Albums</BackButton>
+          <BackButton onClick={() => navigate('/albums')}>{t('album.backToAlbums')}</BackButton>
         </HeroTop>
         <HeroBottom>
           <HeroTitle title={albumName}>{albumName}</HeroTitle>

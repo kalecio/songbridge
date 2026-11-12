@@ -81,7 +81,7 @@ export const Play = styled(FaCirclePlay)`
   max-width: 30px;
   max-height: 30px;
   cursor: pointer;
-  color: ${({ theme }) => theme.accent};
+  color: inherit;
 `;
 
 export const SongList = styled.div<{ $scroll?: boolean }>`

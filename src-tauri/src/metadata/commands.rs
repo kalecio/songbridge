@@ -117,9 +117,59 @@ pub fn update_track_metadata(
     track: Option<u32>,
     cover_art_path: Option<String>,
     remove_cover_art: bool,
+    update_fields: Option<Vec<String>>,
     // Base name (no extension) for the new filename, or null to keep existing.
     new_filename: Option<String>,
 ) -> Result<AudioMetadata, String> {
+    let update_fields = update_fields.unwrap_or_else(|| {
+        vec![
+            "title".to_string(),
+            "artist".to_string(),
+            "album".to_string(),
+            "year".to_string(),
+            "track".to_string(),
+        ]
+    });
+    let update_title = update_fields.iter().any(|field| field == "title");
+    let update_artist = update_fields.iter().any(|field| field == "artist");
+    let update_album = update_fields.iter().any(|field| field == "album");
+    let update_year = update_fields.iter().any(|field| field == "year");
+    let update_track = update_fields.iter().any(|field| field == "track");
+
+    // Group metadata edits update only selected tags. Read untouched values
+    // from each file so writing one album field cannot erase track metadata.
+    let preserved = if update_title && update_artist && update_album && update_year && update_track
+    {
+        None
+    } else {
+        Some(get_metadata(&path)?)
+    };
+    let title = if update_title {
+        title
+    } else {
+        preserved.as_ref().and_then(|m| m.title.clone())
+    };
+    let artist = if update_artist {
+        artist
+    } else {
+        preserved.as_ref().and_then(|m| m.artist.clone())
+    };
+    let album = if update_album {
+        album
+    } else {
+        preserved.as_ref().and_then(|m| m.album.clone())
+    };
+    let year = if update_year {
+        year
+    } else {
+        preserved.as_ref().and_then(|m| m.year.clone())
+    };
+    let track = if update_track {
+        track
+    } else {
+        preserved.as_ref().and_then(|m| m.track)
+    };
+
     // ── Cover art ────────────────────────────────────────────────────────────
     let cover_art_update = if remove_cover_art {
         CoverArtUpdate::Remove

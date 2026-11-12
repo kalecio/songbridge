@@ -19,6 +19,7 @@ import {
 import Playlist from '../../Components/Playlist/Playlist';
 import { useLazyAlbumArt } from '../../hooks/useLazyAlbumArt';
 import { splitArtists } from '../../utils/artistUtils';
+import { useI18n } from '../../i18n/I18nProvider';
 
 interface AlbumGroup {
   name: string;
@@ -40,6 +41,7 @@ function groupByAlbum(songs: MetadataType[]): AlbumGroup[] {
 }
 
 const ArtistDetail = () => {
+  const { t } = useI18n();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { library, currentPath, setCurrentPath, setCurrentPlaylist } = useContext(AppContext);
@@ -69,7 +71,7 @@ const ArtistDetail = () => {
         )}
         <HeroOverlay />
         <HeroTop>
-          <BackButton onClick={() => navigate('/artists')}>Artists</BackButton>
+          <BackButton onClick={() => navigate('/artists')}>{t('sidebar.artists')}</BackButton>
         </HeroTop>
         <HeroBottom>
           <HeroTitle title={artistName}>{artistName}</HeroTitle>

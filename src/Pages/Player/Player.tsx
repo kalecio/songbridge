@@ -46,8 +46,10 @@ import Settings from '../Settings/Settings';
 import Search from '../Search/Search';
 import Lyrics from '../Lyrics/Lyrics';
 import CreatePlaylist from '../Playlist/Create';
+import { useI18n } from '../../i18n/I18nProvider';
 
 const Player = () => {
+  const { t } = useI18n();
   const navigate = useNavigate();
   const location = useLocation();
   const navigationType = useNavigationType();
@@ -323,11 +325,11 @@ const Player = () => {
         <Sidebar />
         <MainWrapper>
           <AppHeader>
-            <HistoryControls aria-label="Page navigation">
+            <HistoryControls aria-label={t('navigation.pageNavigation')}>
               <HistoryButton
                 type="button"
-                aria-label="Go back"
-                title="Go back"
+                aria-label={t('navigation.goBack')}
+                title={t('navigation.goBack')}
                 disabled={!historyAvailability.canGoBack}
                 onClick={() => navigate(-1)}
               >
@@ -335,8 +337,8 @@ const Player = () => {
               </HistoryButton>
               <HistoryButton
                 type="button"
-                aria-label="Go forward"
-                title="Go forward"
+                aria-label={t('navigation.goForward')}
+                title={t('navigation.goForward')}
                 disabled={!historyAvailability.canGoForward}
                 onClick={() => navigate(1)}
               >
@@ -347,20 +349,22 @@ const Player = () => {
               <SearchIcon />
               <SearchInput
                 ref={searchInputRef}
-                placeholder="Buscar músicas, artistas, álbuns…"
+                placeholder={t('navigation.searchPlaceholder')}
                 value={searchTerm}
                 onChange={handleInputChange}
-                aria-label="Search library"
+                aria-label={t('navigation.searchLibrary')}
               />
             </SearchWrapper>
-            <SettingsButton aria-label="Settings" onClick={() => navigate('/settings')} />
+            <SettingsButton aria-label={t('navigation.settings')} onClick={() => navigate('/settings')} />
           </AppHeader>
           {isScanning && (
             <ScanBanner role="status" aria-live="polite">
               <ScanBannerLabel>
-                <span>Scanning library…</span>
+                <span>{t('navigation.scanning')}</span>
                 <span>
-                  {scanProgress.total > 0 ? `${scanProgress.current} / ${scanProgress.total}` : 'Counting tracks…'}
+                  {scanProgress.total > 0
+                    ? t('navigation.trackProgress', { current: scanProgress.current, total: scanProgress.total })
+                    : t('navigation.countingTracks')}
                 </span>
               </ScanBannerLabel>
               <ProgressBar
@@ -383,7 +387,7 @@ const Player = () => {
               <Route path="/playlist/:id" element={<PlaylistRoute playlists={playlists} />} />
               <Route path="/playlist" element={<CreatePlaylist />} />
               {/* CATCH-ALL ROUTE FOR 404 HANDLING */}
-              <Route path="*" element={<div>404 - Page Not Found</div>} />
+              <Route path="*" element={<div>404 - {t('navigation.notFound')}</div>} />
             </Routes>
           </Main>
         </MainWrapper>

@@ -2,7 +2,7 @@
   "name": "songbridge",
   "private": true,
   "version": "0.6.0",
-  "author": "Kalécio Santana <kalecio.santana@gmail.com>",
+  "author": "Kal\u00e9cio Santana <kalecio.santana@gmail.com>",
   "description": "A desktop music player with library scanning, playlist management, and search",
   "type": "module",
   "scripts": {
@@ -14,7 +14,10 @@
     "lint:fix": "eslint . --ext .ts,.tsx --fix",
     "format": "prettier --write \"**/*.{ts,tsx,json}\"",
     "tauri": "tauri",
-    "prepare": "husky"
+    "prepare": "husky",
+    "website:build": "node scripts/build-website.mjs",
+    "website:dev": "vite website --host 127.0.0.1",
+    "website:deploy": "npm run website:build && wrangler pages deploy dist-website --project-name=songbridge-website --branch=main"
   },
   "dependencies": {
     "@tanstack/react-virtual": "^3.13.24",
@@ -56,7 +59,8 @@
     "typescript": "~5.6.2",
     "vite": "^6.0.3",
     "vite-plugin-svgr": "^4.3.0",
-    "vitest": "^3.0.0"
+    "vitest": "^3.0.0",
+    "wrangler": "^4.158.0"
   },
   "resolutions": {
     "styled-components": "^6"

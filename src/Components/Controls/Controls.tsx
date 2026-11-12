@@ -19,8 +19,10 @@ import { MetadataType, RepeatMode } from '../../types';
 import { AUDIO_EVENTS } from '../../audioEvents';
 import ProgressBar from '../ProgressBar/ProgressBar';
 import { TbRepeat, TbRepeatOnce } from 'react-icons/tb';
+import { useI18n } from '../../i18n/I18nProvider';
 
 const Controls = ({ onSeek }: { onSeek?: (_ratio: number) => void }) => {
+  const { t } = useI18n();
   const [isSongLoaded, setIsSongLoaded] = useState(false);
 
   const context = useContext(AppContext);
@@ -171,19 +173,27 @@ const Controls = ({ onSeek }: { onSeek?: (_ratio: number) => void }) => {
   return (
     <Container>
       <ControlsContainer>
-        <TransportButton aria-label="shuffle" aria-pressed={onShuffle} onClick={() => setOnShuffle?.(!onShuffle)}>
+        <TransportButton
+          aria-label={t('common.shuffle')}
+          aria-pressed={onShuffle}
+          onClick={() => setOnShuffle?.(!onShuffle)}
+        >
           <Shuffle $onShuffle={onShuffle} />
         </TransportButton>
-        <TransportButton aria-label="previous" onClick={handlePreviousSong}>
+        <TransportButton aria-label={t('common.previous')} onClick={handlePreviousSong}>
           <Prev />
         </TransportButton>
-        <TransportButton $primary aria-label={isPlaying ? 'pause' : 'play'} onClick={togglePlayPause}>
+        <TransportButton
+          $primary
+          aria-label={isPlaying ? t('common.pause') : t('common.play')}
+          onClick={togglePlayPause}
+        >
           {isPlaying ? <Pause /> : <Play />}
         </TransportButton>
-        <TransportButton aria-label="next" onClick={handleNextSong}>
+        <TransportButton aria-label={t('common.next')} onClick={handleNextSong}>
           <Next />
         </TransportButton>
-        <RepeatButton aria-label="repeat" $onRepeat={onRepeat} onClick={handleToggleRepeat}>
+        <RepeatButton aria-label={t('common.repeat')} $onRepeat={onRepeat} onClick={handleToggleRepeat}>
           {onRepeat === 'one' ? <TbRepeatOnce /> : <TbRepeat />}
         </RepeatButton>
       </ControlsContainer>

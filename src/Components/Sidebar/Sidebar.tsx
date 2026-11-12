@@ -35,12 +35,14 @@ import { useAddToPlaylistMenu } from '../../hooks/useAddToPlaylistMenu';
 import { useLyricsMenu } from '../../hooks/useLyricsMenu';
 import { useSidebarWidth, SIDEBAR_MIN_WIDTH } from '../../hooks/useSidebarWidth';
 import { displayTitle } from '../../songDisplay';
+import { useI18n } from '../../i18n/I18nProvider';
 
 type SidebarMenu =
   | { kind: 'queue'; x: number; y: number; song: MetadataType }
   | { kind: 'playlist'; x: number; y: number; playlist: PlaylistType };
 
 const Sidebar = () => {
+  const { t } = useI18n();
   const { width, maxWidth, isResizing, handleProps } = useSidebarWidth();
   const [songs, setSongs] = useState<MetadataType[]>([]);
   const [menu, setMenu] = useState<SidebarMenu | null>(null);
@@ -89,11 +91,11 @@ const Sidebar = () => {
   const isActive = (path: string) => (path === '/' ? location.pathname === '/' : location.pathname.startsWith(path));
 
   const queueMenuItems = (song: MetadataType): ContextMenuItem[] => [
-    { label: 'Play next', icon: <FaPlay />, onSelect: () => playNext(song) },
+    { label: t('common.playNext'), icon: <FaPlay />, onSelect: () => playNext(song) },
     buildAddToPlaylistItem(song),
     buildLyricsMenuItem(song),
     { type: 'divider' },
-    { label: 'Remove from queue', icon: <FaTrash />, onSelect: () => removeFromQueue(song.path), danger: true },
+    { label: t('common.removeFromQueue'), icon: <FaTrash />, onSelect: () => removeFromQueue(song.path), danger: true },
   ];
 
   const playlistMenuItems = (playlist: PlaylistType): ContextMenuItem[] => {
@@ -101,7 +103,7 @@ const Sidebar = () => {
     const empty = playlist.songs.length === 0;
     return [
       {
-        label: 'Play',
+        label: t('common.play'),
         icon: <FaPlay />,
         onSelect: () => {
           playSongs(playlist.songs);
@@ -109,11 +111,16 @@ const Sidebar = () => {
         },
         disabled: empty,
       },
-      { label: 'Add to queue', icon: <FaListUl />, onSelect: () => addToQueue(playlist.songs), disabled: empty },
-      { type: 'divider' },
-      { label: 'Rename', icon: <FaPen />, onSelect: () => renamePlaylist(playlist), disabled: isFavourites },
       {
-        label: 'Delete playlist',
+        label: t('common.addToQueue'),
+        icon: <FaListUl />,
+        onSelect: () => addToQueue(playlist.songs),
+        disabled: empty,
+      },
+      { type: 'divider' },
+      { label: t('common.rename'), icon: <FaPen />, onSelect: () => renamePlaylist(playlist), disabled: isFavourites },
+      {
+        label: t('common.deletePlaylist'),
         icon: <FaTrash />,
         onSelect: () => deletePlaylist(playlist),
         disabled: isFavourites,
@@ -132,20 +139,20 @@ const Sidebar = () => {
 
         {!showQueue && (
           <>
-            <SectionLabel>Sua biblioteca</SectionLabel>
+            <SectionLabel>{t('sidebar.library')}</SectionLabel>
             <Menu>
               <MenuItem $active={isActive('/') || isActive('/albums')} onClick={() => navigate('/')}>
-                <AlbumsIcon /> Álbuns
+                <AlbumsIcon /> {t('sidebar.albums')}
               </MenuItem>
               <MenuItem $active={isActive('/songs')} onClick={() => navigate('/songs')}>
-                <SongsIcon /> Músicas
+                <SongsIcon /> {t('sidebar.songs')}
               </MenuItem>
               <MenuItem $active={isActive('/artists')} onClick={() => navigate('/artists')}>
-                <ArtistsIcon /> Artistas
+                <ArtistsIcon /> {t('sidebar.artists')}
               </MenuItem>
             </Menu>
             <PlaylistsRow>
-              <SectionLabel>Playlists</SectionLabel>
+              <SectionLabel>{t('sidebar.playlists')}</SectionLabel>
             </PlaylistsRow>
             <Menu>
               {sortFavouritesFirst(playlists ?? []).map((playlist) => (
@@ -163,24 +170,24 @@ const Sidebar = () => {
                 >
                   {isFavouritesPlaylist(playlist.id) ? <HeartIcon /> : <FaListUl />}
                   <span className="sidebar-item-label" title={playlist.name}>
-                    {isFavouritesPlaylist(playlist.id) ? 'Favoritas' : playlist.name}
+                    {isFavouritesPlaylist(playlist.id) ? t('sidebar.favourites') : playlist.name}
                   </span>
                 </PlaylistItem>
               ))}
-              <MenuItem aria-label="manage playlists" onClick={() => navigate('/playlist')}>
-                <span aria-hidden="true">＋</span> Nova playlist
+              <MenuItem aria-label={t('sidebar.managePlaylists')} onClick={() => navigate('/playlist')}>
+                <span aria-hidden="true">＋</span> {t('sidebar.newPlaylist')}
               </MenuItem>
             </Menu>
             <SidebarFooter>
-              <span /> Sua coleção, por perto
+              <span /> {t('sidebar.collectionNearby')}
             </SidebarFooter>
           </>
         )}
 
         {showQueue && (
           <>
-            <QueueHeader aria-label="close queue" onClick={() => setShowQueue?.(false)}>
-              <BackIcon /> Queue
+            <QueueHeader aria-label={t('sidebar.closeQueue')} onClick={() => setShowQueue?.(false)}>
+              <BackIcon /> {t('sidebar.queue')}
             </QueueHeader>
             <Menu>
               {songs.map((song, index) => {

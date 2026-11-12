@@ -319,6 +319,15 @@ export const CancelThemeButton = styled.button`
   }
 `;
 
+export const DeleteThemeButton = styled(CancelThemeButton)`
+  color: ${({ theme }) => theme.error};
+  border-color: ${({ theme }) => theme.error};
+
+  &:hover {
+    background: ${({ theme }) => theme.accentBg};
+  }
+`;
+
 export const ShortcutList = styled.ul`
   list-style: none;
   margin: 0;
@@ -398,4 +407,15 @@ export const ThemeSelect = styled.select`
   &:focus {
     border-color: ${({ theme }) => theme.primary};
   }
+`;
+
+export const LyricsPreviewText = styled.p`
+  margin: 0;
+  padding: 16px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+  background: ${({ theme }) => theme.surface};
+  border: 1px solid ${({ theme }) => theme.border};
+  border-radius: 8px;
+  color: ${({ theme }) => theme.textSecondary};
 `;

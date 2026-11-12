@@ -16,6 +16,7 @@ import { useMetadataActions } from '../../hooks/useMetadataActions';
 import { useLyricsMenu } from '../../hooks/useLyricsMenu';
 import EditMetadataModal from '../../Components/EditMetadataModal/EditMetadataModal';
 import { displayTitle } from '../../songDisplay';
+import { useI18n } from '../../i18n/I18nProvider';
 import {
   SearchContainer,
   ResultsSection,
@@ -62,6 +63,7 @@ type SearchMenu =
   | { kind: 'song'; x: number; y: number; song: MetadataType };
 
 const Search = () => {
+  const { t, tc } = useI18n();
   const [searchParams] = useSearchParams();
   const query = searchParams.get('q') ?? '';
   const { library, playlists = [], setCurrentPath, setCurrentPlaylist } = useContext(AppContext);
@@ -112,26 +114,31 @@ const Search = () => {
     switch (m.kind) {
       case 'song':
         return [
-          { label: 'Play next', icon: <FaPlay />, onSelect: () => playNext(m.song) },
-          { label: 'Add to queue', icon: <FaListUl />, onSelect: () => addToQueue([m.song]) },
+          { label: t('common.playNext'), icon: <FaPlay />, onSelect: () => playNext(m.song) },
+          { label: t('common.addToQueue'), icon: <FaListUl />, onSelect: () => addToQueue([m.song]) },
           buildAddToPlaylistItem(m.song),
           { type: 'divider' as const },
-          { label: 'Edit metadata', icon: <FaPenToSquare />, onSelect: () => setEditSong(m.song) },
+          { label: t('common.editMetadata'), icon: <FaPenToSquare />, onSelect: () => setEditSong(m.song) },
           buildLyricsMenuItem(m.song),
         ];
       case 'artist': {
         const empty = m.songs.length === 0;
         return [
-          { label: 'Play', icon: <FaPlay />, onSelect: () => playSongs(m.songs), disabled: empty },
-          { label: 'Add to queue', icon: <FaListUl />, onSelect: () => addToQueue(m.songs), disabled: empty },
+          { label: t('common.play'), icon: <FaPlay />, onSelect: () => playSongs(m.songs), disabled: empty },
+          { label: t('common.addToQueue'), icon: <FaListUl />, onSelect: () => addToQueue(m.songs), disabled: empty },
         ];
       }
       case 'album': {
         const albumSongs = songsOfAlbum(m.albumName);
         const empty = albumSongs.length === 0;
         return [
-          { label: 'Play', icon: <FaPlay />, onSelect: () => playSongs(albumSongs), disabled: empty },
-          { label: 'Add to queue', icon: <FaListUl />, onSelect: () => addToQueue(albumSongs), disabled: empty },
+          { label: t('common.play'), icon: <FaPlay />, onSelect: () => playSongs(albumSongs), disabled: empty },
+          {
+            label: t('common.addToQueue'),
+            icon: <FaListUl />,
+            onSelect: () => addToQueue(albumSongs),
+            disabled: empty,
+          },
         ];
       }
       case 'playlist': {
@@ -139,7 +146,7 @@ const Search = () => {
         const empty = m.playlist.songs.length === 0;
         return [
           {
-            label: 'Play',
+            label: t('common.play'),
             icon: <FaPlay />,
             onSelect: () => {
               playSongs(m.playlist.songs);
@@ -147,11 +154,21 @@ const Search = () => {
             },
             disabled: empty,
           },
-          { label: 'Add to queue', icon: <FaListUl />, onSelect: () => addToQueue(m.playlist.songs), disabled: empty },
-          { type: 'divider' },
-          { label: 'Rename', icon: <FaPen />, onSelect: () => renamePlaylist(m.playlist), disabled: isFavourites },
           {
-            label: 'Delete playlist',
+            label: t('common.addToQueue'),
+            icon: <FaListUl />,
+            onSelect: () => addToQueue(m.playlist.songs),
+            disabled: empty,
+          },
+          { type: 'divider' },
+          {
+            label: t('common.rename'),
+            icon: <FaPen />,
+            onSelect: () => renamePlaylist(m.playlist),
+            disabled: isFavourites,
+          },
+          {
+            label: t('common.deletePlaylist'),
             icon: <FaTrash />,
             onSelect: () => deletePlaylist(m.playlist),
             disabled: isFavourites,
@@ -167,18 +184,18 @@ const Search = () => {
   const hasResults = matchingSongs.length > 0 || matchingPlaylists.length > 0;
 
   if (!hasResults) {
-    return <StatusMessage>No results for &ldquo;{query}&rdquo;</StatusMessage>;
+    return <StatusMessage>{t('search.noResults', { query })}</StatusMessage>;
   }
 
   return (
     <SearchContainer>
       <div>
-        <SearchEyebrow>Your library</SearchEyebrow>
-        <SearchHeading>Results for &ldquo;{query}&rdquo;</SearchHeading>
+        <SearchEyebrow>{t('search.yourLibrary')}</SearchEyebrow>
+        <SearchHeading>{t('search.resultsFor', { query })}</SearchHeading>
       </div>
       {artists.length > 0 && (
         <ResultsSection>
-          <SectionTitle>Artists</SectionTitle>
+          <SectionTitle>{t('search.artists')}</SectionTitle>
           <ArtistContainer>
             {artists.map(([name, metadata]) => (
               <ArtistRow
@@ -199,7 +216,7 @@ const Search = () => {
 
       {albums.length > 0 && (
         <ResultsSection>
-          <SectionTitle>Albums</SectionTitle>
+          <SectionTitle>{t('search.albums')}</SectionTitle>
           {albums.map(([name, song]) => (
             <AlbumRow
               key={name}
@@ -223,7 +240,7 @@ const Search = () => {
 
       {matchingPlaylists.length > 0 && (
         <ResultsSection>
-          <SectionTitle>Playlists</SectionTitle>
+          <SectionTitle>{t('search.playlists')}</SectionTitle>
           {matchingPlaylists.map((pl) => {
             const cover = library.find((l) => l.path === pl.songs[0]?.path) ?? pl.songs[0];
             const fav = isFavouritesPlaylist(pl.id);
@@ -247,9 +264,7 @@ const Search = () => {
                 )}
                 <AlbumInfo>
                   <AlbumTitle title={pl.name}>{pl.name}</AlbumTitle>
-                  <AlbumArtist>
-                    {pl.songs.length} {pl.songs.length === 1 ? 'song' : 'songs'}
-                  </AlbumArtist>
+                  <AlbumArtist>{tc('count.song', pl.songs.length)}</AlbumArtist>
                 </AlbumInfo>
               </AlbumRow>
             );
@@ -259,7 +274,7 @@ const Search = () => {
 
       {matchingSongs.length > 0 && (
         <ResultsSection>
-          <SectionTitle>Songs</SectionTitle>
+          <SectionTitle>{t('search.songs')}</SectionTitle>
           {matchingSongs.map((song, i) => {
             const title = displayTitle(song);
             return (

@@ -7,8 +7,10 @@ import { invoke } from '@tauri-apps/api/core';
 import { AppContext } from '../../Context/AppContext';
 import { useFavourites } from '../../hooks/useFavourites';
 import { AUDIO_EVENTS } from '../../audioEvents';
+import { useI18n } from '../../i18n/I18nProvider';
 
 const Volume = ({ showFavourite = true }: { showFavourite?: boolean }) => {
+  const { t } = useI18n();
   const [volume, setVolume] = useState(70);
   const [isVolumeOff, setVolumeOff] = useState(false);
 
@@ -28,11 +30,11 @@ const Volume = ({ showFavourite = true }: { showFavourite?: boolean }) => {
 
   const renderVolumeIcon = (volume: number, onClick: () => void) => {
     if (volume >= 0 && volume < 33) {
-      return <VolumeOff aria-label="volume-off" onClick={onClick} />;
+      return <VolumeOff aria-label={t('common.volumeOff')} onClick={onClick} />;
     } else if (volume >= 33 && volume < 66) {
-      return <VolumeLow aria-label="volume-low" onClick={onClick} />;
+      return <VolumeLow aria-label={t('common.volumeLow')} onClick={onClick} />;
     } else if (volume >= 66) {
-      return <VolumeHigh aria-label="volume-high" onClick={onClick} />;
+      return <VolumeHigh aria-label={t('common.volumeHigh')} onClick={onClick} />;
     }
   };
 
@@ -61,21 +63,21 @@ const Volume = ({ showFavourite = true }: { showFavourite?: boolean }) => {
     <VolumeContainer>
       <button
         type="button"
-        aria-label="Playing now"
+        aria-label={t('common.playingNow')}
         aria-pressed={Boolean(showQueue)}
         onClick={() => setShowQueue?.(!showQueue)}
       >
         <FaListUl />
       </button>
       <LyricsIcon
-        aria-label="Lyrics"
+        aria-label={t('common.lyrics')}
         $active={isLyricsActive}
         onClick={() => navigate(isLyricsActive ? '/' : '/lyrics')}
       />
       {showFavourite && (
         <Heart
           role="button"
-          aria-label={isFav ? 'remove from favourites' : 'add to favourites'}
+          aria-label={t(isFav ? 'common.removeFavourite' : 'common.addFavourite')}
           aria-pressed={isFav}
           aria-disabled={!canFavourite}
           $isFavorite={isFav}
@@ -83,7 +85,7 @@ const Volume = ({ showFavourite = true }: { showFavourite?: boolean }) => {
         />
       )}
       {isVolumeOff ? (
-        <VolumeXmark aria-label="volume-muted" onClick={handleToggleVolume} />
+        <VolumeXmark aria-label={t('common.volumeMuted')} onClick={handleToggleVolume} />
       ) : (
         renderVolumeIcon(volume, handleToggleVolume)
       )}

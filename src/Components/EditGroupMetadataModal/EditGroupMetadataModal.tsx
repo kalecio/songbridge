@@ -16,6 +16,7 @@ import {
   RemoveCoverButton,
 } from '../EditMetadataModal/styles';
 import { SubtitleText } from './styles';
+import { useI18n } from '../../i18n/I18nProvider';
 
 export interface GroupEditFields {
   artist?: string;
@@ -23,6 +24,7 @@ export interface GroupEditFields {
   year?: string;
   coverArtPath?: string;
   removeCoverArt?: boolean;
+  updateFields?: Array<'artist' | 'album' | 'year'>;
 }
 
 interface Props {
@@ -33,6 +35,7 @@ interface Props {
 }
 
 const EditGroupMetadataModal = ({ groupType, songs, onClose, onSave }: Props) => {
+  const { t, tc } = useI18n();
   const [artist, setArtist] = useState('');
   const [album, setAlbum] = useState('');
   const [year, setYear] = useState('');
@@ -95,16 +98,20 @@ const EditGroupMetadataModal = ({ groupType, songs, onClose, onSave }: Props) =>
     setSaving(true);
     setError(null);
     try {
-      const fields: GroupEditFields =
-        groupType === 'album'
-          ? {
-              artist: artist.trim() || undefined,
-              album: album.trim() || undefined,
-              year: year.trim() || undefined,
-              coverArtPath: coverArtPath ?? undefined,
-              removeCoverArt,
-            }
-          : { artist: artist.trim() || undefined };
+      const firstSong = songs?.[0];
+      const updateFields: GroupEditFields['updateFields'] = [];
+      if (artist.trim() !== (firstSong?.artist ?? '')) updateFields.push('artist');
+      if (groupType === 'album' && album.trim() !== (firstSong?.album ?? '')) updateFields.push('album');
+      if (groupType === 'album' && year.trim() !== (firstSong?.year ?? '')) updateFields.push('year');
+
+      const fields: GroupEditFields = {
+        artist: artist.trim() || undefined,
+        album: groupType === 'album' ? album.trim() || undefined : undefined,
+        year: groupType === 'album' ? year.trim() || undefined : undefined,
+        coverArtPath: coverArtPath ?? undefined,
+        removeCoverArt,
+        updateFields,
+      };
       await onSave(fields);
       onClose();
     } catch (e) {
@@ -120,8 +127,8 @@ const EditGroupMetadataModal = ({ groupType, songs, onClose, onSave }: Props) =>
   const count = songs?.length ?? 0;
   const modalTitle =
     groupType === 'album'
-      ? `Edit album — ${songs?.[0]?.album ?? 'Unknown Album'}`
-      : `Edit artist — ${songs?.[0]?.artist ?? 'Unknown Artist'}`;
+      ? t('metadata.editAlbum', { name: songs?.[0]?.album ?? t('common.unknownAlbum') })
+      : t('metadata.editArtist', { name: songs?.[0]?.artist ?? t('common.unknownArtist') });
 
   return (
     <Modal
@@ -132,30 +139,28 @@ const EditGroupMetadataModal = ({ groupType, songs, onClose, onSave }: Props) =>
       footer={
         <>
           <Button $variant="ghost" onClick={onClose} disabled={saving}>
-            Cancel
+            {t('common.cancel')}
           </Button>
           <Button $variant="primary" onClick={handleSave} disabled={saving}>
-            {saving ? 'Saving…' : 'Save'}
+            {saving ? t('common.saving') : t('common.save')}
           </Button>
         </>
       }
     >
-      <SubtitleText>
-        {count} {count === 1 ? 'song' : 'songs'} will be updated
-      </SubtitleText>
+      <SubtitleText>{tc('count.trackWillUpdate', count)}</SubtitleText>
 
       {groupType === 'album' && (
         <CoverArtSection>
           <CoverArtPreview $hasImage={hasArt}>
-            {displayedArt ? <img src={displayedArt} alt="Cover art" /> : <FaImage />}
+            {displayedArt ? <img src={displayedArt} alt={t('metadata.coverArt')} /> : <FaImage />}
           </CoverArtPreview>
           <CoverArtActions>
             <CoverArtButton onClick={handleChangeCover} disabled={saving || previewLoading}>
-              {previewLoading ? 'Loading…' : 'Change cover'}
+              {previewLoading ? t('common.loading') : t('common.changeCover')}
             </CoverArtButton>
             {(hasArt || coverArtPath) && (
               <RemoveCoverButton onClick={handleRemoveCover} disabled={saving}>
-                Remove cover
+                {t('common.removeCover')}
               </RemoveCoverButton>
             )}
           </CoverArtActions>
@@ -163,18 +168,18 @@ const EditGroupMetadataModal = ({ groupType, songs, onClose, onSave }: Props) =>
       )}
 
       <FieldGroup>
-        <Label htmlFor="egm-artist">Artist</Label>
+        <Label htmlFor="egm-artist">{t('metadata.artist')}</Label>
         <Input id="egm-artist" value={artist} onChange={(e) => setArtist(e.target.value)} onKeyDown={handleKeyDown} />
       </FieldGroup>
 
       {groupType === 'album' && (
         <>
           <FieldGroup>
-            <Label htmlFor="egm-album">Album</Label>
+            <Label htmlFor="egm-album">{t('metadata.album')}</Label>
             <Input id="egm-album" value={album} onChange={(e) => setAlbum(e.target.value)} onKeyDown={handleKeyDown} />
           </FieldGroup>
           <FieldGroup>
-            <Label htmlFor="egm-year">Year</Label>
+            <Label htmlFor="egm-year">{t('metadata.year')}</Label>
             <Input
               id="egm-year"
               value={year}

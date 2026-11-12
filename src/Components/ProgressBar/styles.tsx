@@ -20,13 +20,16 @@ const CustomProgressBar = styled.div`
 const Slider = styled.input.attrs({ type: 'range' })<{ $height?: number }>`
   -webkit-appearance: none;
   width: 100%;
-  height: 16px;
-  top: -6px;
+  /* A 32px hit area makes it easier to seek without thickening the visual track. */
+  height: 32px;
+  top: 50%;
   cursor: pointer;
   background: none;
   outline: none;
   opacity: 1;
   position: absolute;
+  transform: translateY(-50%);
+  touch-action: pan-y;
 
   &:focus-visible {
     outline: 2px solid ${({ theme }) => theme.accent};

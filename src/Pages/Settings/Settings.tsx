@@ -5,13 +5,18 @@ import { AppContext } from '../../Context/AppContext';
 import Page from '../../Components/Page/Page';
 import PageHeader from '../../Components/PageHeader/PageHeader';
 import { AppTheme, createCustomTheme, defaultTheme, ThemeColorOverrides, themes } from '../../theme';
-import { DEFAULT_SHORTCUTS, SHORTCUT_LABELS, ShortcutAction, eventToBinding, formatBinding } from '../../keyboard';
+import LyricsFontControl from '../../Components/LyricsFontControl/LyricsFontControl';
+import { useLyricsFontSize } from '../../hooks/useLyricsFontSize';
+import { DEFAULT_SHORTCUTS, ShortcutAction, eventToBinding, formatBinding } from '../../keyboard';
+import { Locale, TranslationKey } from '../../i18n/types';
+import { useI18n } from '../../i18n/I18nProvider';
 import {
   AddButton,
   ButtonRow,
   CancelThemeButton,
   CreateThemeButton,
   CreateThemeActions,
+  DeleteThemeButton,
   CreateThemeHeader,
   CreateThemePanel,
   EmptyNote,
@@ -43,16 +48,28 @@ import {
   ThemeSourceField,
   ThemeTextField,
   TrashIcon,
+  LyricsPreviewText,
 } from './styles';
 
-const themeColorFields: { key: keyof ThemeColorOverrides; label: string }[] = [
-  { key: 'primary', label: 'Primary' },
-  { key: 'accent', label: 'Accent' },
-  { key: 'background', label: 'Background' },
-  { key: 'surface', label: 'Surface' },
-  { key: 'textPrimary', label: 'Text' },
-  { key: 'textSecondary', label: 'Secondary text' },
+const themeColorFields: { key: keyof ThemeColorOverrides; label: TranslationKey }[] = [
+  { key: 'primary', label: 'theme.primary' },
+  { key: 'accent', label: 'theme.accent' },
+  { key: 'background', label: 'theme.background' },
+  { key: 'surface', label: 'theme.surface' },
+  { key: 'textPrimary', label: 'theme.text' },
+  { key: 'textSecondary', label: 'theme.secondaryText' },
 ];
+
+const shortcutTranslationKeys: Record<ShortcutAction, TranslationKey> = {
+  playPause: 'shortcut.playPause',
+  next: 'shortcut.next',
+  previous: 'shortcut.previous',
+  shuffle: 'shortcut.shuffle',
+  repeat: 'shortcut.repeat',
+  mute: 'shortcut.mute',
+  openFiles: 'shortcut.openFiles',
+  search: 'shortcut.search',
+};
 
 const getThemeColorDraft = (theme: AppTheme): ThemeColorOverrides => ({
   primary: theme.primary,
@@ -64,6 +81,7 @@ const getThemeColorDraft = (theme: AppTheme): ThemeColorOverrides => ({
 });
 
 const Settings = () => {
+  const { t, locale, setLocale } = useI18n();
   const {
     libraryPaths,
     setLibraryPaths,
@@ -76,19 +94,26 @@ const Settings = () => {
     shortcuts,
     setShortcuts,
   } = useContext(AppContext);
+  const { fontSize } = useLyricsFontSize();
   const [scanSuccess, setScanSuccess] = useState(false);
   const successTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [recording, setRecording] = useState<ShortcutAction | null>(null);
   const themeCatalog = { ...themes, ...customThemes };
   const [creatingTheme, setCreatingTheme] = useState(false);
+  const [renamingTheme, setRenamingTheme] = useState(false);
+  const [renamedTheme, setRenamedTheme] = useState('');
   const [themeName, setThemeName] = useState('');
   const [baseThemeName, setBaseThemeName] = useState(currentTheme);
   const [themeColors, setThemeColors] = useState<ThemeColorOverrides>(() =>
     getThemeColorDraft(themeCatalog[currentTheme] ?? defaultTheme),
   );
+  const themeNameCandidate = renamingTheme ? renamedTheme : themeName;
   const duplicateThemeName = Object.keys(themeCatalog).some(
-    (name) => name.toLocaleLowerCase() === themeName.trim().toLocaleLowerCase(),
+    (name) =>
+      name.toLocaleLowerCase() === themeNameCandidate.trim().toLocaleLowerCase() &&
+      !(renamingTheme && name === currentTheme),
   );
+  const isCustomTheme = Boolean(customThemes[currentTheme]);
 
   useEffect(() => {
     if (!recording) return;
@@ -143,7 +168,15 @@ const Settings = () => {
     setThemeName(`${currentTheme} Custom`);
     setBaseThemeName(currentTheme);
     setThemeColors(getThemeColorDraft(base));
+    setRenamingTheme(false);
     setCreatingTheme(true);
+  };
+
+  const startRenamingTheme = () => {
+    if (!isCustomTheme) return;
+    setRenamedTheme(currentTheme);
+    setCreatingTheme(false);
+    setRenamingTheme(true);
   };
 
   const handleCreateTheme = () => {
@@ -156,15 +189,63 @@ const Settings = () => {
     setCreatingTheme(false);
   };
 
+  const handleRenameTheme = () => {
+    const nextName = renamedTheme.trim();
+    if (!isCustomTheme || !nextName || duplicateThemeName || !setCustomThemes) return;
+    setCustomThemes((previous) => {
+      const next = { ...previous };
+      const theme = next[currentTheme];
+      if (!theme) return previous;
+      delete next[currentTheme];
+      next[nextName] = { ...theme, name: nextName };
+      return next;
+    });
+    setCurrentTheme?.(nextName);
+    setRenamingTheme(false);
+  };
+
+  const handleDeleteTheme = () => {
+    if (!isCustomTheme || !setCustomThemes || !window.confirm(t('theme.confirmDelete', { name: currentTheme }))) {
+      return;
+    }
+    setCustomThemes((previous) => {
+      const next = { ...previous };
+      delete next[currentTheme];
+      return next;
+    });
+    setCurrentTheme?.(defaultTheme.name);
+  };
+
   return (
     <Page>
-      <PageHeader>Settings</PageHeader>
+      <PageHeader>{t('settings.title')}</PageHeader>
       <SettingsContainer>
         <Section>
-          <SectionTitle>Appearance</SectionTitle>
+          <SectionTitle>{t('settings.appearance')}</SectionTitle>
           <ThemeRow>
-            <ThemeLabel htmlFor="theme-select">Theme</ThemeLabel>
-            <ThemeSelect id="theme-select" value={currentTheme} onChange={(e) => setCurrentTheme?.(e.target.value)}>
+            <ThemeLabel htmlFor="locale-select">{t('settings.language')}</ThemeLabel>
+            <ThemeSelect
+              id="locale-select"
+              value={locale}
+              onChange={(event) => setLocale(event.target.value as Locale)}
+            >
+              {(['en-US', 'es-ES', 'pt-BR'] as const).map((code) => (
+                <option key={code} value={code}>
+                  {t(code === 'en-US' ? 'locale.enUS' : code === 'es-ES' ? 'locale.esES' : 'locale.ptBR')}
+                </option>
+              ))}
+            </ThemeSelect>
+          </ThemeRow>
+          <ThemeRow>
+            <ThemeLabel htmlFor="theme-select">{t('settings.theme')}</ThemeLabel>
+            <ThemeSelect
+              id="theme-select"
+              value={currentTheme}
+              onChange={(e) => {
+                setRenamingTheme(false);
+                setCurrentTheme?.(e.target.value);
+              }}
+            >
               {Object.keys(themeCatalog).map((name) => (
                 <option key={name} value={name}>
                   {name}
@@ -172,27 +253,67 @@ const Settings = () => {
               ))}
             </ThemeSelect>
             <CreateThemeButton type="button" onClick={startCreatingTheme}>
-              Create theme
+              {t('theme.create')}
             </CreateThemeButton>
+            {isCustomTheme && (
+              <>
+                <CancelThemeButton type="button" onClick={startRenamingTheme}>
+                  {t('theme.rename')}
+                </CancelThemeButton>
+                <DeleteThemeButton type="button" onClick={handleDeleteTheme}>
+                  {t('theme.delete')}
+                </DeleteThemeButton>
+              </>
+            )}
           </ThemeRow>
+          {renamingTheme && isCustomTheme && (
+            <CreateThemePanel aria-label={t('theme.renameTitle')}>
+              <CreateThemeHeader>{t('theme.renameTitle')}</CreateThemeHeader>
+              <ThemeTextField>
+                <span>{t('theme.name')}</span>
+                <ThemeNameInput
+                  autoComplete="off"
+                  maxLength={40}
+                  value={renamedTheme}
+                  onChange={(event) => setRenamedTheme(event.target.value)}
+                  placeholder={t('theme.namePlaceholder')}
+                />
+              </ThemeTextField>
+              {duplicateThemeName && renamedTheme.trim() && (
+                <ThemeNameError role="alert">{t('theme.duplicateName')}</ThemeNameError>
+              )}
+              <CreateThemeActions>
+                <CancelThemeButton type="button" onClick={() => setRenamingTheme(false)}>
+                  {t('common.cancel')}
+                </CancelThemeButton>
+                <CreateThemeButton
+                  type="button"
+                  onClick={handleRenameTheme}
+                  disabled={!renamedTheme.trim() || duplicateThemeName || !setCustomThemes}
+                >
+                  {t('theme.updateName')}
+                </CreateThemeButton>
+              </CreateThemeActions>
+            </CreateThemePanel>
+          )}
           {creatingTheme && (
-            <CreateThemePanel aria-label="Create a custom theme">
-              <CreateThemeHeader>Clone and customize a theme</CreateThemeHeader>
+            <CreateThemePanel aria-label={t('theme.cloneCustomize')}>
+              <CreateThemeHeader>{t('theme.cloneCustomize')}</CreateThemeHeader>
               <ThemeRow>
                 <ThemeTextField>
-                  <span>Name</span>
+                  <span>{t('theme.name')}</span>
                   <ThemeNameInput
                     autoComplete="off"
                     maxLength={40}
                     value={themeName}
                     onChange={(event) => setThemeName(event.target.value)}
-                    placeholder="My theme"
+                    placeholder={t('theme.namePlaceholder')}
                   />
                 </ThemeTextField>
                 <ThemeSourceField>
-                  <span>Clone from</span>
+                  <span>{t('theme.cloneFrom')}</span>
                   <ThemeSelect
-                    aria-label="Clone from theme"
+                    aria-label={t('theme.cloneFrom')}
                     value={baseThemeName}
                     onChange={(event) => {
                       const name = event.target.value;
@@ -209,14 +330,14 @@ const Settings = () => {
                 </ThemeSourceField>
               </ThemeRow>
               {duplicateThemeName && themeName.trim() && (
-                <ThemeNameError role="alert">A theme with this name already exists.</ThemeNameError>
+                <ThemeNameError role="alert">{t('theme.duplicateName')}</ThemeNameError>
               )}
               <ThemeColorGrid>
                 {themeColorFields.map(({ key, label }) => (
                   <ThemeColorField key={key}>
-                    <span>{label}</span>
+                    <span>{t(label)}</span>
                     <ThemeColorInput
-                      aria-label={label}
+                      aria-label={t(label)}
                       type="color"
                       value={themeColors[key]}
                       onChange={(event) => setThemeColors((previous) => ({ ...previous, [key]: event.target.value }))}
@@ -226,14 +347,14 @@ const Settings = () => {
               </ThemeColorGrid>
               <CreateThemeActions>
                 <CancelThemeButton type="button" onClick={() => setCreatingTheme(false)}>
-                  Cancel
+                  {t('common.cancel')}
                 </CancelThemeButton>
                 <CreateThemeButton
                   type="button"
                   onClick={handleCreateTheme}
                   disabled={!themeName.trim() || duplicateThemeName || !setCustomThemes}
                 >
-                  Save theme
+                  {t('theme.save')}
                 </CreateThemeButton>
               </CreateThemeActions>
             </CreateThemePanel>
@@ -241,37 +362,45 @@ const Settings = () => {
         </Section>
 
         <Section>
-          <SectionTitle>Keyboard Shortcuts</SectionTitle>
+          <SectionTitle>{t('settings.keyboardShortcuts')}</SectionTitle>
           <ShortcutList>
-            {(Object.keys(SHORTCUT_LABELS) as ShortcutAction[]).map((action) => (
+            {(Object.keys(shortcutTranslationKeys) as ShortcutAction[]).map((action) => (
               <ShortcutRow key={action}>
-                <ShortcutLabel>{SHORTCUT_LABELS[action]}</ShortcutLabel>
+                <ShortcutLabel>{t(shortcutTranslationKeys[action])}</ShortcutLabel>
                 <ShortcutKey
-                  aria-label={`Edit shortcut for ${SHORTCUT_LABELS[action]}`}
+                  aria-label={t('settings.editShortcut', { action: t(shortcutTranslationKeys[action]) })}
                   $recording={recording === action}
                   onClick={() => setRecording(action)}
                 >
-                  {recording === action ? 'Press a key…' : formatBinding(shortcuts[action]) || 'Unset'}
+                  {recording === action
+                    ? t('settings.pressAKey')
+                    : formatBinding(shortcuts[action]) || t('settings.unset')}
                 </ShortcutKey>
               </ShortcutRow>
             ))}
           </ShortcutList>
           <ResetShortcutsButton onClick={() => setShortcuts?.(DEFAULT_SHORTCUTS)}>
-            Reset to defaults
+            {t('settings.resetShortcuts')}
           </ResetShortcutsButton>
         </Section>
 
         <Section>
-          <SectionTitle>Music Library Paths</SectionTitle>
+          <SectionTitle>{t('common.lyrics')}</SectionTitle>
+          <LyricsFontControl />
+          <LyricsPreviewText style={{ fontSize }}>{t('album.welcomeTitle')}</LyricsPreviewText>
+        </Section>
+
+        <Section>
+          <SectionTitle>{t('settings.musicLibraryPaths')}</SectionTitle>
 
           {libraryPaths.length === 0 ? (
-            <EmptyNote>No folders added yet. The default system music directory will be scanned.</EmptyNote>
+            <EmptyNote>{t('settings.noFolders')}</EmptyNote>
           ) : (
             <PathList>
               {libraryPaths.map((path) => (
                 <PathItem key={path}>
                   <PathText title={path}>{path}</PathText>
-                  <RemoveButton aria-label={`Remove ${path}`} onClick={() => handleRemove(path)}>
+                  <RemoveButton aria-label={t('settings.removePath', { path })} onClick={() => handleRemove(path)}>
                     <TrashIcon />
                   </RemoveButton>
                 </PathItem>
@@ -282,14 +411,14 @@ const Settings = () => {
           <ButtonRow>
             <AddButton onClick={handleAddFolder} disabled={isScanning}>
               <FolderPlusIcon />
-              Add folder
+              {t('settings.addFolder')}
             </AddButton>
             <RescanButton onClick={handleRescan} disabled={isScanning || libraryPaths.length === 0}>
               <RescanIcon $spinning={isScanning} />
-              Rescan library
+              {t('settings.rescanLibrary')}
             </RescanButton>
-            {isScanning && <ScanningBadge>Scanning…</ScanningBadge>}
-            {!isScanning && scanSuccess && <SuccessBadge>Library scan complete!</SuccessBadge>}
+            {isScanning && <ScanningBadge>{t('settings.scanning')}</ScanningBadge>}
+            {!isScanning && scanSuccess && <SuccessBadge>{t('settings.scanComplete')}</SuccessBadge>}
           </ButtonRow>
         </Section>
       </SettingsContainer>

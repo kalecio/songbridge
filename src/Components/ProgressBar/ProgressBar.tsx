@@ -36,6 +36,13 @@ const ProgressBar = ({ progress = 0, max, onSeek }: ProgressBarProps) => {
     }
   };
 
+  const handleKeyUp = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    const seekKeys = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End', 'PageUp', 'PageDown'];
+    if (seekKeys.includes(event.key)) {
+      onSeek?.(Number(event.currentTarget.value) / max);
+    }
+  };
+
   return (
     <CustomProgressBar>
       <ProgressBarInner style={{ width: `${progressValue}%` }} />
@@ -47,13 +54,7 @@ const ProgressBar = ({ progress = 0, max, onSeek }: ProgressBarProps) => {
         onMouseUp={handleMouseUp}
         onTouchStart={handleMouseDown}
         onTouchEnd={handleMouseUp}
-        onKeyUp={(event) => {
-          if (
-            ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End', 'PageUp', 'PageDown'].includes(event.key)
-          ) {
-            onSeek?.(Number(event.currentTarget.value) / max);
-          }
-        }}
+        onKeyUp={handleKeyUp}
         min={0}
         max={max}
       />
