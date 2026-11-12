@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 interface Env {
   LASTFM_API_KEY: string;
   LASTFM_API_SECRET: string;
-  REQUEST_LIMITER: { limit(input: { key: string }): Promise<{ success: boolean }> };
+  REQUEST_LIMITER: { limit(_input: { key: string }): Promise<{ success: boolean }> };
 }
 
 const LASTFM_URL = "https://ws.audioscrobbler.com/2.0/";
