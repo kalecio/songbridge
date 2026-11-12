@@ -20,6 +20,12 @@ pub struct Suggestion {
     pub artwork: Option<String>,
     pub url: String,
 }
+#[derive(Serialize)]
+pub struct AlbumTrack {
+    pub title: String,
+    pub artist: String,
+    pub track: u32,
+}
 
 fn text(value: &Value) -> Option<String> {
     value
@@ -173,6 +179,68 @@ pub async fn lastfm_details(
             url: source_url(&v["url"]),
         }
     })
+}
+
+#[tauri::command]
+pub async fn lastfm_album_tracks(
+    service: tauri::State<'_, Arc<Service>>,
+    album: String,
+    artist_name: String,
+) -> Result<Vec<AlbumTrack>, String> {
+    let _gate = service.gate.lock().await;
+    service.session_key()?;
+    if album.trim().is_empty() || album.len() > 500 || artist_name.len() > 500 {
+        return Err("invalid_request".into());
+    }
+    let body = service
+        .client
+        .request(
+            "album.getInfo",
+            BTreeMap::from([
+                ("album".into(), album),
+                ("artist".into(), artist_name),
+                ("autocorrect".into(), "0".into()),
+            ]),
+            None,
+        )
+        .await
+        .map_err(|error| error.code)?;
+    let album_info = body.get("album").ok_or("no_results")?;
+    let album_artist = artist(&album_info["artist"]);
+    let rows = &album_info["tracks"]["track"];
+    let rows = if let Some(rows) = rows.as_array() {
+        rows.clone()
+    } else if rows.is_object() {
+        vec![rows.clone()]
+    } else {
+        return Err("no_results".into());
+    };
+    Ok(rows
+        .into_iter()
+        .enumerate()
+        .filter_map(|(index, row)| {
+            Some(AlbumTrack {
+                title: text(&row["name"])?,
+                artist: {
+                    let track_artist = artist(&row["artist"]);
+                    if track_artist.is_empty() {
+                        album_artist.clone()
+                    } else {
+                        track_artist
+                    }
+                },
+                track: row["@attr"]["rank"]
+                    .as_str()
+                    .and_then(|rank| rank.parse().ok())
+                    .or_else(|| {
+                        row["@attr"]["rank"]
+                            .as_u64()
+                            .and_then(|rank| rank.try_into().ok())
+                    })
+                    .unwrap_or(index as u32 + 1),
+            })
+        })
+        .collect())
 }
 
 #[derive(Serialize)]

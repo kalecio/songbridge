@@ -5,6 +5,7 @@ import { useI18n } from '../../i18n/I18nProvider';
 import { Button } from '../Modal/styles';
 import { useLastfm, useLastfmReason } from './LastfmProvider';
 import { Actions, History, Panel } from './styles';
+import LastfmLibraryReview from './LastfmLibraryReview';
 
 export const LastfmHistory = () => {
   const { status } = useLastfm();
@@ -74,6 +75,7 @@ const LastfmSettings = () => {
             {t('lastfm.enable')}
           </label>
           <p>{t('lastfm.pending', { count: status.pending })}</p>
+          <LastfmLibraryReview />
         </>
       )}
       <Actions>

@@ -50,6 +50,8 @@ The implementation follows Last.fm's [Scrobbling 2.0 guide](https://www.last.fm/
 
 The **Last.fm** indicator in the player opens current status and recent activity. Settings also includes recent activity and pending counts. Reasons include missing tags, short/unknown duration, skipping too early, disabled scrobbling, network errors, expired authorization, rate limits, rejected tags, and invalid timestamps. Missing tags offer access to the metadata editor.
 
+In **Settings → Last.fm → Review library metadata**, Songbridge can compare every local track's title, artist, album, track number, and cover art with Last.fm. The scan reads tags from each file and checks tracks sequentially, showing progress and allowing cancellation. Correct values are skipped; missing fields and mismatches are proposed. Missing cover art can be filled, while existing embedded covers are preserved. You approve or reject each proposed field change individually, and nothing is written until **Apply approved changes** is chosen. Review suggested artist or title changes carefully because Last.fm may normalize names. Last.fm does not provide a reliable release year for this workflow.
+
 ## Queue and retry policy
 
 Eligible plays are persisted in SQLite before submission, bound to the Last.fm username, and sent oldest first in batches of at most 50. A restart retains pending plays but marks unfinished, unqualified plays as interrupted. An account cannot submit another account's queue.

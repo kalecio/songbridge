@@ -68,6 +68,7 @@ pub fn run() {
             lastfm::lastfm_disconnect,
             lastfm::metadata::lastfm_search,
             lastfm::metadata::lastfm_details,
+            lastfm::metadata::lastfm_album_tracks,
             lastfm::metadata::lastfm_artwork,
             audio::commands::load_song,
             audio::commands::play_song,
