@@ -8,6 +8,7 @@ import { Button } from '../Modal/styles';
 import { useLastfm, useLastfmReason } from './LastfmProvider';
 import { Actions, History, Panel } from './styles';
 import type { Suggestion } from './importFields';
+import { getFilenameSearchName } from './searchQuery';
 
 type TagField = 'title' | 'artist' | 'album' | 'track';
 type Field = TagField | 'artwork';
@@ -34,6 +35,34 @@ interface AlbumTrack {
 
 const fields: TagField[] = ['title', 'artist', 'album', 'track'];
 const comparable = (value: string | number) => String(value).trim().toLocaleLowerCase();
+
+async function findTrackSuggestion(query: string, artistName: string): Promise<Suggestion> {
+  if (artistName.trim()) {
+    try {
+      return await invoke<Suggestion>('lastfm_details', {
+        kind: 'track',
+        name: query,
+        artistName: artistName.trim(),
+      });
+    } catch (cause) {
+      const code = String(cause).replace(/^Error:\s*/, '');
+      if (!code.includes('no_results') && !code.includes('invalid_request')) throw cause;
+    }
+  }
+
+  const matches = await invoke<Match[]>('lastfm_search', {
+    kind: 'track',
+    query,
+    artistName: artistName.trim(),
+  });
+  const match = matches[0];
+  if (!match) throw new Error('no_results');
+  return invoke<Suggestion>('lastfm_details', {
+    kind: 'track',
+    name: match.name,
+    artistName: match.artist,
+  });
+}
 
 function differences(current: MetadataType, suggestion: Suggestion): Change[] {
   const changes: Change[] = fields.flatMap((field): Change[] => {
@@ -91,46 +120,23 @@ export default function LastfmLibraryReview() {
         const path = song.path!;
         // Compare the on-disk tags, not potentially stale library state.
         const current = await invoke<MetadataType>('get_metadata', { path });
-        let suggestion: Suggestion;
-        if (current.title?.trim()) {
-          if (current.artist?.trim()) {
-            try {
-              suggestion = await invoke<Suggestion>('lastfm_details', {
-                kind: 'track',
-                name: current.title.trim(),
-                artistName: current.artist.trim(),
-              });
-            } catch (cause) {
-              const code = String(cause).replace(/^Error:\s*/, '');
-              if (!code.includes('no_results') && !code.includes('invalid_request')) throw cause;
-              const matches = await invoke<Match[]>('lastfm_search', {
-                kind: 'track',
-                query: current.title.trim(),
-                artistName: current.artist.trim(),
-              });
-              const match = matches[0];
-              if (!match) throw new Error('no_results');
-              suggestion = await invoke<Suggestion>('lastfm_details', {
-                kind: 'track',
-                name: match.name,
-                artistName: match.artist,
-              });
-            }
-          } else {
-            const matches = await invoke<Match[]>('lastfm_search', {
-              kind: 'track',
-              query: current.title.trim(),
-              artistName: '',
-            });
-            const match = matches[0];
-            if (!match) throw new Error('no_results');
-            suggestion = await invoke<Suggestion>('lastfm_details', {
-              kind: 'track',
-              name: match.name,
-              artistName: match.artist,
-            });
+        const filenameQuery = getFilenameSearchName(path);
+        const titleQueries = current.title?.trim() ? [current.title.trim()] : [];
+        let suggestion: Suggestion | undefined;
+        let lookupError: unknown;
+
+        for (const query of titleQueries) {
+          try {
+            suggestion = await findTrackSuggestion(query, current.artist ?? '');
+            break;
+          } catch (cause) {
+            const code = String(cause).replace(/^Error:\s*/, '');
+            if (!code.includes('no_results') && !code.includes('invalid_request')) throw cause;
+            lookupError = cause;
           }
-        } else if (current.album?.trim() && current.track && current.track > 0) {
+        }
+
+        if (!suggestion && current.album?.trim() && current.track && current.track > 0) {
           const key = `${current.album.trim().toLocaleLowerCase()}\u0000${(current.artist ?? '').trim().toLocaleLowerCase()}`;
           let listing = albumTracks.get(key);
           if (!listing) {
@@ -141,19 +147,38 @@ export default function LastfmLibraryReview() {
             albumTracks.set(key, listing);
           }
           const match = (await listing).find((track) => track.track === current.track);
-          if (!match) throw new Error('no_results');
-          suggestion = await invoke<Suggestion>('lastfm_details', {
-            kind: 'track',
-            name: match.title,
-            artistName: match.artist,
-          });
-        } else {
+          if (match) {
+            suggestion = await invoke<Suggestion>('lastfm_details', {
+              kind: 'track',
+              name: match.title,
+              artistName: match.artist,
+            });
+          }
+        }
+        if (!suggestion && filenameQuery && !titleQueries.includes(filenameQuery)) {
+          try {
+            suggestion = await findTrackSuggestion(filenameQuery, current.artist ?? '');
+          } catch (cause) {
+            const code = String(cause).replace(/^Error:\s*/, '');
+            if (!code.includes('no_results') && !code.includes('invalid_request')) throw cause;
+            lookupError = cause;
+          }
+        }
+        if (!suggestion) {
+          if (lookupError) throw lookupError;
           throw new Error('missing_metadata');
         }
         const changes = differences(current, suggestion);
         if (changes.length) found.push({ song: { ...song, ...current }, changes });
       } catch (cause) {
-        found.push({ song, changes: [], error: String(cause).replace(/^Error:\s*/, '') });
+        const code = String(cause).replace(/^Error:\s*/, '');
+        found.push({ song, changes: [], error: code });
+        if (code.includes('rate_limited')) {
+          setError('rate_limited');
+          setItems([...found]);
+          setProgress({ current: index + 1, total: allFiles.length });
+          break;
+        }
       }
       setItems([...found]);
       setProgress({ current: index + 1, total: allFiles.length });
@@ -226,6 +251,17 @@ export default function LastfmLibraryReview() {
 
   const selectedCount = Object.values(selected).reduce((count, value) => count + value.length, 0);
   const diffCount = items?.filter((item) => item.changes.length).length ?? 0;
+  const availableChangeCount = items?.reduce((count, item) => count + (item.error ? 0 : item.changes.length), 0) ?? 0;
+  const approveAll = () => {
+    if (!items) return;
+    setSelected(
+      Object.fromEntries(
+        items
+          .filter((item) => item.changes.length && !item.error && item.song.path)
+          .map((item) => [item.song.path!, item.changes.map((change) => change.field)]),
+      ),
+    );
+  };
   const labels: Record<Field, string> = {
     title: t('metadata.title'),
     artist: t('metadata.artist'),
@@ -322,6 +358,13 @@ export default function LastfmLibraryReview() {
       {items && !busy && !items.length && <p>{t('lastfm.libraryReviewNoDifferences')}</p>}
       {items && !busy && items.length > 0 && (
         <Actions>
+          <Button
+            $variant="ghost"
+            disabled={!availableChangeCount || selectedCount === availableChangeCount || busy || Boolean(saveResults)}
+            onClick={approveAll}
+          >
+            {t('lastfm.libraryReviewApproveAll')}
+          </Button>
           <Button disabled={!selectedCount || busy || Boolean(saveResults)} onClick={() => void apply()}>
             {t('lastfm.libraryReviewApply', { count: selectedCount })}
           </Button>

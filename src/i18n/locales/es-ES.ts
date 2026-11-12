@@ -43,6 +43,7 @@ const esES: Record<TranslationKey, string> = {
   'lastfm.libraryReviewResults': 'Cambios de metadatos sugeridos para la biblioteca',
   'lastfm.libraryReviewNoDifferences': 'No se sugirieron cambios de metadatos.',
   'lastfm.libraryReviewApprove': 'Aprobar el cambio de {field}',
+  'lastfm.libraryReviewApproveAll': 'Aprobar todos los cambios',
   'lastfm.libraryReviewApply': 'Aplicar {count} cambios aprobados',
   'lastfm.artworkFailed': 'Etiquetas actualizadas, pero no se pudo guardar la portada: {error}',
   'lastfm.albumHelp':
@@ -69,7 +70,8 @@ const esES: Record<TranslationKey, string> = {
   'lastfm.reason.scrobbled': 'Aceptado por Last.fm.',
   'lastfm.reason.offline': 'No se puede conectar con Last.fm. Las reproducciones válidas quedan en cola.',
   'lastfm.reason.temporary': 'Last.fm no está disponible temporalmente. Songbridge lo intentará más tarde.',
-  'lastfm.reason.rate_limited': 'Last.fm ha solicitado menos peticiones. Los envíos se reanudarán tras una pausa.',
+  'lastfm.reason.rate_limited':
+    'Last.fm pidió a Songbridge que reduzca las solicitudes. Las peticiones se pausarán durante el intervalo.',
   'lastfm.reason.reauthenticate': 'La autorización de Last.fm ya no es válida. Vuelve a conectar.',
   'lastfm.reason.application_error':
     'Last.fm rechazó las credenciales de la aplicación. Los envíos se han detenido; contacta con el responsable de Songbridge.',
@@ -258,6 +260,9 @@ const esES: Record<TranslationKey, string> = {
   'lyrics.customSearch': 'Buscar con una consulta personalizada',
   'lyrics.trackArtistAlbum': 'Canción, artista, álbum…',
   'settings.title': 'Configuración',
+  'settings.categoryAccount': 'Last.fm',
+  'settings.searchPlaceholder': 'Buscar en configuración…',
+  'settings.noSearchResults': 'No se encontraron ajustes.',
   'settings.appearance': 'Aspecto',
   'settings.theme': 'Tema',
   'settings.language': 'Idioma',

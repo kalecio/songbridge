@@ -41,6 +41,7 @@ const enUS = {
   'lastfm.libraryReviewResults': 'Metadata changes suggested for your library',
   'lastfm.libraryReviewNoDifferences': 'No metadata changes were suggested.',
   'lastfm.libraryReviewApprove': 'Approve the {field} change',
+  'lastfm.libraryReviewApproveAll': 'Approve all changes',
   'lastfm.libraryReviewApply': 'Apply {count} approved changes',
   'lastfm.artworkFailed': 'Tags updated, but the cover could not be saved: {error}',
   'lastfm.albumHelp':
@@ -66,7 +67,7 @@ const enUS = {
   'lastfm.reason.scrobbled': 'Accepted by Last.fm.',
   'lastfm.reason.offline': 'Unable to reach Last.fm. Eligible plays are queued for later.',
   'lastfm.reason.temporary': 'Last.fm is temporarily unavailable. Songbridge will try again later.',
-  'lastfm.reason.rate_limited': 'Last.fm requested fewer requests. Submissions will resume after a cooldown.',
+  'lastfm.reason.rate_limited': 'Last.fm asked Songbridge to slow down. Requests are paused during a cooldown.',
   'lastfm.reason.reauthenticate': 'Last.fm authorization is no longer valid. Please reconnect.',
   'lastfm.reason.application_error':
     'Last.fm rejected the application credentials. Submissions are stopped; contact the Songbridge maintainer.',
@@ -256,6 +257,9 @@ const enUS = {
   'lyrics.customSearch': 'Search with a custom query',
   'lyrics.trackArtistAlbum': 'Track, artist, album…',
   'settings.title': 'Settings',
+  'settings.categoryAccount': 'Last.fm',
+  'settings.searchPlaceholder': 'Search settings…',
+  'settings.noSearchResults': 'No settings found for this search.',
   'settings.appearance': 'Appearance',
   'settings.theme': 'Theme',
   'settings.language': 'Language',
