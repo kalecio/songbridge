@@ -26,7 +26,7 @@ const Viewport = styled.span`
 
   &[data-overflow='true'][data-hover-only='true']:hover .text-marquee__track,
   &[data-overflow='true'][data-hover-only='true']:focus-within .text-marquee__track {
-    animation: text-marquee-scroll var(--marquee-duration) linear infinite;
+    animation: text-marquee-scroll-on-hover var(--marquee-duration) linear infinite;
   }
 
   &[data-hover-only='false']:hover .text-marquee__track,
@@ -37,6 +37,17 @@ const Viewport = styled.span`
   @keyframes text-marquee-scroll {
     0%,
     12% {
+      transform: translateX(0);
+    }
+    88%,
+    100% {
+      transform: translateX(calc(-1 * var(--marquee-distance)));
+    }
+  }
+
+  @keyframes text-marquee-scroll-on-hover {
+    0%,
+    2% {
       transform: translateX(0);
     }
     88%,
