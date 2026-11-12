@@ -179,8 +179,9 @@ const Albums = ({ home = false }: { home?: boolean }) => {
             <CardInfo>
               <CardTitle title={album.name}>{album.name}</CardTitle>
               <CardBottom>
-                <CardArtist title={album.artist ?? t('album.unknownArtist')}>
+                <CardArtist title={[album.artist ?? t('album.unknownArtist'), album.year].filter(Boolean).join(' · ')}>
                   {album.artist ?? t('album.unknownArtist')}
+                  {album.year && ` · ${album.year}`}
                 </CardArtist>
                 {!home && (
                   <CardCount>
