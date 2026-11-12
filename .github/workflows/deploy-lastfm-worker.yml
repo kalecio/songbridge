@@ -2,7 +2,7 @@ name: Deploy Last.fm Worker
 
 on:
   push:
-    branches: [main]
+    branches: [main, feat/lastfm-scrobbling]
     paths:
       - "worker/lastfm/**"
       - ".github/workflows/deploy-lastfm-worker.yml"
