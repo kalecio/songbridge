@@ -20,7 +20,6 @@ import { LibraryHeading, RecentTrack } from './LibraryHeader';
 import FavouriteButton from '../../Components/Song/FavouriteButton';
 import { displayTitle } from '../../songDisplay';
 import { useI18n } from '../../i18n/I18nProvider';
-import LibraryControls from '../../Components/LibraryControls/LibraryControls';
 
 interface AlbumEntry {
   name: string;
@@ -60,8 +59,6 @@ const Albums = ({ home = false }: { home?: boolean }) => {
   const navigate = useNavigate();
   const [menu, setMenu] = useState<{ x: number; y: number; album: AlbumEntry } | null>(null);
   const [editAlbum, setEditAlbum] = useState<AlbumEntry | null>(null);
-  const [query, setQuery] = useState('');
-  const [sortBy, setSortBy] = useState('name');
   const { playSongs, addToQueue } = useQueueActions();
   const { batchUpdateSongsMetadata } = useMetadataActions();
 
@@ -83,14 +80,7 @@ const Albums = ({ home = false }: { home?: boolean }) => {
   }
 
   const allAlbums = groupByAlbum(library, !home);
-  const normalizedQuery = query.trim().toLocaleLowerCase();
-  const albums = allAlbums
-    .filter((album) => !normalizedQuery || `${album.name} ${album.artist ?? ''}`.toLocaleLowerCase().includes(normalizedQuery))
-    .sort((a, b) => {
-      if (sortBy === 'tracks') return b.songs.length - a.songs.length || a.name.localeCompare(b.name);
-      if (sortBy === 'year') return (Number(b.year) || 0) - (Number(a.year) || 0) || a.name.localeCompare(b.name);
-      return a.name.localeCompare(b.name);
-    });
+  const albums = allAlbums;
   const currentTrack =
     library.find((song) => song.path === currentPath) ?? (currentPath ? { ...metadata, path: currentPath } : undefined);
 
@@ -132,21 +122,7 @@ const Albums = ({ home = false }: { home?: boolean }) => {
           {t('sidebar.albums')} <Count>{albums.length}</Count>
         </PageHeader>
       )}
-      {!home && (
-        <LibraryControls
-          query={query}
-          onQueryChange={setQuery}
-          sortBy={sortBy}
-          onSortChange={setSortBy}
-          searchLabel="Search albums or artists"
-          sortOptions={[{ value: 'name', label: 'Name' }, { value: 'tracks', label: 'Track count' }, { value: 'year', label: 'Year' }]}
-        />
-      )}
-      {!albums.length && (
-        <StatusMessage>
-          {normalizedQuery ? 'No albums match your search.' : isScanning ? t('album.scanning') : t('album.emptyCollection')}
-        </StatusMessage>
-      )}
+      {!albums.length && <StatusMessage>{isScanning ? t('album.scanning') : t('album.emptyCollection')}</StatusMessage>}
       {!allAlbums.length && home && (
         <button type="button" onClick={() => navigate('/settings')}>
           Adicionar músicas

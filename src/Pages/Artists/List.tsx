@@ -16,7 +16,6 @@ import { useQueueActions } from '../../hooks/useQueueActions';
 import { useMetadataActions } from '../../hooks/useMetadataActions';
 import { splitArtists } from '../../utils/artistUtils';
 import { useI18n } from '../../i18n/I18nProvider';
-import LibraryControls from '../../Components/LibraryControls/LibraryControls';
 import { Grid, Card, Avatar, ArtistName, ArtistMeta, AvatarImage } from './styles';
 
 interface ArtistEntry {
@@ -58,8 +57,6 @@ const Artists = () => {
   const navigate = useNavigate();
   const [menu, setMenu] = useState<{ x: number; y: number; artist: ArtistEntry } | null>(null);
   const [editArtist, setEditArtist] = useState<ArtistEntry | null>(null);
-  const [query, setQuery] = useState('');
-  const [sortBy, setSortBy] = useState('name');
   const { playSongs, addToQueue } = useQueueActions();
   const { batchUpdateSongsMetadata } = useMetadataActions();
 
@@ -76,17 +73,11 @@ const Artists = () => {
     return <StatusMessage>{t('album.scanning')}</StatusMessage>;
   }
 
-  const normalizedQuery = query.trim().toLocaleLowerCase();
-  const artists = groupByArtist(library)
-    .filter((artist) => !normalizedQuery || artist.name.toLocaleLowerCase().includes(normalizedQuery))
-    .sort((a, b) => {
-      if (sortBy === 'tracks') return b.songs.length - a.songs.length || a.name.localeCompare(b.name);
-      if (sortBy === 'year') {
-        const latestYear = (entry: ArtistEntry) => Math.max(0, ...entry.songs.map((song) => Number(song.year) || 0));
-        return latestYear(b) - latestYear(a) || a.name.localeCompare(b.name);
-      }
-      return a.name.localeCompare(b.name);
-    });
+  const artists = groupByArtist(library);
+
+  if (artists.length === 0) {
+    return <StatusMessage>{t('artist.noArtists')}</StatusMessage>;
+  }
 
   const artistMenuItems = (artist: ArtistEntry): ContextMenuItem[] => {
     const empty = artist.songs.length === 0;
@@ -111,17 +102,6 @@ const Artists = () => {
       <PageHeader>
         {t('sidebar.artists')} <Count>{artists.length}</Count>
       </PageHeader>
-      <LibraryControls
-        query={query}
-        onQueryChange={setQuery}
-        sortBy={sortBy}
-        onSortChange={setSortBy}
-        searchLabel="Search artists"
-        sortOptions={[{ value: 'name', label: 'Name' }, { value: 'tracks', label: 'Track count' }, { value: 'year', label: 'Year' }]}
-      />
-      {!artists.length && (
-        <StatusMessage>{normalizedQuery ? 'No artists match your search.' : t('artist.noArtists')}</StatusMessage>
-      )}
       <Grid>
         {artists.map((artist) => (
           <Card
