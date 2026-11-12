@@ -20,6 +20,12 @@ import { LibraryHeading, RecentTrack } from './LibraryHeader';
 import FavouriteButton from '../../Components/Song/FavouriteButton';
 import { displayTitle } from '../../songDisplay';
 import { useI18n } from '../../i18n/I18nProvider';
+import SongSortControl from '../../Components/SongSortControl/SongSortControl';
+import type { SongSortDirection } from '../../hooks/useSongSort';
+import { AlbumSortRow } from './styles';
+
+type AlbumSortField = 'artist' | 'year';
+const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' });
 
 interface AlbumEntry {
   name: string;
@@ -59,6 +65,8 @@ const Albums = ({ home = false }: { home?: boolean }) => {
   const navigate = useNavigate();
   const [menu, setMenu] = useState<{ x: number; y: number; album: AlbumEntry } | null>(null);
   const [editAlbum, setEditAlbum] = useState<AlbumEntry | null>(null);
+  const [sortField, setSortField] = useState<AlbumSortField>('artist');
+  const [sortDirection, setSortDirection] = useState<SongSortDirection>('asc');
   const { playSongs, addToQueue } = useQueueActions();
   const { batchUpdateSongsMetadata } = useMetadataActions();
 
@@ -80,7 +88,14 @@ const Albums = ({ home = false }: { home?: boolean }) => {
   }
 
   const allAlbums = groupByAlbum(library, !home);
-  const albums = allAlbums;
+  const albums = [...allAlbums].sort((left, right) => {
+    const comparison =
+      sortField === 'artist'
+        ? collator.compare(left.artist ?? '', right.artist ?? '')
+        : (Number(left.year) || 0) - (Number(right.year) || 0);
+    const stableComparison = comparison || collator.compare(left.name, right.name);
+    return sortDirection === 'asc' ? stableComparison : -stableComparison;
+  });
   const currentTrack =
     library.find((song) => song.path === currentPath) ?? (currentPath ? { ...metadata, path: currentPath } : undefined);
 
@@ -127,6 +142,20 @@ const Albums = ({ home = false }: { home?: boolean }) => {
         <button type="button" onClick={() => navigate('/settings')}>
           Adicionar músicas
         </button>
+      )}
+      {albums.length > 1 && (
+        <AlbumSortRow>
+          <SongSortControl
+            sortField={sortField}
+            sortDirection={sortDirection}
+            sortFields={['artist', 'year']}
+            includeOriginalOrder={false}
+            onSortFieldChange={(field) => {
+              if (field === 'artist' || field === 'year') setSortField(field);
+            }}
+            onSortDirectionChange={setSortDirection}
+          />
+        </AlbumSortRow>
       )}
       <Grid>
         {albums.map((album) => (

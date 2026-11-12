@@ -38,6 +38,13 @@ export const SortSelect = styled.select<{ $compact?: boolean }>`
   }
 `;
 
+export const SortFieldLabel = styled.span`
+  padding: 0.2rem 0.3rem;
+  color: ${({ theme }) => theme.textPrimary};
+  font-size: 0.75rem;
+  white-space: nowrap;
+`;
+
 export const DirectionButton = styled.button`
   display: inline-flex;
   align-items: center;
