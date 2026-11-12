@@ -1,6 +1,7 @@
 import { styled } from 'styled-components';
 import AlbumPlaceholder from '../../assets/images/album-placeholder.svg';
 import { selectable } from '../../styles/mixins';
+import TextMarquee from '../TextMarquee/TextMarquee';
 
 const SongContainer = styled.div`
   display: flex;
@@ -64,23 +65,21 @@ const MusicInfo = styled.div`
   overflow: hidden;
 `;
 
-const MusicName = styled.span`
+const MusicName = styled(TextMarquee)`
   font-size: 12px;
   font-weight: 500;
   max-width: 100%;
   white-space: nowrap;
   overflow: hidden;
-  text-overflow: ellipsis;
   ${selectable}
 `;
 
-const ArtistName = styled.span<{ $clickable?: boolean }>`
+const ArtistName = styled(TextMarquee)<{ $clickable?: boolean }>`
   font-size: 10px;
   color: ${({ theme }) => theme.textMuted};
   max-width: 100%;
   white-space: nowrap;
   overflow: hidden;
-  text-overflow: ellipsis;
   ${selectable}
   ${(p) =>
     p.$clickable &&

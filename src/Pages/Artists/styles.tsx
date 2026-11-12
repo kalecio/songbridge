@@ -1,5 +1,6 @@
 import { styled } from 'styled-components';
 import { selectable } from '../../styles/mixins';
+import TextMarquee from '../../Components/TextMarquee/TextMarquee';
 
 export const Grid = styled.div`
   display: grid;
@@ -51,14 +52,13 @@ export const AvatarImage = styled.img`
   border-radius: 50%;
 `;
 
-export const ArtistName = styled.div`
+export const ArtistName = styled(TextMarquee)`
   color: ${({ theme }) => theme.textPrimary};
   font-weight: 600;
   font-size: 0.9rem;
   text-align: left;
   white-space: nowrap;
   overflow: hidden;
-  text-overflow: ellipsis;
   width: 100%;
   ${selectable}
 `;

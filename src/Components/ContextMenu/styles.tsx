@@ -1,4 +1,5 @@
 import { styled } from 'styled-components';
+import TextMarquee from '../TextMarquee/TextMarquee';
 
 export const Menu = styled.ul<{ $x: number; $y: number }>`
   position: fixed;
@@ -47,11 +48,9 @@ export const ItemIcon = styled.span`
   flex-shrink: 0;
 `;
 
-export const ItemLabel = styled.span`
+export const ItemLabel = styled(TextMarquee)`
   flex: 1;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  min-width: 0;
 `;
 
 export const SubmenuChevron = styled.span`

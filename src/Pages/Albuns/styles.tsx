@@ -1,5 +1,6 @@
 import { styled } from 'styled-components';
 import { selectable } from '../../styles/mixins';
+import TextMarquee from '../../Components/TextMarquee/TextMarquee';
 
 export const Grid = styled.div`
   display: grid;
@@ -66,13 +67,12 @@ export const CardInfo = styled.div`
   box-sizing: border-box;
 `;
 
-export const CardTitle = styled.div`
+export const CardTitle = styled(TextMarquee)`
   color: ${({ theme }) => theme.textPrimary};
   font-weight: 500;
   font-size: clamp(0.85rem, 0.9vw, 1rem);
   white-space: nowrap;
   overflow: hidden;
-  text-overflow: ellipsis;
   max-width: 100%;
   margin-bottom: 0.2rem;
   ${selectable}
@@ -86,12 +86,11 @@ export const CardBottom = styled.div`
   min-width: 0;
 `;
 
-export const CardArtist = styled.div`
+export const CardArtist = styled(TextMarquee)`
   color: ${({ theme }) => theme.textMuted};
   font-size: clamp(0.75rem, 0.8vw, 0.875rem);
   white-space: nowrap;
   overflow: hidden;
-  text-overflow: ellipsis;
   flex: 1;
   min-width: 0;
   ${selectable}

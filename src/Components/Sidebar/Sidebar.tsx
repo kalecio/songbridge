@@ -7,6 +7,7 @@ import { AppContext } from '../../Context/AppContext';
 import { MetadataType, PlaylistType } from '../../types';
 import AlbumImage from '../AlbumImage/AlbumImage';
 import ContextMenu, { ContextMenuItem } from '../ContextMenu/ContextMenu';
+import TextMarquee from '../TextMarquee/TextMarquee';
 import {
   AlbumsIcon,
   AppLogo,
@@ -169,9 +170,9 @@ const Sidebar = () => {
                   }}
                 >
                   {isFavouritesPlaylist(playlist.id) ? <HeartIcon /> : <FaListUl />}
-                  <span className="sidebar-item-label" title={playlist.name}>
+                  <TextMarquee className="sidebar-item-label" title={playlist.name}>
                     {isFavouritesPlaylist(playlist.id) ? t('sidebar.favourites') : playlist.name}
-                  </span>
+                  </TextMarquee>
                 </PlaylistItem>
               ))}
               <MenuItem aria-label={t('sidebar.managePlaylists')} onClick={() => navigate('/playlist')}>
@@ -235,7 +236,7 @@ const Sidebar = () => {
                     title={displayTitle(song)}
                   >
                     <AlbumImage metadata={song} height="2.25rem" width="2.25rem" draggable={false} />
-                    <span className="sidebar-item-label">{displayTitle(song)}</span>
+                    <TextMarquee className="sidebar-item-label">{displayTitle(song)}</TextMarquee>
                   </MenuItem>
                 );
               })}

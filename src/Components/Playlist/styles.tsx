@@ -1,6 +1,7 @@
 import { styled } from 'styled-components';
 import { FaCirclePlay, FaCircleExclamation, FaTrash } from 'react-icons/fa6';
 import { selectable } from '../../styles/mixins';
+import TextMarquee from '../TextMarquee/TextMarquee';
 
 export const PlaylistContainer = styled.div<{ $scroll?: boolean }>`
   overflow: ${({ $scroll = true }) => ($scroll ? 'hidden' : 'visible')};
@@ -136,24 +137,22 @@ export const SongInfo = styled.div`
   overflow: hidden;
 `;
 
-export const SongTitle = styled.span`
+export const SongTitle = styled(TextMarquee)`
   font-size: 0.9rem;
   font-weight: 550;
   color: ${({ theme }) => theme.textPrimary};
   max-width: 100%;
   white-space: nowrap;
   overflow: hidden;
-  text-overflow: ellipsis;
   ${selectable}
 `;
 
-export const SongArtist = styled.span`
+export const SongArtist = styled(TextMarquee)`
   font-size: 0.8rem;
   max-width: 100%;
   color: ${({ theme }) => theme.textSecondary};
   white-space: nowrap;
   overflow: hidden;
-  text-overflow: ellipsis;
   ${selectable}
 `;
 
