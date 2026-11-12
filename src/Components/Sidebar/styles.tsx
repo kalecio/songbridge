@@ -219,6 +219,13 @@ const QueueHeader = styled.div`
   }
 `;
 
+const QueueSortRow = styled.div`
+  display: flex;
+  justify-content: flex-end;
+  flex-shrink: 0;
+  padding-bottom: 0.25rem;
+`;
+
 const LogoImg = styled.img`
   width: 24px;
   height: 24px;
@@ -285,6 +292,7 @@ export {
   FavouriteThumb,
   HeartIcon,
   QueueHeader,
+  QueueSortRow,
   HomeIcon,
   ArtistsIcon,
   AlbumsIcon,

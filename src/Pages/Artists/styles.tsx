@@ -14,6 +14,12 @@ export const Grid = styled.div`
   }
 `;
 
+export const ArtistSortRow = styled.div`
+  display: flex;
+  justify-content: flex-end;
+  margin: 0 0 0.75rem;
+`;
+
 export const Card = styled.div`
   display: flex;
   flex-direction: column;

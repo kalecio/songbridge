@@ -30,6 +30,14 @@ export const PlaylistInfo = styled.div`
   border-bottom: 1px solid ${({ theme }) => theme.border};
 `;
 
+export const SortRow = styled.div`
+  display: flex;
+  justify-content: flex-end;
+  flex: 0 0 auto;
+  min-height: 2rem;
+  margin: -0.6rem 0 0.15rem;
+`;
+
 export const PlaylistDetails = styled.div`
   display: flex;
   flex-direction: column;

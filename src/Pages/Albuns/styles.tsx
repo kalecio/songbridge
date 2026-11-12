@@ -15,6 +15,12 @@ export const Grid = styled.div`
   align-items: start;
 `;
 
+export const AlbumSortRow = styled.div`
+  display: flex;
+  justify-content: flex-end;
+  margin: 0 0 0.75rem;
+`;
+
 export const GridItem = styled.div`
   display: flex;
   flex-direction: column;

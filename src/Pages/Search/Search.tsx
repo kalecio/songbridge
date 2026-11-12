@@ -17,6 +17,8 @@ import { useLyricsMenu } from '../../hooks/useLyricsMenu';
 import EditMetadataModal from '../../Components/EditMetadataModal/EditMetadataModal';
 import { displayTitle } from '../../songDisplay';
 import { useI18n } from '../../i18n/I18nProvider';
+import { useSongSort } from '../../hooks/useSongSort';
+import SongSortControl from '../../Components/SongSortControl/SongSortControl';
 import {
   SearchContainer,
   ResultsSection,
@@ -40,6 +42,7 @@ import {
   ArtistContainer,
   SearchEyebrow,
   SearchHeading,
+  SongSortRow,
 } from './styles';
 
 function normalize(s?: string) {
@@ -84,6 +87,7 @@ const Search = () => {
   const matchingSongs = library.filter(
     (s) => normalize(s.title).includes(q) || normalize(s.artist).includes(q) || normalize(s.album).includes(q),
   );
+  const songSort = useSongSort(matchingSongs);
 
   const matchingPlaylists: PlaylistType[] = sortFavouritesFirst(
     playlists.filter((pl) => normalize(pl.name).includes(q)),
@@ -105,7 +109,7 @@ const Search = () => {
   const albums = Array.from(albumMap.entries()).filter(([name]) => normalize(name).includes(q));
 
   const playSong = (song: MetadataType) => {
-    const paths = matchingSongs.map((s) => s.path).filter((p): p is string => Boolean(p));
+    const paths = songSort.sortedSongs.map((s) => s.path).filter((p): p is string => Boolean(p));
     setCurrentPlaylist?.(paths);
     setCurrentPath?.(song.path);
   };
@@ -275,7 +279,17 @@ const Search = () => {
       {matchingSongs.length > 0 && (
         <ResultsSection>
           <SectionTitle>{t('search.songs')}</SectionTitle>
-          {matchingSongs.map((song, i) => {
+          {matchingSongs.length > 1 && (
+            <SongSortRow>
+              <SongSortControl
+                sortField={songSort.sortField}
+                sortDirection={songSort.sortDirection}
+                onSortFieldChange={songSort.setSortField}
+                onSortDirectionChange={songSort.setSortDirection}
+              />
+            </SongSortRow>
+          )}
+          {songSort.sortedSongs.map((song, i) => {
             const title = displayTitle(song);
             return (
               <SongRow

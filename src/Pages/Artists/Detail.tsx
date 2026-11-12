@@ -90,8 +90,11 @@ const ArtistDetail = () => {
             type={t('sidebar.albums')}
             activePath={currentPath}
             scroll={false}
-            onSongClick={(song) => playSong(song, album.songs)}
-            onPlayAll={() => album.songs[0] && playSong(album.songs[0], album.songs)}
+            onSongClick={(song, orderedSongs) => playSong(song, orderedSongs ?? album.songs)}
+            onPlayAll={(orderedSongs) => {
+              const list = orderedSongs ?? album.songs;
+              if (list[0]) playSong(list[0], list);
+            }}
           />
         ))}
       </HeroContent>

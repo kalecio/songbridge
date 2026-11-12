@@ -37,6 +37,12 @@ export const ResultsSection = styled.section`
   flex-shrink: 3;
 `;
 
+export const SongSortRow = styled.div`
+  display: flex;
+  justify-content: flex-end;
+  margin: 0.15rem 0 0.25rem;
+`;
+
 export const SectionTitle = styled.h2`
   font-size: 0.75rem;
   font-weight: 600;
