@@ -132,11 +132,11 @@ fn response_error(method: &str, http_status: u16, body: Option<&Value>) -> Optio
         .and_then(|b| b.get("error"))
         .and_then(|v| v.as_u64().or_else(|| v.as_str()?.parse().ok()));
     match error {
-        Some(9) => Some("reauthenticate"),
         Some(4 | 14) if method.starts_with("auth.") => Some("not_authorized"),
+        Some(4 | 9 | 14) => Some("reauthenticate"),
         Some(15) => Some("token_expired"),
-        Some(10 | 13 | 26) => Some("application_error"),
-        Some(11 | 16) => Some("temporary"),
+        Some(2 | 3 | 5 | 10 | 13 | 26 | 27) => Some("application_error"),
+        Some(8 | 11 | 16) => Some("temporary"),
         Some(29) => Some("rate_limited"),
         Some(_) => Some("invalid_request"),
         None if http_status >= 500 => Some("temporary"),
@@ -177,6 +177,7 @@ mod tests {
             Some("invalid_response")
         );
         for (code, reason) in [
+            (4, "reauthenticate"),
             (9, "reauthenticate"),
             (26, "application_error"),
             (29, "rate_limited"),

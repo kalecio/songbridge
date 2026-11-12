@@ -435,6 +435,10 @@ pub fn init(app: &tauri::AppHandle) -> Result<(), String> {
     tauri::async_runtime::spawn(async move {
         loop {
             tokio::time::sleep(Duration::from_secs(2)).await;
+            // An unconfigured development build must retain any saved outbox.
+            if !service.client.configured() {
+                continue;
+            }
             let _gate = service.gate.lock().await;
             let snapshot = {
                 let mut i = service.inner.lock().unwrap();
@@ -710,13 +714,16 @@ pub async fn lastfm_complete_connection(
     i.pending_session = None;
     i.persistent = remember;
     i.enabled = true;
-    i.error = None;
-    i.failures = 0;
-    i.cooldown = Instant::now();
+    // Reconnecting must not bypass an existing server-requested cooldown.
+    if !matches!(i.error.as_deref(), Some("daily_limit" | "rate_limited")) {
+        i.error = None;
+        i.failures = 0;
+        i.cooldown = Instant::now();
+        service.preference("lastfm_error", "")?;
+        service.preference("lastfm_retry_after", "0")?;
+    }
     i.tracking_since = Instant::now();
     service.preference("lastfm_remember", if remember { "true" } else { "false" })?;
-    service.preference("lastfm_error", "")?;
-    service.preference("lastfm_retry_after", "0")?;
     service
         .db
         .lock()
