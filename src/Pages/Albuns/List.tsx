@@ -9,6 +9,7 @@ import Page from '../../Components/Page/Page';
 import PageHeader from '../../Components/PageHeader/PageHeader';
 import StatusMessage from '../../Components/StatusMessage/StatusMessage';
 import ContextMenu, { ContextMenuItem } from '../../Components/ContextMenu/ContextMenu';
+import LibraryControls from '../../Components/LibraryControls/LibraryControls';
 import EditGroupMetadataModal, {
   GroupEditFields,
 } from '../../Components/EditGroupMetadataModal/EditGroupMetadataModal';
@@ -52,6 +53,8 @@ const Albums = () => {
   const navigate = useNavigate();
   const [menu, setMenu] = useState<{ x: number; y: number; album: AlbumEntry } | null>(null);
   const [editAlbum, setEditAlbum] = useState<AlbumEntry | null>(null);
+  const [query, setQuery] = useState('');
+  const [sortBy, setSortBy] = useState('name');
   const { playSongs, addToQueue } = useQueueActions();
   const { batchUpdateSongsMetadata } = useMetadataActions();
 
@@ -72,9 +75,18 @@ const Albums = () => {
     );
   }
 
-  const albums = groupByAlbum(library);
+  const albums = (() => {
+    const normalizedQuery = query.trim().toLocaleLowerCase();
+    return groupByAlbum(library)
+      .filter((album) => !normalizedQuery || `${album.name} ${album.artist ?? ''}`.toLocaleLowerCase().includes(normalizedQuery))
+      .sort((a, b) => {
+        if (sortBy === 'tracks') return b.songs.length - a.songs.length || a.name.localeCompare(b.name);
+        if (sortBy === 'year') return (Number(b.year) || 0) - (Number(a.year) || 0) || a.name.localeCompare(b.name);
+        return a.name.localeCompare(b.name);
+      });
+  })();
 
-  if (albums.length === 0) {
+  if (albums.length === 0 && !query) {
     return (
       <Page>
         <StatusMessage>No albums found in your music library.</StatusMessage>
@@ -105,6 +117,15 @@ const Albums = () => {
       <PageHeader>
         Albums <Count>{albums.length}</Count>
       </PageHeader>
+      <LibraryControls
+        query={query}
+        onQueryChange={setQuery}
+        sortBy={sortBy}
+        onSortChange={setSortBy}
+        searchLabel="Search albums or artists"
+        sortOptions={[{ value: 'name', label: 'Name' }, { value: 'tracks', label: 'Track count' }, { value: 'year', label: 'Year' }]}
+      />
+      {albums.length === 0 ? <StatusMessage>No albums match your search.</StatusMessage> : null}
       <Grid>
         {albums.map((album) => (
           <GridItem
