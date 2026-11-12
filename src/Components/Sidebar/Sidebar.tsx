@@ -70,6 +70,7 @@ const Sidebar = () => {
     library,
   } = context;
   const queueSort = useSongSort(songs);
+  const { setSortField: setQueueSortField, setSortDirection: setQueueSortDirection } = queueSort;
   const navigate = useNavigate();
   const location = useLocation();
   const { playSongs, addToQueue, playNext, removeFromQueue, reorderQueue } = useQueueActions();
@@ -105,8 +106,8 @@ const Sidebar = () => {
     if (queueSortUpdateRef.current) {
       queueSortUpdateRef.current = false;
     } else {
-      queueSort.setSortField('original');
-      queueSort.setSortDirection('asc');
+      setQueueSortField('original');
+      setQueueSortDirection('asc');
     }
 
     if (currentPlaylist.length === 0) {
@@ -125,7 +126,7 @@ const Sidebar = () => {
       setSongs(currentPlaylist.map((p) => libraryMap.get(p) ?? metadataCache.current.get(p)!));
     };
     getSongs();
-  }, [currentPlaylist, library, queueSort.setSortDirection, queueSort.setSortField]);
+  }, [currentPlaylist, library, setQueueSortDirection, setQueueSortField]);
 
   const isActive = (path: string) => (path === '/' ? location.pathname === '/' : location.pathname.startsWith(path));
 

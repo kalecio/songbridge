@@ -14,7 +14,18 @@ import EditGroupMetadataModal, {
 } from '../../Components/EditGroupMetadataModal/EditGroupMetadataModal';
 import { useQueueActions } from '../../hooks/useQueueActions';
 import { useMetadataActions } from '../../hooks/useMetadataActions';
-import { Grid, GridItem, Card, ArtWrapper, CardInfo, CardTitle, CardBottom, CardArtist, CardCount } from './styles';
+import {
+  Grid,
+  GridItem,
+  Card,
+  ArtWrapper,
+  CardInfo,
+  CardTitle,
+  CardBottom,
+  CardArtist,
+  CardCount,
+  AlbumSortRow,
+} from './styles';
 
 import { LibraryHeading, RecentTrack } from './LibraryHeader';
 import FavouriteButton from '../../Components/Song/FavouriteButton';
@@ -22,7 +33,6 @@ import { displayTitle } from '../../songDisplay';
 import { useI18n } from '../../i18n/I18nProvider';
 import SongSortControl from '../../Components/SongSortControl/SongSortControl';
 import type { SongSortDirection } from '../../hooks/useSongSort';
-import { AlbumSortRow } from './styles';
 
 type AlbumSortField = 'artist' | 'year';
 const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' });
