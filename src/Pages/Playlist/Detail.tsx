@@ -21,8 +21,8 @@ const Detail = ({ playlists }: { playlists?: PlaylistType[] }) => {
     return { ...match, title: song.title ?? match.title, artist: song.artist ?? match.artist };
   });
 
-  const playSong = (song: MetadataType) => {
-    const paths = songs.map((s) => s.path).filter((p): p is string => Boolean(p));
+  const playSong = (song: MetadataType, orderedSongs: MetadataType[] = songs) => {
+    const paths = orderedSongs.map((s) => s.path).filter((p): p is string => Boolean(p));
     setCurrentPlaylist?.(paths);
     setCurrentPath?.(song.path);
     if (playlist) recordPlaylistPlay(playlist.id);
@@ -39,8 +39,11 @@ const Detail = ({ playlists }: { playlists?: PlaylistType[] }) => {
       name={playlist?.name ?? ''}
       type={t('playlist.type')}
       activePath={currentPath}
-      onSongClick={(song) => playSong(song)}
-      onPlayAll={() => songs[0] && playSong(songs[0])}
+      onSongClick={playSong}
+      onPlayAll={(orderedSongs) => {
+        const list = orderedSongs ?? songs;
+        if (list[0]) playSong(list[0], list);
+      }}
       onRemoveMissing={handleRemove}
       onRemoveSong={playlist ? handleRemove : undefined}
       onReorder={playlist ? (from, to) => reorderSongsInPlaylist(playlist, from, to) : undefined}

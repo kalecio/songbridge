@@ -69,6 +69,7 @@ const enUS = {
   'song.noSongs': 'No songs found in your music library.',
   'song.backToArtists': 'Artists',
   'song.sortBy': 'Sort by',
+  'song.sortOriginal': 'Original order',
   'song.sortTitle': 'Title',
   'song.sortAlbum': 'Album',
   'song.sortArtist': 'Artist',

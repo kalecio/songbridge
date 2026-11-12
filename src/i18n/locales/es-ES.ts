@@ -71,6 +71,7 @@ const esES: Record<TranslationKey, string> = {
   'song.noSongs': 'No se encontraron canciones en tu biblioteca.',
   'song.backToArtists': 'Artistas',
   'song.sortBy': 'Ordenar por',
+  'song.sortOriginal': 'Orden original',
   'song.sortTitle': 'Título',
   'song.sortAlbum': 'Álbum',
   'song.sortArtist': 'Artista',
