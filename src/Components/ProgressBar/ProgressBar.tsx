@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { ProgressBarInner, CustomProgressBar, Slider } from './styles';
+import { useI18n } from '../../i18n/I18nProvider';
 
 interface ProgressBarProps {
   progress: number;
@@ -8,6 +9,7 @@ interface ProgressBarProps {
 }
 
 const ProgressBar = ({ progress = 0, max, onSeek }: ProgressBarProps) => {
+  const { t } = useI18n();
   const [progressValue, setProgressValue] = useState(progress);
   const isDraggingRef = useRef(false);
 
@@ -36,16 +38,25 @@ const ProgressBar = ({ progress = 0, max, onSeek }: ProgressBarProps) => {
     }
   };
 
+  const handleKeyUp = (event: React.KeyboardEvent<HTMLInputElement>) => {
+    const seekKeys = ['ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown', 'Home', 'End', 'PageUp', 'PageDown'];
+    if (seekKeys.includes(event.key)) {
+      onSeek?.(Number(event.currentTarget.value) / max);
+    }
+  };
+
   return (
     <CustomProgressBar>
       <ProgressBarInner style={{ width: `${progressValue}%` }} />
       <Slider
+        aria-label={t('common.playbackPosition')}
         value={progressValue}
         onChange={handleProgressChange}
         onMouseDown={handleMouseDown}
         onMouseUp={handleMouseUp}
         onTouchStart={handleMouseDown}
         onTouchEnd={handleMouseUp}
+        onKeyUp={handleKeyUp}
         min={0}
         max={max}
       />

@@ -4,13 +4,13 @@ const LyricsContainer = styled.div`
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding: 2rem 2rem 4rem;
+  padding: clamp(1.5rem, 4vw, 3rem) clamp(1rem, 4vw, 4rem) 5rem;
   width: 100%;
   min-height: 0;
   flex: 1;
   overflow-y: auto;
-
-  gap: 0.1rem;
+  gap: 0.2rem;
+  color: ${({ theme }) => theme.textPrimary};
 `;
 
 interface LyricLineProps {

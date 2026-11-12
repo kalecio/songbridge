@@ -1,6 +1,7 @@
 import { useId } from 'react';
 import { styled } from 'styled-components';
 import { useLyricsFontSize, MIN_LYRICS_FONT_SIZE, MAX_LYRICS_FONT_SIZE } from '../../hooks/useLyricsFontSize';
+import { useI18n } from '../../i18n/I18nProvider';
 
 const Control = styled.div`
   display: flex;
@@ -33,10 +34,11 @@ const Control = styled.div`
 `;
 export default function LyricsFontControl() {
   const id = useId();
+  const { t } = useI18n();
   const { fontSize, setFontSize, resetFontSize } = useLyricsFontSize();
   return (
     <Control>
-      <label htmlFor={id}>Lyrics font size</label>
+      <label htmlFor={id}>{t('settings.lyricsFontSize')}</label>
       <input
         id={id}
         type="range"
@@ -44,14 +46,14 @@ export default function LyricsFontControl() {
         max={MAX_LYRICS_FONT_SIZE}
         step={1}
         value={fontSize}
-        aria-valuetext={`${fontSize} pixels`}
+        aria-valuetext={t('settings.fontSizePixels', { size: fontSize })}
         onChange={(event) => setFontSize(Number(event.target.value))}
       />
       <output htmlFor={id} aria-live="polite">
-        {fontSize} px
+        {t('settings.fontSizePixels', { size: fontSize })}
       </output>
       <button type="button" onClick={resetFontSize}>
-        Reset lyrics font size
+        {t('settings.resetLyricsFontSize')}
       </button>
     </Control>
   );

@@ -1,5 +1,6 @@
 import { useCallback, useContext, useEffect, useRef, useState } from 'react';
-import { useNavigate, useLocation, Route, Routes } from 'react-router';
+import { useNavigate, useLocation, useNavigationType, Route, Routes } from 'react-router';
+import { FaArrowLeft, FaArrowRight } from 'react-icons/fa6';
 import { error as logError } from '../../logger';
 import Controls from '../../Components/Controls/Controls';
 import ProgressBar from '../../Components/ProgressBar/ProgressBar';
@@ -14,7 +15,9 @@ import {
   Container,
   ContentContainer,
   ControlsWrapper,
-  HomeCenter,
+  HistoryButton,
+  HistoryControls,
+  NowPlaying,
   Main,
   MainWrapper,
   PlayerContainer,
@@ -32,7 +35,7 @@ import { displayTitle } from '../../songDisplay';
 import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts';
 import { useMediaKeys } from '../../hooks/useMediaKeys';
 import Sidebar from '../../Components/Sidebar/Sidebar';
-import AlbumImage from '../../Components/AlbumImage/AlbumImage';
+import FavouriteButton from '../../Components/Song/FavouriteButton';
 import PlaylistRoute from '../Playlist/Detail';
 import Songs from '../Songs/List';
 import Albums from '../Albuns/List';
@@ -43,10 +46,15 @@ import Settings from '../Settings/Settings';
 import Search from '../Search/Search';
 import Lyrics from '../Lyrics/Lyrics';
 import CreatePlaylist from '../Playlist/Create';
+import { useI18n } from '../../i18n/I18nProvider';
 
 const Player = () => {
+  const { t } = useI18n();
   const navigate = useNavigate();
   const location = useLocation();
+  const navigationType = useNavigationType();
+  const navigationHistoryRef = useRef({ entries: [location.key], index: 0 });
+  const [historyAvailability, setHistoryAvailability] = useState({ canGoBack: false, canGoForward: false });
   const context = useContext(AppContext);
   const {
     currentPath: path,
@@ -57,7 +65,6 @@ const Player = () => {
     shortcuts,
     metadata,
     playlists,
-    progress,
     onRepeat,
     onShuffle,
     setCurrentPath,
@@ -74,6 +81,32 @@ const Player = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const debounceTimeoutRef = useRef<number | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const history = navigationHistoryRef.current;
+    if (history.entries[history.index] === location.key) return;
+
+    if (navigationType === 'PUSH') {
+      history.entries = history.entries.slice(0, history.index + 1);
+      history.entries.push(location.key);
+      history.index = history.entries.length - 1;
+    } else if (navigationType === 'REPLACE') {
+      history.entries[history.index] = location.key;
+    } else {
+      const previousIndex = history.entries.lastIndexOf(location.key);
+      if (previousIndex >= 0) {
+        history.index = previousIndex;
+      } else {
+        history.index = Math.max(0, Math.min(history.entries.length - 1, history.index - 1));
+        history.entries[history.index] = location.key;
+      }
+    }
+
+    setHistoryAvailability({
+      canGoBack: history.index > 0,
+      canGoForward: history.index < history.entries.length - 1,
+    });
+  }, [location.key, navigationType]);
 
   const handleSeek = useCallback(
     async (progressRatio: number) => {
@@ -292,24 +325,46 @@ const Player = () => {
         <Sidebar />
         <MainWrapper>
           <AppHeader>
-            <SearchWrapper>
+            <HistoryControls aria-label={t('navigation.pageNavigation')}>
+              <HistoryButton
+                type="button"
+                aria-label={t('navigation.goBack')}
+                title={t('navigation.goBack')}
+                disabled={!historyAvailability.canGoBack}
+                onClick={() => navigate(-1)}
+              >
+                <FaArrowLeft />
+              </HistoryButton>
+              <HistoryButton
+                type="button"
+                aria-label={t('navigation.goForward')}
+                title={t('navigation.goForward')}
+                disabled={!historyAvailability.canGoForward}
+                onClick={() => navigate(1)}
+              >
+                <FaArrowRight />
+              </HistoryButton>
+            </HistoryControls>
+            <SearchWrapper $expanded={location.pathname === '/search'}>
               <SearchIcon />
               <SearchInput
                 ref={searchInputRef}
-                placeholder="Search songs, artists, albums…"
+                placeholder={t('navigation.searchPlaceholder')}
                 value={searchTerm}
                 onChange={handleInputChange}
-                aria-label="Search library"
+                aria-label={t('navigation.searchLibrary')}
               />
             </SearchWrapper>
-            <SettingsButton aria-label="Settings" onClick={() => navigate('/settings')} />
+            <SettingsButton aria-label={t('navigation.settings')} onClick={() => navigate('/settings')} />
           </AppHeader>
           {isScanning && (
             <ScanBanner role="status" aria-live="polite">
               <ScanBannerLabel>
-                <span>Scanning library…</span>
+                <span>{t('navigation.scanning')}</span>
                 <span>
-                  {scanProgress.total > 0 ? `${scanProgress.current} / ${scanProgress.total}` : 'Counting tracks…'}
+                  {scanProgress.total > 0
+                    ? t('navigation.trackProgress', { current: scanProgress.current, total: scanProgress.total })
+                    : t('navigation.countingTracks')}
                 </span>
               </ScanBannerLabel>
               <ProgressBar
@@ -320,14 +375,7 @@ const Player = () => {
           )}
           <Main>
             <Routes>
-              <Route
-                path="/"
-                element={
-                  <HomeCenter>
-                    <AlbumImage metadata={metadata} onClick={handleOpenFile} />
-                  </HomeCenter>
-                }
-              />
+              <Route path="/" element={<Albums home />} />
               <Route path="/artists" element={<Artists />} />
               <Route path="/artists/:id" element={<ArtistDetail />} />
               <Route path="/albums" element={<Albums />} />
@@ -339,24 +387,26 @@ const Player = () => {
               <Route path="/playlist/:id" element={<PlaylistRoute playlists={playlists} />} />
               <Route path="/playlist" element={<CreatePlaylist />} />
               {/* CATCH-ALL ROUTE FOR 404 HANDLING */}
-              <Route path="*" element={<div>404 - Page Not Found</div>} />
+              <Route path="*" element={<div>404 - {t('navigation.notFound')}</div>} />
             </Routes>
           </Main>
         </MainWrapper>
       </ContentContainer>
       <PlayerContainer>
-        <ProgressBar progress={progress} max={100} onSeek={handleSeek} />
         <StyledPlayer>
-          <Song
-            albumImage={metadata?.image}
-            albumName={metadata?.album}
-            songName={displayTitle({ title: metadata?.title, path: path }, 'no name')}
-            artistName={splitArtists(metadata?.artist ?? '')[0] ?? 'no name'}
-          />
+          <NowPlaying>
+            <Song
+              albumImage={metadata?.image}
+              albumName={metadata?.album}
+              songName={displayTitle({ title: metadata?.title, path: path }, 'no name')}
+              artistName={splitArtists(metadata?.artist ?? '')[0] ?? 'no name'}
+            />
+            <FavouriteButton />
+          </NowPlaying>
           <ControlsWrapper>
-            <Controls />
+            <Controls onSeek={handleSeek} />
           </ControlsWrapper>
-          <Volume />
+          <Volume showFavourite={false} />
         </StyledPlayer>
       </PlayerContainer>
     </Container>

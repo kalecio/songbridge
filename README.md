@@ -40,6 +40,8 @@ Songbridge is an open-source, cross-platform music player and library manager fo
 
 ## Development
 
+Interested in translating Songbridge? See the [translation contribution guide](docs/translations.md).
+
 ### Prerequisites
 
 - [Node.js](https://nodejs.org/) v22+
@@ -60,6 +62,15 @@ Follow the [Tauri prerequisites guide](https://v2.tauri.app/start/prerequisites/
 npm install
 npm run tauri dev
 ```
+
+### Prévia visual do aplicativo
+
+`npx vite --config vite.visual.config.ts` abre uma prévia dos componentes reais
+com dados de exemplo em http://127.0.0.1:5174. Essa entrada é exclusiva para
+comparações visuais: não altera a biblioteca local nem participa do build desktop.
+A sidebar permite arrastar a divisória ou usar as setas, Home e End ao focá-la.
+A largura é salva localmente, entre 175 e 360 px, preservando pelo menos 680 px
+para a biblioteca nas dimensões de janela suportadas pelo aplicativo.
 
 ### Building
 

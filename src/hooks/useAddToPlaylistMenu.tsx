@@ -6,6 +6,7 @@ import { ContextMenuItem } from '../Components/ContextMenu/ContextMenu';
 import { MetadataType } from '../types';
 import { usePlayHistory } from './usePlayHistory';
 import { usePlaylistActions } from './usePlaylistActions';
+import { useI18n } from '../i18n/I18nProvider';
 
 /**
  * Returns a builder that produces an "Add to playlist →" submenu item for a
@@ -18,6 +19,7 @@ export const useAddToPlaylistMenu = () => {
   const { addSongToPlaylist } = usePlaylistActions();
   const { recentPlaylistIds } = usePlayHistory();
   const navigate = useNavigate();
+  const { t } = useI18n();
 
   return (song: MetadataType): ContextMenuItem => {
     const recent = recentPlaylistIds
@@ -40,7 +42,7 @@ export const useAddToPlaylistMenu = () => {
     const items: ContextMenuItem[] = [
       {
         type: 'item',
-        label: 'Create new playlist',
+        label: t('common.createNewPlaylist'),
         icon: <FaPlus />,
         onSelect: () => navigate('/playlist', { state: { addSong: song } }),
       },
@@ -50,7 +52,7 @@ export const useAddToPlaylistMenu = () => {
 
     return {
       type: 'submenu',
-      label: 'Add to playlist',
+      label: t('common.addToPlaylist'),
       icon: <FaListUl />,
       items,
       disabled: !song.path,
