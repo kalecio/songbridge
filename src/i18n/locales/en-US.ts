@@ -1,4 +1,15 @@
 const enUS = {
+  'update.title': 'Songbridge update available',
+  'update.available': 'Version {latest} is available. You are using {current}.',
+  'update.changelog': 'What’s new',
+  'update.noChangelog': 'No release notes are available.',
+  'update.later': 'Ask me later',
+  'update.installNow': 'Install now',
+  'update.checking': 'Checking for updates…',
+  'update.downloading': 'Downloading and installing the update…',
+  'update.downloadProgress': 'Downloaded {bytes} bytes…',
+  'update.installing': 'Installing…',
+  'update.installFailed': 'The update could not be installed. Try again later.',
   'lastfm.nextPlay':
     'Scrobbling starts with the next track you play. Plays before connecting or enabling it are not imported.',
   'lastfm.reason.awaiting_play': 'Play a new track to start scrobbling.',

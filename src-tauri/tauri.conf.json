@@ -25,11 +25,16 @@
   },
   "bundle": {
     "active": true,
+    "createUpdaterArtifacts": true,
     "category": "Music",
     "targets": "all",
     "icon": ["icons/32x32.png", "icons/128x128.png", "icons/128x128@2x.png", "icons/icon.icns", "icons/icon.ico"]
   },
   "plugins": {
+    "updater": {
+      "pubkey": "untrusted comment: minisign public key: 76C3CAFED052E579\nRWR55VLQ/srDdj+uEDuVDlG9bG3ZHF4yyw7EHHOrEvZSUFSl4UNBPXOU",
+      "endpoints": ["https://github.com/kalecio/songbridge/releases/latest/download/latest.json"]
+    },
     "discord-rpc": {
       "applicationId": "1520795932818407514"
     }

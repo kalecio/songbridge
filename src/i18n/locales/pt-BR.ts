@@ -1,6 +1,17 @@
 import type { TranslationKey } from '../types';
 
 const ptBR: Record<TranslationKey, string> = {
+  'update.title': 'Atualização do Songbridge disponível',
+  'update.available': 'A versão {latest} está disponível. Você está usando a versão {current}.',
+  'update.changelog': 'Novidades',
+  'update.noChangelog': 'As notas desta versão não estão disponíveis.',
+  'update.later': 'Perguntar depois',
+  'update.installNow': 'Instalar agora',
+  'update.checking': 'Verificando atualizações…',
+  'update.downloading': 'Baixando e instalando a atualização…',
+  'update.downloadProgress': 'Baixados {bytes} bytes…',
+  'update.installing': 'Instalando…',
+  'update.installFailed': 'Não foi possível instalar a atualização. Tente novamente mais tarde.',
   'lastfm.nextPlay':
     'O scrobbling começa na próxima música que você tocar. Reproduções anteriores à conexão ou ativação não são importadas.',
   'lastfm.reason.awaiting_play': 'Toque uma nova música para começar o scrobbling.',
