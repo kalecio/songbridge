@@ -1,3 +1,4 @@
+import LastfmIndicator from '../../Components/Lastfm/LastfmIndicator';
 import { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { useNavigate, useLocation, useNavigationType, Route, Routes } from 'react-router';
 import { FaArrowLeft, FaArrowRight } from 'react-icons/fa6';
@@ -220,32 +221,37 @@ const Player = () => {
       }
     };
 
+    const replayCurrent = async () => {
+      try {
+        if (path) {
+          await invoke('load_song', { path });
+          await invoke('play_song');
+          await new Promise((resolve) => setTimeout(resolve, 200));
+          const verifyProgress = await invoke<number>('get_progress');
+          const durationSeconds = metadata?.duration?.duration_seconds ?? 0;
+          if (verifyProgress < durationSeconds * 0.1) {
+            endedRef.current = false;
+            lastPolledProgressRef.current = 0;
+            lastPolledTimeRef.current = performance.now();
+            localProgressRef.current = 0;
+            setProgress?.(0);
+          }
+        }
+      } catch (err) {
+        logError(`Repeat failed: ${err}`).catch(() => {});
+      }
+    };
+
     const handleTrackEnd = async () => {
       if (onRepeat === 'one') {
-        try {
-          if (path) {
-            await handleSeek(0);
-            await invoke('resume');
-            await new Promise((resolve) => setTimeout(resolve, 200));
-            const verifyProgress = await invoke<number>('get_progress');
-            const durationSeconds = metadata?.duration?.duration_seconds ?? 0;
-            if (verifyProgress < durationSeconds * 0.1) {
-              endedRef.current = false;
-              lastPolledProgressRef.current = 0;
-              lastPolledTimeRef.current = performance.now();
-              localProgressRef.current = 0;
-              setProgress?.(0);
-            }
-          }
-        } catch (err) {
-          logError(`Repeat failed: ${err}`).catch(() => {});
-        }
+        await replayCurrent();
       } else if (onShuffle) {
         try {
           if (currentPlaylist && currentPlaylist.length > 0) {
             const randomIndex = Math.floor(Math.random() * currentPlaylist.length);
             const randomPath = currentPlaylist[randomIndex];
-            setCurrentPath?.(randomPath);
+            if (randomPath === path) await replayCurrent();
+            else setCurrentPath?.(randomPath);
           }
         } catch (err) {
           logError(`Shuffle failed: ${err}`).catch(() => {});
@@ -256,7 +262,8 @@ const Player = () => {
           const nextPath = currentPlaylist[currentIndex + 1];
           setCurrentPath?.(nextPath);
         } else if (onRepeat === 'all') {
-          setCurrentPath?.(currentPlaylist[0]);
+          if (currentPlaylist[0] === path) await replayCurrent();
+          else setCurrentPath?.(currentPlaylist[0]);
         }
       }
     };
@@ -402,6 +409,7 @@ const Player = () => {
               artistName={splitArtists(metadata?.artist ?? '')[0] ?? 'no name'}
             />
             <FavouriteButton />
+            <LastfmIndicator />
           </NowPlaying>
           <ControlsWrapper>
             <Controls onSeek={handleSeek} />

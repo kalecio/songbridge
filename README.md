@@ -40,6 +40,8 @@ Songbridge is an open-source, cross-platform music player and library manager fo
 
 ## Development
 
+To enable Last.fm in local or release builds, see the [Last.fm setup and behavior guide](docs/lastfm.md).
+
 Interested in translating Songbridge? See the [translation contribution guide](docs/translations.md).
 
 ### Prerequisites

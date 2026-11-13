@@ -2,7 +2,7 @@ use std::fs::File;
 use std::io::BufReader;
 use std::sync::mpsc::Sender as StdSender;
 use std::thread;
-use std::time::Duration;
+use std::time::{Duration, Instant};
 
 use crossbeam_channel::Sender;
 use rodio::{decoder::DecoderBuilder, OutputStreamBuilder, Sink};
@@ -73,29 +73,68 @@ pub fn spawn_audio_thread() -> Sender<AudioCommand> {
         // on an empty sink (e.g., repeat-one after track ends).
         let mut current_path: Option<String> = None;
 
-        while let Ok(cmd) = rx.recv() {
+        let mut last_sample = Instant::now();
+        loop {
+            let command = rx.recv_timeout(Duration::from_millis(250));
+            if last_sample.elapsed() >= Duration::from_millis(250) || command.is_ok() {
+                crate::lastfm::audio_event(crate::lastfm::AudioEvent::Sample {
+                    position: sink.get_pos().as_secs_f64(),
+                    playing: !sink.is_paused() && !sink.empty(),
+                    ended: sink.empty(),
+                    at: Instant::now(),
+                    utc_ms: crate::lastfm::utc_ms(),
+                });
+                last_sample = Instant::now();
+            }
+            let cmd = match command {
+                Ok(cmd) => cmd,
+                Err(crossbeam_channel::RecvTimeoutError::Timeout) => continue,
+                Err(crossbeam_channel::RecvTimeoutError::Disconnected) => break,
+            };
             match cmd {
                 AudioCommand::Load(path) => {
                     current_path = Some(path.clone());
                     sink.stop();
+                    sink.pause();
                     max_pos = Duration::from_secs(0);
                     ended_reported = false;
-                    if load_track(&sink, &path) {
+                    let loaded = load_track(&sink, &path);
+                    if loaded {
                         sink.pause();
                     }
+                    crate::lastfm::audio_event(crate::lastfm::AudioEvent::Loaded(
+                        path,
+                        loaded,
+                        Instant::now(),
+                    ));
                 }
-                AudioCommand::Play => sink.play(),
+                AudioCommand::Play | AudioCommand::Resume => {
+                    sink.play();
+                    // Capture the start instant, not the next periodic poll.
+                    crate::lastfm::audio_event(crate::lastfm::AudioEvent::Sample {
+                        position: sink.get_pos().as_secs_f64(),
+                        playing: !sink.empty(),
+                        ended: sink.empty(),
+                        at: Instant::now(),
+                        utc_ms: crate::lastfm::utc_ms(),
+                    });
+                }
                 AudioCommand::Pause => sink.pause(),
-                AudioCommand::Resume => sink.play(),
                 AudioCommand::SetVolume(v) => sink.set_volume(v),
                 AudioCommand::Seek(pos) => {
                     // If the sink is empty (track ended), reload the track first
                     if sink.empty() {
                         if let Some(path) = &current_path {
-                            load_track(&sink, path);
+                            let loaded = load_track(&sink, path);
+                            crate::lastfm::audio_event(crate::lastfm::AudioEvent::Loaded(
+                                path.clone(),
+                                loaded,
+                                Instant::now(),
+                            ));
                         }
                     }
                     let _ = sink.try_seek(pos);
+                    crate::lastfm::audio_event(crate::lastfm::AudioEvent::Seek);
                     max_pos = Duration::from_secs(0);
                     ended_reported = false;
                 }

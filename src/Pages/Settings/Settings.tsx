@@ -1,3 +1,4 @@
+import LastfmSettings from '../../Components/Lastfm/LastfmSettings';
 import { useContext, useEffect, useRef, useState } from 'react';
 import { open } from '@tauri-apps/plugin-dialog';
 import { invoke } from '@tauri-apps/api/core';
@@ -220,6 +221,10 @@ const Settings = () => {
     <Page>
       <PageHeader>{t('settings.title')}</PageHeader>
       <SettingsContainer>
+        <Section>
+          <SectionTitle>Last.fm</SectionTitle>
+          <LastfmSettings />
+        </Section>
         <Section>
           <SectionTitle>{t('settings.appearance')}</SectionTitle>
           <ThemeRow>

@@ -521,3 +521,50 @@ describe('useMetadataActions', () => {
     });
   });
 });
+
+describe('partial metadata imports', () => {
+  it('keeps successful writes and reports a read-only file without losing the other updates', async () => {
+    const first = makeSong({ path: '/first.mp3', title: 'First' });
+    const second = makeSong({ path: '/second.mp3', title: 'Second' });
+    const third = makeSong({ path: '/third.mp3', title: 'Third' });
+    const setLibrary = vi.fn();
+    mockInvoke
+      .mockResolvedValueOnce({ ...first, album: 'Imported' })
+      .mockRejectedValueOnce('Read only')
+      .mockResolvedValueOnce({ ...third, artist: 'New artist' });
+    const { result } = renderWithContext({ library: [first, second, third], setLibrary });
+    let reports;
+    await act(async () => {
+      reports = await result.current.batchUpdateSongsMetadata(
+        ['/first.mp3', '/second.mp3', '/third.mp3'],
+        {},
+        {
+          perTrack: {
+            '/first.mp3': { album: 'Imported', updateFields: ['album'] },
+            '/second.mp3': { album: 'Imported', updateFields: ['album'] },
+            '/third.mp3': { artist: 'New artist', updateFields: ['artist'] },
+          },
+          reportFailures: true,
+        },
+      );
+    });
+    expect(reports).toEqual([
+      { path: '/first.mp3' },
+      { path: '/second.mp3', error: 'Read only' },
+      { path: '/third.mp3' },
+    ]);
+    expect(setLibrary).toHaveBeenCalledWith([
+      { ...first, album: 'Imported' },
+      second,
+      { ...third, artist: 'New artist' },
+    ]);
+    expect(mockInvoke).toHaveBeenLastCalledWith(
+      'update_track_metadata',
+      expect.objectContaining({
+        path: '/third.mp3',
+        artist: 'New artist',
+        updateFields: ['artist'],
+      }),
+    );
+  });
+});

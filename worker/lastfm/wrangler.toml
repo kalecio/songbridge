@@ -1,0 +1,15 @@
+name = "songbridge-lastfm-api"
+main = "src/index.ts"
+compatibility_date = "2026-11-12"
+compatibility_flags = ["nodejs_compat"]
+
+[observability]
+enabled = true
+
+[[ratelimits]]
+name = "REQUEST_LIMITER"
+namespace_id = "730401"
+
+  [ratelimits.simple]
+  limit = 60
+  period = 60

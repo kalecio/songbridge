@@ -26,3 +26,5 @@ dist-ssr
 # Marketing website
 dist-website/
 .wrangler/
+.dev.vars*
+!.dev.vars.example

@@ -1,3 +1,4 @@
+import { LastfmProvider } from './Components/Lastfm/LastfmProvider';
 import { useEffect, useRef, useState } from 'react';
 import { createGlobalStyle, ThemeProvider } from 'styled-components';
 import './App.css';
@@ -236,7 +237,9 @@ function App() {
         <GlobalStyle />
         <ModalProvider>
           <LyricsSearchModalProvider>
-            <Player />
+            <LastfmProvider>
+              <Player />
+            </LastfmProvider>
           </LyricsSearchModalProvider>
         </ModalProvider>
       </ThemeProvider>
