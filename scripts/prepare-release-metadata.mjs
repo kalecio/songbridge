@@ -1,5 +1,6 @@
 import { appendFile, readFile } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
+import { get } from 'node:https';
 import process from 'node:process';
 
 const { version } = JSON.parse(await readFile('package.json', 'utf8'));
@@ -10,25 +11,38 @@ const token = process.env.GH_TOKEN;
 const repository = process.env.GITHUB_REPOSITORY;
 if (!token || !repository) throw new Error('GitHub release metadata is unavailable');
 
-const existingResponse = await globalThis.fetch(
-  `https://api.github.com/repos/${repository}/releases/tags/${encodeURIComponent(tag)}`,
-  {
-    headers: {
-      Accept: 'application/vnd.github+json',
-      Authorization: `Bearer ${token}`,
-      'User-Agent': 'songbridge-release-workflow',
-      'X-GitHub-Api-Version': '2022-11-28',
+const existingReleaseResponse = await new Promise((resolve, reject) => {
+  const request = get(
+    `https://api.github.com/repos/${repository}/releases/tags/${encodeURIComponent(tag)}`,
+    {
+      headers: {
+        Accept: 'application/vnd.github+json',
+        Authorization: `Bearer ${token}`,
+        'User-Agent': 'songbridge-release-workflow',
+        'X-GitHub-Api-Version': '2022-11-28',
+      },
     },
-  },
-);
+    (response) => {
+      let body = '';
+      response.setEncoding('utf8');
+      response.on('data', (chunk) => {
+        body += chunk;
+      });
+      response.on('end', () => {
+        resolve({ status: response.statusCode ?? 0, body });
+      });
+    },
+  );
+  request.on('error', reject);
+});
 
-if (existingResponse.ok) {
-  const existingRelease = await existingResponse.json();
+if (existingReleaseResponse.status === 200) {
+  const existingRelease = JSON.parse(existingReleaseResponse.body);
   if (!existingRelease.draft) {
     throw new Error(`Release ${tag} is already published; refusing to replace its assets`);
   }
-} else if (existingResponse.status !== 404) {
-  throw new Error(`Could not check release ${tag}: ${existingResponse.status} ${existingResponse.statusText}`);
+} else if (existingReleaseResponse.status !== 404) {
+  throw new Error(`Could not check release ${tag}: HTTP ${existingReleaseResponse.status}`);
 }
 
 const changelog = await readFile('CHANGELOG.md', 'utf8');
