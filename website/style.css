@@ -421,7 +421,7 @@ h1 > span {
 .release-note {
   font-size: 11px !important;
 }
-.release-note > span:nth-child(2) {
+.release-note .separator {
   margin: 0 10px;
 }
 .community {
