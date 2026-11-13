@@ -11,6 +11,7 @@ import { themes, defaultTheme, AppTheme, loadCustomThemes, saveCustomThemes } fr
 import { ShortcutBindings, loadShortcuts, saveShortcuts } from './keyboard';
 import { ModalProvider } from './Context/ModalContext';
 import { LyricsSearchModalProvider } from './Context/LyricsSearchModalContext';
+import UpdatePrompt from './Components/UpdatePrompt/UpdatePrompt';
 
 const GlobalStyle = createGlobalStyle`
   body {
@@ -238,6 +239,7 @@ function App() {
         <ModalProvider>
           <LyricsSearchModalProvider>
             <LastfmProvider>
+              <UpdatePrompt />
               <Player />
             </LastfmProvider>
           </LyricsSearchModalProvider>

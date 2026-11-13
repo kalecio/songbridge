@@ -1,6 +1,17 @@
 import type { TranslationKey } from '../types';
 
 const esES: Record<TranslationKey, string> = {
+  'update.title': 'Actualización de Songbridge disponible',
+  'update.available': 'La versión {latest} está disponible. Estás usando la versión {current}.',
+  'update.changelog': 'Novedades',
+  'update.noChangelog': 'No hay notas de esta versión disponibles.',
+  'update.later': 'Preguntar más tarde',
+  'update.installNow': 'Instalar ahora',
+  'update.checking': 'Buscando actualizaciones…',
+  'update.downloading': 'Descargando e instalando la actualización…',
+  'update.downloadProgress': 'Descargados {bytes} bytes…',
+  'update.installing': 'Instalando…',
+  'update.installFailed': 'No se pudo instalar la actualización. Inténtalo de nuevo más tarde.',
   'lastfm.nextPlay':
     'El scrobbling empieza con la próxima canción que reproduzcas. No se importan reproducciones anteriores a la conexión o activación.',
   'lastfm.reason.awaiting_play': 'Reproduce una nueva canción para empezar a hacer scrobbling.',
