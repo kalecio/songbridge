@@ -29,6 +29,13 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
+      - name: Prepare release metadata
+        id: release-metadata
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITHUB_REPOSITORY: ${{ github.repository }}
+        run: node scripts/prepare-release-metadata.mjs
+
       - name: Install Linux dependencies
         if: startsWith(matrix.platform, 'ubuntu')
         run: |
@@ -67,7 +74,7 @@ jobs:
         with:
           tagName: songbridge-v__VERSION__
           releaseName: 'Songbridge v__VERSION__'
-          releaseBody: 'See the assets to download this version and install.'
+          releaseBody: ${{ steps.release-metadata.outputs.body }}
           releaseDraft: true
-          prerelease: false
+          prerelease: ${{ steps.release-metadata.outputs.prerelease }}
           args: ${{ matrix.args }}
