@@ -65,14 +65,14 @@ npm install
 npm run tauri dev
 ```
 
-### Prévia visual do aplicativo
+### Visual app preview
 
-`npx vite --config vite.visual.config.ts` abre uma prévia dos componentes reais
-com dados de exemplo em http://127.0.0.1:5174. Essa entrada é exclusiva para
-comparações visuais: não altera a biblioteca local nem participa do build desktop.
-A sidebar permite arrastar a divisória ou usar as setas, Home e End ao focá-la.
-A largura é salva localmente, entre 175 e 360 px, preservando pelo menos 680 px
-para a biblioteca nas dimensões de janela suportadas pelo aplicativo.
+`npx vite --config vite.visual.config.ts` opens a preview of the actual components
+with sample data at http://127.0.0.1:5174. This entry point is for visual
+comparisons only: it does not modify the local library or participate in the
+desktop build. Drag the sidebar divider or focus it and use the arrow keys, Home,
+and End. Its width is saved locally between 175 and 360 px, preserving at least
+680 px for the library at the window sizes supported by the app.
 
 ### Building
 
@@ -149,8 +149,8 @@ A special thanks to everyone who has contributed to this project:
 
 ## Website
 
-O site institucional fica em [`website/`](website/README.md), com build independente
-e publicação no Cloudflare Pages em https://songbridge.kalec.io.
+The project website is in [`website/`](website/README.md), with an independent
+build and deployment to Cloudflare Pages at https://songbridge.kalec.io.
 
 ```sh
 npm run website:dev
