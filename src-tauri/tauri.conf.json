@@ -32,7 +32,7 @@
   },
   "plugins": {
     "updater": {
-      "pubkey": "untrusted comment: minisign public key: 76C3CAFED052E579\nRWR55VLQ/srDdj+uEDuVDlG9bG3ZHF4yyw7EHHOrEvZSUFSl4UNBPXOU",
+      "pubkey": "dW50cnVzdGVkIGNvbW1lbnQ6IG1pbmlzaWduIHB1YmxpYyBrZXk6IDc2QzNDQUZFRDA1MkU1NzkKUldSNTVWTFEvc3JEZGordUVEdVZEbEc5YkczWkhGNHl5dzdFSEhPckV2WlNVRlNsNFVOQlBYT1UK",
       "endpoints": ["https://github.com/kalecio/songbridge/releases/latest/download/latest.json"]
     },
     "discord-rpc": {
