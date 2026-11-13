@@ -37,6 +37,7 @@ const songs: MetadataType[] = [
 ];
 
 beforeEach(() => {
+  mockInvoke.mockClear();
   mockInvoke.mockResolvedValue([]);
 });
 
@@ -181,10 +182,13 @@ describe('Playlist', () => {
   });
 
   describe('path existence check optimization', () => {
-    it.skip('does not call check_paths_exist when paths have not changed', async () => {
+    it('does not call check_paths_exist when paths have not changed', async () => {
       mockInvoke.mockResolvedValue([]);
+      mockInvoke.mockClear();
       const { rerender } = renderWithContext(<Playlist songs={songs} name="Test" />);
       await waitFor(() => expect(mockInvoke).toHaveBeenCalledWith('check_paths_exist', expect.anything()));
+      const checkPathsCalls = () => mockInvoke.mock.calls.filter(([command]) => command === 'check_paths_exist');
+      const initialCheckCount = checkPathsCalls().length;
 
       // Re-render with same songs (same paths)
       rerender(<Playlist songs={songs} name="Test" />);
@@ -192,17 +196,19 @@ describe('Playlist', () => {
       // Wait a bit for any potential async calls
       await waitFor(
         () => {
-          // The mock should still only have been called once
-          expect(mockInvoke).toHaveBeenCalledTimes(1);
+          // Other child components also use Tauri invoke; count only this command.
+          expect(checkPathsCalls()).toHaveLength(initialCheckCount);
         },
         { timeout: 2000 },
       );
     });
 
-    it.skip('calls check_paths_exist when paths change', async () => {
+    it('calls check_paths_exist when paths change', async () => {
       mockInvoke.mockResolvedValue([]);
+      mockInvoke.mockClear();
       const { rerender } = renderWithContext(<Playlist songs={songs} name="Test" />);
       await waitFor(() => expect(mockInvoke).toHaveBeenCalledWith('check_paths_exist', expect.anything()));
+      const checkPathsCalls = () => mockInvoke.mock.calls.filter(([command]) => command === 'check_paths_exist');
 
       // Re-render with different songs (different paths)
       const newSongs: MetadataType[] = [
@@ -212,7 +218,7 @@ describe('Playlist', () => {
 
       await waitFor(
         () => {
-          expect(mockInvoke).toHaveBeenCalledTimes(2);
+          expect(checkPathsCalls()).toHaveLength(2);
         },
         { timeout: 3000 },
       );

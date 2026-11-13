@@ -7,6 +7,7 @@ import Page from '../../Components/Page/Page';
 import PageHeader from '../../Components/PageHeader/PageHeader';
 import { AppTheme, createCustomTheme, defaultTheme, ThemeColorOverrides, themes } from '../../theme';
 import LyricsFontControl from '../../Components/LyricsFontControl/LyricsFontControl';
+import VisualizerAppearance from './VisualizerAppearance';
 import { useLyricsFontSize } from '../../hooks/useLyricsFontSize';
 import { DEFAULT_SHORTCUTS, ShortcutAction, eventToBinding, formatBinding } from '../../keyboard';
 import { Locale, TranslationKey } from '../../i18n/types';
@@ -364,6 +365,7 @@ const Settings = () => {
               </CreateThemeActions>
             </CreateThemePanel>
           )}
+          <VisualizerAppearance />
         </Section>
 
         <Section>

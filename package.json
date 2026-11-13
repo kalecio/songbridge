@@ -2,7 +2,7 @@
   "name": "songbridge",
   "private": true,
   "version": "0.6.0",
-  "author": "Kal\u00e9cio Santana <kalecio.santana@gmail.com>",
+  "author": "Kalécio Santana <kalecio.santana@gmail.com>",
   "description": "A desktop music player with library scanning, playlist management, and search",
   "type": "module",
   "scripts": {
@@ -27,6 +27,8 @@
     "@tauri-apps/plugin-dialog": "^2.6.0",
     "@tauri-apps/plugin-log": "^2.8.0",
     "@tauri-apps/plugin-opener": "^2",
+    "butterchurn": "3.0.0-beta.5",
+    "butterchurn-presets": "3.0.0-beta.4",
     "lint-staged": "^16.1.2",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",

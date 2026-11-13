@@ -11,6 +11,7 @@ import TextMarquee from '../TextMarquee/TextMarquee';
 import SongSortControl from '../SongSortControl/SongSortControl';
 import {
   AlbumsIcon,
+  HomeIcon,
   AppLogo,
   LogoImg,
   ArtistsIcon,
@@ -180,9 +181,14 @@ const Sidebar = () => {
 
         {!showQueue && (
           <>
+            <Menu>
+              <MenuItem $active={location.pathname === '/'} onClick={() => navigate('/')}>
+                <HomeIcon /> {t('sidebar.home')}
+              </MenuItem>
+            </Menu>
             <SectionLabel>{t('sidebar.library')}</SectionLabel>
             <Menu>
-              <MenuItem $active={isActive('/') || isActive('/albums')} onClick={() => navigate('/')}>
+              <MenuItem $active={isActive('/albums')} onClick={() => navigate('/albums')}>
                 <AlbumsIcon /> {t('sidebar.albums')}
               </MenuItem>
               <MenuItem $active={isActive('/songs')} onClick={() => navigate('/songs')}>

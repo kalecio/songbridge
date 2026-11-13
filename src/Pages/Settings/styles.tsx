@@ -196,6 +196,12 @@ export const CreateThemePanel = styled.div`
   border: 1px solid ${({ theme }) => theme.border};
   border-radius: 0.5rem;
   background: ${({ theme }) => theme.surface};
+  > p {
+    margin: -0.5rem 0 0;
+    color: ${({ theme }) => theme.textSecondary};
+    font-size: 0.85rem;
+    line-height: 1.55;
+  }
 `;
 
 export const CreateThemeHeader = styled.h3`

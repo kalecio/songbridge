@@ -65,6 +65,14 @@ pub fn get_progress(state: tauri::State<Arc<Mutex<AudioState>>>) -> u64 {
 }
 
 #[tauri::command]
+pub fn get_audio_visualizer_levels(state: tauri::State<Arc<Mutex<AudioState>>>) -> Vec<f32> {
+    state
+        .lock()
+        .map(|audio| audio.visualizer_levels())
+        .unwrap_or_else(|_| vec![0.0; 32])
+}
+
+#[tauri::command]
 pub fn seek(state: tauri::State<Arc<Mutex<AudioState>>>, percent: f32, path: String) {
     log::info!("Seeking to {:.1}% in '{}'", percent * 100.0, path);
     if let Ok(mut audio) = state.lock() {
