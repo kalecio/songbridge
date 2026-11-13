@@ -1,5 +1,6 @@
 import { appendFile, readFile } from 'node:fs/promises';
 import { randomUUID } from 'node:crypto';
+import process from 'node:process';
 
 const { version } = JSON.parse(await readFile('package.json', 'utf8'));
 if (!version) throw new Error('package.json is missing a version');
@@ -9,7 +10,7 @@ const token = process.env.GH_TOKEN;
 const repository = process.env.GITHUB_REPOSITORY;
 if (!token || !repository) throw new Error('GitHub release metadata is unavailable');
 
-const existingResponse = await fetch(
+const existingResponse = await globalThis.fetch(
   `https://api.github.com/repos/${repository}/releases/tags/${encodeURIComponent(tag)}`,
   {
     headers: {
