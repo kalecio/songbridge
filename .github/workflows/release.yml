@@ -64,6 +64,10 @@ jobs:
       - name: Install frontend dependencies
         run: npm ci
 
+      - name: Prepare Windows MSI version
+        if: matrix.platform == 'windows-latest'
+        run: node scripts/prepare-windows-msi-config.mjs
+
       - uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
