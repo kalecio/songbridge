@@ -1,5 +1,5 @@
 import { styled, keyframes, css } from 'styled-components';
-import { FaFolderPlus, FaTrash, FaArrowsRotate } from 'react-icons/fa6';
+import { FaFolderPlus, FaTrash, FaArrowsRotate, FaMagnifyingGlass } from 'react-icons/fa6';
 
 export const SettingsContainer = styled.div`
   display: flex;
@@ -7,14 +7,124 @@ export const SettingsContainer = styled.div`
   width: 100%;
   max-width: 900px;
   padding: 0;
-  gap: 2.25rem;
+  gap: 1.25rem;
+`;
+
+export const SettingsToolbar = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.1rem;
+  border: 1px solid ${({ theme }) => theme.border};
+  border-radius: 0.9rem;
+  background: ${({ theme }) => theme.surface};
+`;
+
+export const SearchWrap = styled.label`
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 2.9rem;
+  padding: 0 0.9rem;
+  border: 1px solid ${({ theme }) => theme.borderLight};
+  border-radius: 0.65rem;
+  background: ${({ theme }) => theme.background};
+  color: ${({ theme }) => theme.textSecondary};
+  &:focus-within {
+    border-color: ${({ theme }) => theme.primary};
+  }
+`;
+
+export const SearchIcon = styled(FaMagnifyingGlass)`
+  flex: 0 0 auto;
+  font-size: 0.9rem;
+`;
+
+export const SearchInput = styled.input`
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: ${({ theme }) => theme.textPrimary};
+  font: inherit;
+  &::placeholder {
+    color: ${({ theme }) => theme.textSecondary};
+  }
+`;
+
+export const TabList = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+`;
+
+export const TabButton = styled.button<{ $active: boolean }>`
+  min-height: 2.4rem;
+  padding: 0.45rem 0.85rem;
+  border: 1px solid ${({ theme, $active }) => ($active ? theme.primary : theme.border)};
+  border-radius: 999px;
+  background: ${({ theme, $active }) => ($active ? theme.accentBg : 'transparent')};
+  color: ${({ theme, $active }) => ($active ? theme.primary : theme.textSecondary)};
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+`;
+
+export const SearchResults = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding-top: 0.25rem;
+  border-top: 1px solid ${({ theme }) => theme.border};
+`;
+
+export const SearchResultButton = styled.button`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  width: 100%;
+  padding: 0.65rem 0.75rem;
+  border: 0;
+  border-radius: 0.5rem;
+  background: transparent;
+  color: ${({ theme }) => theme.textPrimary};
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+  &:hover,
+  &:focus-visible {
+    background: ${({ theme }) => theme.surfaceRaised};
+    outline: none;
+  }
+  small {
+    color: ${({ theme }) => theme.textSecondary};
+  }
+`;
+
+export const SearchEmpty = styled.p`
+  margin: 0;
+  padding: 0.65rem 0.75rem;
+  color: ${({ theme }) => theme.textSecondary};
+  font-size: 0.875rem;
+`;
+
+export const SettingsPanel = styled.div`
+  padding: 1.5rem;
+  border: 1px solid ${({ theme }) => theme.border};
+  border-radius: 0.9rem;
+  background: ${({ theme }) => theme.surfaceRaised};
+  @media (max-width: 600px) {
+    padding: 1rem;
+  }
 `;
 
 export const Section = styled.section`
   display: flex;
   flex-direction: column;
   gap: 1rem;
-  padding: 0 0 1.5rem;
+  padding: 0;
 `;
 
 export const SectionTitle = styled.h2`
@@ -40,10 +150,10 @@ export const PathItem = styled.li`
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  background: ${({ theme }) => theme.surface};
+  background: ${({ theme }) => theme.surfaceRaised};
   border: 1px solid ${({ theme }) => theme.border};
-  border-radius: 0.4rem;
-  padding: 0.75rem 0.9rem;
+  border-radius: 0.65rem;
+  padding: 0.8rem 1rem;
   min-height: 2.75rem;
 `;
 
@@ -79,16 +189,25 @@ export const AddButton = styled.button`
   background: ${({ theme }) => theme.primary};
   color: ${({ theme }) => theme.textOnPrimary};
   border: none;
-  border-radius: 2rem;
-  padding: 0.5rem 1.2rem;
+  border-radius: 0.5rem;
+  padding: 0.5rem 0.9rem;
   font-size: 0.875rem;
+  font-weight: 500;
   cursor: pointer;
   align-self: flex-start;
-  transition: background 0.15s;
+  transition:
+    background 0.15s,
+    transform 0.15s;
   min-height: 2.5rem;
 
   &:hover {
     background: ${({ theme }) => theme.primaryDark};
+    transform: translateY(-1px);
+  }
+
+  &:focus-visible {
+    outline: 2px solid ${({ theme }) => theme.accent};
+    outline-offset: 2px;
   }
 
   &:disabled {
@@ -122,31 +241,41 @@ const spin = keyframes`
 
 export const ButtonRow = styled.div`
   display: flex;
-  justify-content: flex-start;
-  flex-direction: column;
-  gap: 0.75rem;
-  max-height: none;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  margin-top: 0.25rem;
 `;
 
 export const RescanButton = styled.button`
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  background: none;
-  color: ${({ theme }) => theme.primary};
-  border: 1.5px solid ${({ theme }) => theme.primary};
-  border-radius: 2rem;
-  padding: 0.5rem 1.2rem;
+  background: transparent;
+  color: ${({ theme }) => theme.textPrimary};
+  border: 1px solid ${({ theme }) => theme.border};
+  border-radius: 0.5rem;
+  padding: 0.5rem 0.9rem;
   font-size: 0.875rem;
+  font-weight: 500;
   cursor: pointer;
   align-self: flex-start;
   transition:
     background 0.15s,
-    color 0.15s;
+    color 0.15s,
+    border-color 0.15s,
+    transform 0.15s;
   min-height: 2.5rem;
 
   &:hover {
-    background: ${({ theme }) => theme.surfaceRaised};
+    background: ${({ theme }) => theme.hover};
+    border-color: ${({ theme }) => theme.borderLight};
+    transform: translateY(-1px);
+  }
+
+  &:focus-visible {
+    outline: 2px solid ${({ theme }) => theme.accent};
+    outline-offset: 2px;
   }
 
   &:disabled {
@@ -196,6 +325,12 @@ export const CreateThemePanel = styled.div`
   border: 1px solid ${({ theme }) => theme.border};
   border-radius: 0.5rem;
   background: ${({ theme }) => theme.surface};
+  > p {
+    margin: -0.5rem 0 0;
+    color: ${({ theme }) => theme.textSecondary};
+    font-size: 0.85rem;
+    line-height: 1.55;
+  }
 `;
 
 export const CreateThemeHeader = styled.h3`

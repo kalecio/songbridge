@@ -8,6 +8,7 @@ import { Button, Input } from '../Modal/styles';
 import { useLastfm, useLastfmReason } from './LastfmProvider';
 import { Actions, History, ImportPanel } from './styles';
 import { importFields, type ImportField, type Suggestion } from './importFields';
+import { getLastfmSearchQuery } from './searchQuery';
 
 interface Match {
   name: string;
@@ -51,7 +52,7 @@ export default function LastfmImport({
   const reason = useLastfmReason();
   const id = useId();
   const { batchUpdateSongsMetadata } = useMetadataActions();
-  const [query, setQuery] = useState((kind === 'track' ? songs[0]?.title : songs[0]?.album) ?? '');
+  const [query, setQuery] = useState(getLastfmSearchQuery(songs[0], kind));
   const [artist, setArtist] = useState(songs[0]?.artist ?? '');
   const [matches, setMatches] = useState<Match[]>([]);
   const [suggestion, setSuggestion] = useState<Suggestion | null>(null);

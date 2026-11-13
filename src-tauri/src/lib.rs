@@ -17,7 +17,8 @@ mod now_playing;
 pub use audio::utils::{calculate_track_duration, get_audio_probe};
 // Re-export selected audio API for integration tests.
 pub use audio::commands::{
-    get_progress, load_song, pause, play_song, resume, seek, set_volume, toggle_mute,
+    get_audio_visualizer_levels, get_progress, load_song, pause, play_song, resume, seek,
+    set_volume, toggle_mute,
 };
 pub use audio::state::AudioState;
 // Re-export metadata utils for integration tests
@@ -78,6 +79,7 @@ pub fn run() {
             audio::commands::set_volume,
             audio::commands::seek,
             audio::commands::get_progress,
+            audio::commands::get_audio_visualizer_levels,
             metadata::commands::get_metadata,
             metadata::commands::get_track_image,
             metadata::commands::get_image_preview,

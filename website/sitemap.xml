@@ -1,2 +1,24 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9"><url><loc>https://songbridge.kalec.io/</loc></url></urlset>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">
+  <url>
+    <loc>https://songbridge.kalec.io/</loc>
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://songbridge.kalec.io/" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://songbridge.kalec.io/en/" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://songbridge.kalec.io/es/" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://songbridge.kalec.io/" />
+  </url>
+  <url>
+    <loc>https://songbridge.kalec.io/en/</loc>
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://songbridge.kalec.io/" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://songbridge.kalec.io/en/" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://songbridge.kalec.io/es/" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://songbridge.kalec.io/" />
+  </url>
+  <url>
+    <loc>https://songbridge.kalec.io/es/</loc>
+    <xhtml:link rel="alternate" hreflang="pt-BR" href="https://songbridge.kalec.io/" />
+    <xhtml:link rel="alternate" hreflang="en" href="https://songbridge.kalec.io/en/" />
+    <xhtml:link rel="alternate" hreflang="es" href="https://songbridge.kalec.io/es/" />
+    <xhtml:link rel="alternate" hreflang="x-default" href="https://songbridge.kalec.io/" />
+  </url>
+</urlset>

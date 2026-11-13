@@ -1,7 +1,8 @@
 import LastfmIndicator from '../../Components/Lastfm/LastfmIndicator';
 import { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { useNavigate, useLocation, useNavigationType, Route, Routes } from 'react-router';
-import { FaArrowLeft, FaArrowRight } from 'react-icons/fa6';
+import { FaArrowLeft, FaArrowRight, FaCompress, FaExpand } from 'react-icons/fa6';
+import { getCurrentWindow } from '@tauri-apps/api/window';
 import { error as logError } from '../../logger';
 import Controls from '../../Components/Controls/Controls';
 import ProgressBar from '../../Components/ProgressBar/ProgressBar';
@@ -18,6 +19,8 @@ import {
   ControlsWrapper,
   HistoryButton,
   HistoryControls,
+  FocusHeader,
+  FocusModeButton,
   NowPlaying,
   Main,
   MainWrapper,
@@ -46,6 +49,7 @@ import ArtistDetail from '../Artists/Detail';
 import Settings from '../Settings/Settings';
 import Search from '../Search/Search';
 import Lyrics from '../Lyrics/Lyrics';
+import Home from '../Home/Home';
 import CreatePlaylist from '../Playlist/Create';
 import { useI18n } from '../../i18n/I18nProvider';
 
@@ -56,6 +60,7 @@ const Player = () => {
   const navigationType = useNavigationType();
   const navigationHistoryRef = useRef({ entries: [location.key], index: 0 });
   const [historyAvailability, setHistoryAvailability] = useState({ canGoBack: false, canGoForward: false });
+  const [focusMode, setFocusMode] = useState(false);
   const context = useContext(AppContext);
   const {
     currentPath: path,
@@ -82,6 +87,28 @@ const Player = () => {
   const [searchTerm, setSearchTerm] = useState('');
   const debounceTimeoutRef = useRef<number | null>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
+
+  const setFocusModeAndWindow = useCallback(async (enabled: boolean) => {
+    setFocusMode(enabled);
+    if (enabled && location.pathname !== '/') navigate('/');
+    try {
+      await getCurrentWindow().setFullscreen(enabled);
+    } catch (error) {
+      logError(`Could not change fullscreen state: ${String(error)}`);
+    }
+  }, [location.pathname, navigate]);
+
+  useEffect(() => {
+    if (!focusMode) return;
+    const exitFocusMode = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        void setFocusModeAndWindow(false);
+      }
+    };
+    window.addEventListener('keydown', exitFocusMode);
+    return () => window.removeEventListener('keydown', exitFocusMode);
+  }, [focusMode, setFocusModeAndWindow]);
 
   useEffect(() => {
     const history = navigationHistoryRef.current;
@@ -329,8 +356,15 @@ const Player = () => {
   return (
     <Container>
       <ContentContainer>
-        <Sidebar />
+        {!focusMode && <Sidebar />}
         <MainWrapper>
+          {focusMode ? (
+            <FocusHeader>
+              <FocusModeButton type="button" onClick={() => void setFocusModeAndWindow(false)}>
+                <FaCompress aria-hidden="true" /> {t('focus.exit')}
+              </FocusModeButton>
+            </FocusHeader>
+          ) : (
           <AppHeader>
             <HistoryControls aria-label={t('navigation.pageNavigation')}>
               <HistoryButton
@@ -363,8 +397,12 @@ const Player = () => {
               />
             </SearchWrapper>
             <SettingsButton aria-label={t('navigation.settings')} onClick={() => navigate('/settings')} />
+            <FocusModeButton type="button" aria-label={t('focus.enter')} title={t('focus.enter')} onClick={() => void setFocusModeAndWindow(true)}>
+              <FaExpand aria-hidden="true" /> {t('focus.enter')}
+            </FocusModeButton>
           </AppHeader>
-          {isScanning && (
+          )}
+          {!focusMode && isScanning && (
             <ScanBanner role="status" aria-live="polite">
               <ScanBannerLabel>
                 <span>{t('navigation.scanning')}</span>
@@ -382,7 +420,7 @@ const Player = () => {
           )}
           <Main>
             <Routes>
-              <Route path="/" element={<Albums home />} />
+              <Route path="/" element={<Home />} />
               <Route path="/artists" element={<Artists />} />
               <Route path="/artists/:id" element={<ArtistDetail />} />
               <Route path="/albums" element={<Albums />} />

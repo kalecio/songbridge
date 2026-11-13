@@ -90,6 +90,7 @@ const reasons = new Set([
   'database',
   'no_results',
   'invalid_artwork',
+  'write_verification_failed',
 ]);
 export const useLastfmReason = () => {
   const { t } = useI18n();

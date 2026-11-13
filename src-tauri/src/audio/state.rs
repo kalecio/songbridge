@@ -2,7 +2,10 @@ use super::utils::{calculate_track_duration, format_duration, get_audio_probe};
 use crate::audio::backend::{spawn_audio_thread, AudioCommand, PositionReport};
 use crate::metadata::types::AudioDuration;
 use crossbeam_channel::Sender;
-use std::{sync::mpsc, time::Duration};
+use std::{
+    sync::{mpsc, Arc, Mutex},
+    time::Duration,
+};
 
 pub struct AudioState {
     pub path: String,
@@ -10,6 +13,7 @@ pub struct AudioState {
     original_volume: f32,
     is_muted: bool,
     pub track_duration: AudioDuration,
+    visualizer_levels: Arc<Mutex<Vec<f32>>>,
 }
 
 impl Default for AudioState {
@@ -20,13 +24,15 @@ impl Default for AudioState {
 
 impl AudioState {
     pub fn new() -> Self {
-        let audio_tx = spawn_audio_thread();
+        let visualizer_levels = Arc::new(Mutex::new(vec![0.0; 32]));
+        let audio_tx = spawn_audio_thread(Arc::clone(&visualizer_levels));
         AudioState {
             path: String::new(),
             audio_tx,
             original_volume: 1.0,
             is_muted: false,
             track_duration: AudioDuration::default(),
+            visualizer_levels,
         }
     }
 
@@ -35,6 +41,9 @@ impl AudioState {
         let track_duration = calculate_track_duration(&probe);
         self.track_duration = AudioDuration::new(track_duration, format_duration(track_duration));
         self.path = path.to_string();
+        if let Ok(mut levels) = self.visualizer_levels.lock() {
+            levels.fill(0.0);
+        }
         let _ = self.audio_tx.send(AudioCommand::Load(path.to_string()));
         Ok(())
     }
@@ -105,6 +114,13 @@ impl AudioState {
     pub fn seek(&mut self, position: Duration) {
         let _ = self.audio_tx.send(AudioCommand::Seek(position));
     }
+
+    pub fn visualizer_levels(&self) -> Vec<f32> {
+        self.visualizer_levels
+            .lock()
+            .map(|levels| levels.clone())
+            .unwrap_or_else(|_| vec![0.0; 32])
+    }
 }
 
 #[cfg(test)]
@@ -123,6 +139,7 @@ mod tests {
             original_volume: 1.0,
             is_muted: false,
             track_duration: crate::metadata::types::AudioDuration::default(),
+            visualizer_levels: Arc::new(Mutex::new(vec![0.0; 32])),
         };
 
         state.play();
@@ -153,6 +170,7 @@ mod tests {
             original_volume: 1.0,
             is_muted: false,
             track_duration: crate::metadata::types::AudioDuration::default(),
+            visualizer_levels: Arc::new(Mutex::new(vec![0.0; 32])),
         };
 
         state.set_volume(0.6);
@@ -186,6 +204,7 @@ mod tests {
             original_volume: 0.8,
             is_muted: false,
             track_duration: crate::metadata::types::AudioDuration::default(),
+            visualizer_levels: Arc::new(Mutex::new(vec![0.0; 32])),
         };
 
         state.toggle_mute();
@@ -212,6 +231,7 @@ mod tests {
             original_volume: 1.0,
             is_muted: false,
             track_duration: crate::metadata::types::AudioDuration::default(),
+            visualizer_levels: Arc::new(Mutex::new(vec![0.0; 32])),
         };
 
         // Spawn a small helper thread that will respond to GetPosition requests
@@ -245,6 +265,7 @@ mod tests {
             original_volume: 1.0,
             is_muted: false,
             track_duration: crate::metadata::types::AudioDuration::new(Some(82), None),
+            visualizer_levels: Arc::new(Mutex::new(vec![0.0; 32])),
         };
 
         let responder = thread::spawn(move || {
@@ -277,6 +298,7 @@ mod tests {
             original_volume: 1.0,
             is_muted: false,
             track_duration: crate::metadata::types::AudioDuration::default(),
+            visualizer_levels: Arc::new(Mutex::new(vec![0.0; 32])),
         };
 
         let responder = thread::spawn(move || {

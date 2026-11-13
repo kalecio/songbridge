@@ -86,6 +86,38 @@ const AppHeader = styled.header`
   background: ${({ theme }) => theme.background};
   border-bottom: 1px solid ${({ theme }) => theme.border};
 `;
+const FocusHeader = styled.header`
+  position: sticky;
+  top: 0;
+  z-index: 3;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  flex: 0 0 48px;
+  min-height: 48px;
+  padding: 0 clamp(18px, 2vw, 32px);
+  background: ${({ theme }) => theme.background};
+`;
+const FocusModeButton = styled.button`
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  min-height: 34px;
+  padding: 0 12px;
+  border: 1px solid ${({ theme }) => theme.border};
+  border-radius: 9px;
+  background: ${({ theme }) => theme.surface};
+  color: ${({ theme }) => theme.textSecondary};
+  font: inherit;
+  font-size: 0.78rem;
+  cursor: pointer;
+  &:hover, &:focus-visible {
+    border-color: ${({ theme }) => theme.accent};
+    color: ${({ theme }) => theme.accent};
+    outline: none;
+  }
+`;
 const HistoryControls = styled.nav`
   display: flex;
   align-items: center;
@@ -241,6 +273,8 @@ export {
   Main,
   MainWrapper,
   AppHeader,
+  FocusHeader,
+  FocusModeButton,
   SearchWrapper,
   HistoryControls,
   HistoryButton,
