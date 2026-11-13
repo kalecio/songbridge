@@ -1,23 +1,36 @@
 import { URL } from 'node:url';
 import { log } from 'node:console';
 import { cp, mkdir, readFile, rm, writeFile } from 'node:fs/promises';
+import { get } from 'node:https';
 const root = new URL('../', import.meta.url);
 const output = new URL('dist-website/', root);
 
 const repository = 'kalecio/songbridge';
-const releaseResponse = await fetch(`https://api.github.com/repos/${repository}/releases/latest`, {
-  headers: {
-    Accept: 'application/vnd.github+json',
-    'Cache-Control': 'no-cache',
-    'User-Agent': 'songbridge-website-build',
-  },
+const releaseResponse = await new Promise((resolve, reject) => {
+  const request = get(`https://api.github.com/repos/${repository}/releases/latest`, {
+    headers: {
+      Accept: 'application/vnd.github+json',
+      'Cache-Control': 'no-cache',
+      'User-Agent': 'songbridge-website-build',
+    },
+  }, (response) => {
+    let body = '';
+    response.setEncoding('utf8');
+    response.on('data', (chunk) => {
+      body += chunk;
+    });
+    response.on('end', () => {
+      resolve({ status: response.statusCode ?? 0, body });
+    });
+  });
+  request.on('error', reject);
 });
 
-if (!releaseResponse.ok) {
-  throw new Error(`Could not load the latest Songbridge release: ${releaseResponse.status} ${releaseResponse.statusText}`);
+if (releaseResponse.status !== 200) {
+  throw new Error(`Could not load the latest Songbridge release: HTTP ${releaseResponse.status}`);
 }
 
-const release = await releaseResponse.json();
+const release = JSON.parse(releaseResponse.body);
 const version = release.tag_name?.replace(/^songbridge-v/, '');
 if (!version || version === release.tag_name) {
   throw new Error(`Unexpected Songbridge release tag: ${release.tag_name}`);
