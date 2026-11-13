@@ -1,8 +1,13 @@
 # Songbridge website
 
-The landing page is in Brazilian Portuguese and is independent of the Tauri app.
-It uses static HTML and CSS, locally hosted Inter fonts, and the original logo,
-with no external services or client-side JavaScript.
+The landing page is available in Brazilian Portuguese (`/`), English (`/en/`),
+and Spanish (`/es/`). Each locale is a static HTML page, independent of the
+Tauri app. The site uses static HTML and CSS, locally hosted Inter fonts, and
+the original logo, with no external services or client-side JavaScript.
+
+The header language selector links directly to each locale. Keep the page title,
+description, canonical URL, `hreflang` alternates, and sitemap entries aligned
+when adding or updating translations.
 
 ## Visual identity
 

@@ -83,6 +83,23 @@ nav {
   font-size: 13px;
   color: #c3c3cf;
 }
+.language-switch {
+  gap: 4px;
+  padding: 4px;
+  border: 1px solid var(--line);
+  border-radius: 7px;
+  font-size: 11px;
+}
+.language-switch a {
+  min-width: 30px;
+  padding: 4px 6px;
+  border-radius: 4px;
+  text-align: center;
+}
+.language-switch a[aria-current='page'] {
+  background: #292b38;
+  color: #fff;
+}
 .button {
   display: inline-flex;
   justify-content: space-between;
@@ -516,13 +533,22 @@ footer > small {
     width: calc(100% - 36px);
   }
   .nav {
+    flex-wrap: wrap;
     min-height: 80px;
+    padding: 12px 0;
+    row-gap: 10px;
   }
   .nav .brand {
     font-size: 21px;
   }
   .nav nav {
     display: none;
+  }
+  .nav .language-switch {
+    display: flex;
+    order: 3;
+    width: 100%;
+    justify-content: center;
   }
   .nav .small {
     font-size: 11px;
