@@ -30,14 +30,17 @@ The domain association and DNS are configured once in Cloudflare Pages; deployin
 the files does not require Workers or DNS permissions.
 
 The `.github/workflows/website.yml` workflow deploys changes to the website
-directory on the `main` branch, or can be run manually from that branch. It uses
-the `CLOUDFLARE_ACCOUNT_ID` and `CLOUDFLARE_API_TOKEN` GitHub repository secrets.
+directory on the `main` branch, deploys again when a GitHub release is published,
+or can be run manually from `main`. Release deployments check out `main` and
+resolve the latest published release during the site build. The workflow uses the
+`CLOUDFLARE_ACCOUNT_ID` and `CLOUDFLARE_API_TOKEN` GitHub repository secrets.
 The token only needs **Account / Cloudflare Pages / Edit**, scoped to the account
 that owns the project. Never add a token to the repository.
 
-Downloads are pinned to public version 0.6.0, which was verified when the site
-was created. Update the links and version number in `index.html` when publishing
-a new release. Links to other formats and release notes point to the latest
-release.
+The website build reads the latest published Songbridge release from GitHub and
+uses its version and uploaded assets to generate download links for all three
+locales. Missing expected assets fail the build instead of publishing broken
+download links. Release drafts are not shown; publishing a release triggers a
+website deployment automatically.
 
 Domain setup: https://developers.cloudflare.com/pages/configuration/custom-domains/
