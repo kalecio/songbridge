@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0-rc.2] - 2026-11-14
+
+### Added
+- **Automatic visualizer rotation** — change presets on a configurable interval and choose from all presets or favorites only
+
+### Fixed
+- **Visualizer preset changes in production builds** — load selected presets reliably on macOS and allow the bundled WebAssembly equations to compile
+
 ## [1.0.0-rc.1] - 2026-11-13
 
 ### Added
