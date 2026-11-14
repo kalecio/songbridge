@@ -76,13 +76,13 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
-          tagName: songbridge-v__VERSION__
-          releaseName: 'Songbridge v__VERSION__'
+          tagName: ${{ steps.release-metadata.outputs.tag }}
+          releaseName: ${{ steps.release-metadata.outputs.releaseName }}
           releaseBody: ${{ steps.release-metadata.outputs.body }}
           releaseDraft: true
           prerelease: ${{ steps.release-metadata.outputs.prerelease }}
-          # RPM metadata rejects SemVer prerelease hyphens. Keep the Linux RC
-          # bundles users can install directly and omit RPM until stable.
+          # Preserve the app's SemVer for builds; RPM gets its own normalized
+          # package version in the separate step below.
           args: ${{ startsWith(matrix.platform, 'ubuntu') && steps.release-metadata.outputs.prerelease == 'true' && '--bundles deb,appimage' || matrix.args }}
 
       - name: Prepare RPM prerelease version
@@ -100,8 +100,8 @@ jobs:
           TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
         with:
           tauriScript: ${{ github.workspace }}/scripts/tauri-rpm-bundle.sh
-          tagName: songbridge-v__VERSION__
-          releaseName: 'Songbridge v__VERSION__'
+          tagName: ${{ steps.release-metadata.outputs.tag }}
+          releaseName: ${{ steps.release-metadata.outputs.releaseName }}
           releaseBody: ${{ steps.release-metadata.outputs.body }}
           releaseDraft: true
           prerelease: ${{ steps.release-metadata.outputs.prerelease }}
