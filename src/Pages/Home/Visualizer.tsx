@@ -10,9 +10,16 @@ interface VisualizerProps {
 }
 
 interface ButterchurnInstance {
-  loadPreset: (..._args: [Record<string, unknown>, number]) => void;
+  loadPreset: (..._args: [Record<string, unknown>, number]) => Promise<void>;
   setRendererSize: (..._args: [number, number]) => void;
-  render: (..._args: [{ elapsedTime: number; audioLevels: { timeByteArray: Uint8Array; timeByteArrayL: Uint8Array; timeByteArrayR: Uint8Array } }]) => void;
+  render: (
+    ..._args: [
+      {
+        elapsedTime: number;
+        audioLevels: { timeByteArray: Uint8Array; timeByteArrayL: Uint8Array; timeByteArrayR: Uint8Array };
+      },
+    ]
+  ) => void;
   destroy?: () => void;
 }
 
@@ -40,6 +47,7 @@ const createWaveform = (levels: number[], frame: number, channel: number) => {
 const Visualizer = ({ isPlaying, colors, presetName, preset }: VisualizerProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const visualizerRef = useRef<ButterchurnInstance | null>(null);
+  const presetLoadQueueRef = useRef<Promise<void>>(Promise.resolve());
   const levelsRef = useRef<number[]>(Array(BAND_COUNT).fill(0));
   const isPlayingRef = useRef(isPlaying);
   const drawRef = useRef<(() => void) | null>(null);
@@ -92,7 +100,9 @@ const Visualizer = ({ isPlaying, colors, presetName, preset }: VisualizerProps) 
       try {
         const module = await import('butterchurn');
         if (cancelled) return;
-        const factory = module.default as unknown as { createVisualizer: (..._args: [null, HTMLCanvasElement, Record<string, unknown>]) => ButterchurnInstance };
+        const factory = module.default as unknown as {
+          createVisualizer: (..._args: [null, HTMLCanvasElement, Record<string, unknown>]) => ButterchurnInstance;
+        };
         resize();
         visualizerRef.current = factory.createVisualizer(null, canvas, {
           width: canvas.width,
@@ -117,7 +127,25 @@ const Visualizer = ({ isPlaying, colors, presetName, preset }: VisualizerProps) 
   }, []);
 
   useEffect(() => {
-    if (rendererReady && preset) visualizerRef.current?.loadPreset(preset, 1.5);
+    const visualizer = visualizerRef.current;
+    if (!rendererReady || !preset || !visualizer) return;
+
+    let cancelled = false;
+    const queuedLoad = presetLoadQueueRef.current
+      .catch((error) => {
+        console.error('Previous Butterchurn preset failed to load', error);
+      })
+      .then(async () => {
+        if (cancelled || visualizerRef.current !== visualizer) return;
+        await visualizer.loadPreset(preset, 0.25);
+        if (!cancelled) console.info(`Loaded Butterchurn preset: ${presetName}`);
+      });
+    presetLoadQueueRef.current = queuedLoad;
+    void queuedLoad.catch((error) => console.error(`Unable to load Butterchurn preset: ${presetName}`, error));
+
+    return () => {
+      cancelled = true;
+    };
   }, [preset, presetName, rendererReady]);
 
   useEffect(() => {
@@ -142,7 +170,10 @@ const Visualizer = ({ isPlaying, colors, presetName, preset }: VisualizerProps) 
       const left = createWaveform(current, frame, 0);
       const right = createWaveform(current, frame, 1);
       const mono = createWaveform(current, frame, 0.5);
-      visualizerRef.current.render({ elapsedTime, audioLevels: { timeByteArray: mono, timeByteArrayL: left, timeByteArrayR: right } });
+      visualizerRef.current.render({
+        elapsedTime,
+        audioLevels: { timeByteArray: mono, timeByteArrayL: left, timeByteArrayR: right },
+      });
       animationFrameRef.current = window.requestAnimationFrame(draw);
     };
 
