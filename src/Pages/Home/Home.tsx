@@ -44,19 +44,27 @@ const Home = () => {
   const title = displayTitle({ title: metadata?.title, path: currentPath }, t('home.noTrackTitle'));
   const artist = metadata?.artist || t('home.unknownArtist');
   const album = metadata?.album || t('home.unknownAlbum');
-  const presetNames = useMemo(() => Object.keys(presetCatalog).sort((first, second) => first.localeCompare(second)), [presetCatalog]);
-  const selectedPresetName = visualizerConfig.selectedPresetName && presetCatalog[visualizerConfig.selectedPresetName]
-    ? visualizerConfig.selectedPresetName
-    : presetNames[0];
+  const presetNames = useMemo(
+    () => Object.keys(presetCatalog).sort((first, second) => first.localeCompare(second)),
+    [presetCatalog],
+  );
+  const selectedPresetName =
+    visualizerConfig.selectedPresetName && presetCatalog[visualizerConfig.selectedPresetName]
+      ? visualizerConfig.selectedPresetName
+      : presetNames[0];
   const selectedPalette = getSelectedPalette(visualizerConfig, selectedPresetName ?? 'spectrum');
 
   useEffect(() => {
     if (mode !== 'visualizer') return;
     let cancelled = false;
-    void loadButterchurnPresets().then((catalog) => {
-      if (!cancelled) setPresetCatalog(catalog);
-    }).catch((error) => console.error('Unable to load Butterchurn presets', error));
-    return () => { cancelled = true; };
+    void loadButterchurnPresets()
+      .then((catalog) => {
+        if (!cancelled) setPresetCatalog(catalog);
+      })
+      .catch((error) => console.error('Unable to load Butterchurn presets', error));
+    return () => {
+      cancelled = true;
+    };
   }, [mode]);
 
   useEffect(() => {
@@ -142,14 +150,16 @@ const Home = () => {
               presets={presetNames}
               selected={selectedPresetName ?? ''}
               favorites={visualizerConfig.favoritePresets}
-              onSelect={(preset) => updateVisualizerConfig({
-                ...visualizerConfig,
-                selectedPresetName: preset,
-                selectedPaletteIds: {
-                  ...visualizerConfig.selectedPaletteIds,
-                  [preset]: visualizerConfig.selectedPaletteIds[preset] ?? 'builtin-neon',
-                },
-              })}
+              onSelect={(preset) =>
+                updateVisualizerConfig({
+                  ...visualizerConfig,
+                  selectedPresetName: preset,
+                  selectedPaletteIds: {
+                    ...visualizerConfig.selectedPaletteIds,
+                    [preset]: visualizerConfig.selectedPaletteIds[preset] ?? 'builtin-neon',
+                  },
+                })
+              }
               onToggleFavorite={toggleFavoritePreset}
             />
           </>
@@ -165,7 +175,11 @@ const Home = () => {
         ) : mode === 'cover' ? (
           <ArtworkStage>
             <ArtworkFrame>
-              {artwork ? <img src={artwork} alt={t('home.coverFor', { album })} /> : <ArtworkFallback>♫</ArtworkFallback>}
+              {artwork ? (
+                <img src={artwork} alt={t('home.coverFor', { album })} />
+              ) : (
+                <ArtworkFallback>♫</ArtworkFallback>
+              )}
             </ArtworkFrame>
             <TrackInfo>
               <p className="eyebrow">{isPlaying ? t('home.nowPlaying') : t('home.lastPlayed')}</p>
@@ -178,6 +192,7 @@ const Home = () => {
           <>
             <VisualizerStage>
               <Visualizer
+                key={selectedPresetName}
                 isPlaying={isPlaying}
                 presetName={selectedPresetName ?? ''}
                 preset={selectedPresetName ? presetCatalog[selectedPresetName] : undefined}
@@ -187,7 +202,9 @@ const Home = () => {
             <VisualizerCaption>
               <p className="eyebrow">{isPlaying ? t('home.nowPlaying') : t('home.visualizers')}</p>
               <strong>{title}</strong>
-              <span>{artist} · {album}</span>
+              <span>
+                {artist} · {album}
+              </span>
             </VisualizerCaption>
           </>
         )}
