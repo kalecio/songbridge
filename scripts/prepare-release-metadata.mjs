@@ -56,5 +56,5 @@ if (!body) throw new Error(`CHANGELOG.md section for ${version} is empty`);
 const delimiter = `SONGBRIDGE_RELEASE_${randomUUID()}`;
 await appendFile(
   process.env.GITHUB_OUTPUT,
-  `prerelease=${String(version.includes('-'))}\nbody<<${delimiter}\n${body}\n${delimiter}\n`,
+  `version=${version}\ntag=${tag}\nreleaseName=Songbridge v${version}\nprerelease=${String(version.includes('-'))}\nbody<<${delimiter}\n${body}\n${delimiter}\n`,
 );
