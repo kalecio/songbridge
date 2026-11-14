@@ -84,3 +84,25 @@ jobs:
           # RPM metadata rejects SemVer prerelease hyphens. Keep the Linux RC
           # bundles users can install directly and omit RPM until stable.
           args: ${{ startsWith(matrix.platform, 'ubuntu') && steps.release-metadata.outputs.prerelease == 'true' && '--bundles deb,appimage' || matrix.args }}
+
+      - name: Prepare RPM prerelease version
+        if: startsWith(matrix.platform, 'ubuntu') && steps.release-metadata.outputs.prerelease == 'true'
+        run: node scripts/prepare-rpm-prerelease-config.mjs
+
+      - name: Build and upload RPM bundle
+        if: startsWith(matrix.platform, 'ubuntu') && steps.release-metadata.outputs.prerelease == 'true'
+        uses: tauri-apps/tauri-action@v0
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          LASTFM_API_KEY: ${{ secrets.LASTFM_API_KEY }}
+          LASTFM_WORKER_URL: ${{ vars.LASTFM_WORKER_URL }}
+          TAURI_SIGNING_PRIVATE_KEY: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY }}
+          TAURI_SIGNING_PRIVATE_KEY_PASSWORD: ${{ secrets.TAURI_SIGNING_PRIVATE_KEY_PASSWORD }}
+        with:
+          tauriScript: ${{ github.workspace }}/scripts/tauri-rpm-bundle.sh
+          tagName: songbridge-v__VERSION__
+          releaseName: 'Songbridge v__VERSION__'
+          releaseBody: ${{ steps.release-metadata.outputs.body }}
+          releaseDraft: true
+          prerelease: ${{ steps.release-metadata.outputs.prerelease }}
+          args: --bundles rpm --config src-tauri/tauri.rpm-prerelease.conf.json
