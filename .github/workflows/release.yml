@@ -81,4 +81,6 @@ jobs:
           releaseBody: ${{ steps.release-metadata.outputs.body }}
           releaseDraft: true
           prerelease: ${{ steps.release-metadata.outputs.prerelease }}
-          args: ${{ matrix.args }}
+          # RPM metadata rejects SemVer prerelease hyphens. Keep the Linux RC
+          # bundles users can install directly and omit RPM until stable.
+          args: ${{ startsWith(matrix.platform, 'ubuntu') && steps.release-metadata.outputs.prerelease == 'true' && '--bundles deb,appimage' || matrix.args }}
