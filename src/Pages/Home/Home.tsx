@@ -63,6 +63,42 @@ const Home = () => {
     window.localStorage.setItem('songbridge-home-mode', mode);
   }, [mode]);
 
+  useEffect(() => {
+    if (mode !== 'visualizer' || !visualizerConfig.randomEnabled || presetNames.length < 2) return;
+    const candidates = visualizerConfig.randomFavoritesOnly
+      ? presetNames.filter((preset) => visualizerConfig.favoritePresets.includes(preset))
+      : presetNames;
+    if (candidates.length < 2) return;
+
+    const interval = window.setInterval(() => {
+      const available = candidates.filter((preset) => preset !== selectedPresetName);
+      if (available.length === 0) return;
+      const nextPreset = available[Math.floor(Math.random() * available.length)];
+      if (!nextPreset) return;
+      const next = {
+        ...visualizerConfig,
+        selectedPresetName: nextPreset,
+        selectedPaletteIds: {
+          ...visualizerConfig.selectedPaletteIds,
+          [nextPreset]: visualizerConfig.selectedPaletteIds[nextPreset] ?? 'builtin-neon',
+        },
+      };
+      setVisualizerConfig(next);
+      saveVisualizerConfig(next);
+    }, visualizerConfig.randomIntervalSeconds * 1000);
+
+    return () => window.clearInterval(interval);
+  }, [
+    mode,
+    presetNames,
+    selectedPresetName,
+    visualizerConfig.favoritePresets,
+    visualizerConfig.randomEnabled,
+    visualizerConfig.randomFavoritesOnly,
+    visualizerConfig.randomIntervalSeconds,
+    visualizerConfig.selectedPaletteIds,
+  ]);
+
   const updateVisualizerConfig = (next: VisualizerConfig) => {
     setVisualizerConfig(next);
     saveVisualizerConfig(next);

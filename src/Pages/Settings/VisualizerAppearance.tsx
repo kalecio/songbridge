@@ -26,6 +26,8 @@ import {
   ThemeRow,
   ThemeSelect,
   ThemeTextField,
+  VisualizerIntervalInput,
+  VisualizerRandomToggle,
 } from './styles';
 
 const colorLabels = ['visualizer.colorPrimary', 'visualizer.colorSecondary', 'visualizer.colorTertiary'] as const;
@@ -155,6 +157,48 @@ const VisualizerAppearance = () => {
           {t('visualizer.createColorTheme')}
         </CreateThemeButton>
       </ThemeRow>
+      <CreateThemeHeader>{t('visualizer.randomTitle')}</CreateThemeHeader>
+      <ThemeRow>
+        <VisualizerRandomToggle>
+          <input
+            type="checkbox"
+            checked={config.randomEnabled}
+            onChange={(event) => persist({ ...config, randomEnabled: event.target.checked })}
+          />
+          {t('visualizer.randomEnable')}
+        </VisualizerRandomToggle>
+        <ThemeTextField>
+          {t('visualizer.randomInterval')}
+          <VisualizerIntervalInput
+            type="number"
+            min={5}
+            max={600}
+            step={5}
+            value={config.randomIntervalSeconds}
+            disabled={!config.randomEnabled}
+            onChange={(event) => {
+              const seconds = Number(event.target.value);
+              if (Number.isFinite(seconds) && seconds >= 5 && seconds <= 600) {
+                persist({ ...config, randomIntervalSeconds: seconds });
+              }
+            }}
+          />
+        </ThemeTextField>
+        <ThemeTextField>
+          {t('visualizer.randomScope')}
+          <ThemeSelect
+            value={config.randomFavoritesOnly ? 'favorites' : 'all'}
+            disabled={!config.randomEnabled}
+            onChange={(event) => persist({ ...config, randomFavoritesOnly: event.target.value === 'favorites' })}
+          >
+            <option value="all">{t('visualizer.randomAll')}</option>
+            <option value="favorites">{t('visualizer.randomFavorites')}</option>
+          </ThemeSelect>
+        </ThemeTextField>
+      </ThemeRow>
+      {config.randomEnabled && config.randomFavoritesOnly && config.favoritePresets.length === 0 && (
+        <p>{t('visualizer.randomNeedsFavorites')}</p>
+      )}
       {creating && (
         <div>
           <CreateThemeHeader>{t('visualizer.createColorThemeFor', { style: visualizer })}</CreateThemeHeader>

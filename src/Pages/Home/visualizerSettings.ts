@@ -16,6 +16,9 @@ export interface VisualizerConfig {
   selectedVisualizer: VisualizerType;
   selectedPresetName?: string;
   favoritePresets: string[];
+  randomEnabled: boolean;
+  randomIntervalSeconds: number;
+  randomFavoritesOnly: boolean;
   selectedPaletteIds: Record<string, string>;
   palettesByVisualizer: Record<string, VisualizerPalette[]>;
 }
@@ -43,6 +46,9 @@ const makeBuiltInPalettes = (): VisualizerPalette[] => [
 
 const makeDefaults = (): VisualizerConfig => ({
   selectedVisualizer: 'spectrum',
+  randomEnabled: false,
+  randomIntervalSeconds: 30,
+  randomFavoritesOnly: false,
   favoritePresets: [],
   selectedPaletteIds: {
     spectrum: 'builtin-neon',
@@ -102,6 +108,11 @@ export const loadVisualizerConfig = (): VisualizerConfig => {
     if (Array.isArray(parsed.favoritePresets)) {
       defaults.favoritePresets = parsed.favoritePresets.filter((preset): preset is string => typeof preset === 'string');
     }
+    if (typeof parsed.randomEnabled === 'boolean') defaults.randomEnabled = parsed.randomEnabled;
+    if (typeof parsed.randomIntervalSeconds === 'number' && Number.isFinite(parsed.randomIntervalSeconds)) {
+      defaults.randomIntervalSeconds = Math.max(5, Math.min(600, Math.round(parsed.randomIntervalSeconds)));
+    }
+    if (typeof parsed.randomFavoritesOnly === 'boolean') defaults.randomFavoritesOnly = parsed.randomFavoritesOnly;
     for (const [selector, storedPalettes] of Object.entries(parsed.palettesByVisualizer ?? {})) {
       if (!Array.isArray(storedPalettes)) continue;
       const customs = storedPalettes.filter(validPalette).filter((palette) => !palette.builtIn);
