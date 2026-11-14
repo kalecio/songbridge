@@ -19,6 +19,18 @@ pub fn get_track_image(path: &str) -> Result<Option<String>, String> {
 
 #[tauri::command]
 pub fn get_metadata(path: &str) -> Result<AudioMetadata, String> {
+    get_metadata_with_art(path, true)
+}
+
+/// Read a track's tags without loading its embedded artwork.
+///
+/// Library scans use this path so a large collection does not retain a
+/// base64 copy of every cover in memory or send all of those images to the UI.
+pub(crate) fn get_metadata_without_art(path: &str) -> Result<AudioMetadata, String> {
+    get_metadata_with_art(path, false)
+}
+
+fn get_metadata_with_art(path: &str, include_art: bool) -> Result<AudioMetadata, String> {
     println!("Getting metadata for file: {}", path);
     let mut probe = get_audio_probe(path)?;
     let total_duration = calculate_track_duration(&probe);
@@ -65,8 +77,12 @@ pub fn get_metadata(path: &str) -> Result<AudioMetadata, String> {
     }
 
     // Album art: prefer container art, fall back to probed art.
-    let image = extract_album_art(probe.format.as_mut())
-        .or_else(|| extract_album_art_probed(&mut probe.metadata));
+    let image = if include_art {
+        extract_album_art(probe.format.as_mut())
+            .or_else(|| extract_album_art_probed(&mut probe.metadata))
+    } else {
+        None
+    };
 
     println!(
         "Title: {:?}, Artist: {:?}, Album: {:?}, Year: {:?}, Track: {:?}, Duration: {:?}",
