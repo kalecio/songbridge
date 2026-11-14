@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import type { VisualizerColors } from './visualizerSettings';
 
@@ -13,6 +13,7 @@ interface ButterchurnInstance {
   loadPreset: (..._args: [Record<string, unknown>, number]) => void;
   setRendererSize: (..._args: [number, number]) => void;
   render: (..._args: [{ elapsedTime: number; audioLevels: { timeByteArray: Uint8Array; timeByteArrayL: Uint8Array; timeByteArrayR: Uint8Array } }]) => void;
+  destroy?: () => void;
 }
 
 const BAND_COUNT = 32;
@@ -25,7 +26,9 @@ const createWaveform = (levels: number[], frame: number, channel: number) => {
     let value = 0;
     for (let band = 0; band < BAND_COUNT; band += 1) {
       const frequency = 1 + Math.pow(band / (BAND_COUNT - 1), 2) * 125;
-      const amplitude = (levels[band] ?? 0) * (0.5 / Math.sqrt(BAND_COUNT));
+      // Butterchurn expects byte-scale waveform input. Give quiet bands enough
+      // headroom to remain visible after converting the synthesized waveform.
+      const amplitude = (levels[band] ?? 0) * (1.5 / Math.sqrt(BAND_COUNT));
       value += Math.sin(2 * Math.PI * frequency * time + frame * (0.025 + band * 0.001) + channel * 0.14) * amplitude;
     }
     samples[sample] = Math.max(0, Math.min(255, Math.round(128 + value * 255)));
@@ -36,10 +39,12 @@ const createWaveform = (levels: number[], frame: number, channel: number) => {
 /** Renders Butterchurn presets, driven by the desktop player's live frequency bands. */
 const Visualizer = ({ isPlaying, colors, presetName, preset }: VisualizerProps) => {
   const canvasRef = useRef<HTMLCanvasElement>(null);
+  const visualizerRef = useRef<ButterchurnInstance | null>(null);
   const levelsRef = useRef<number[]>(Array(BAND_COUNT).fill(0));
   const isPlayingRef = useRef(isPlaying);
   const drawRef = useRef<(() => void) | null>(null);
   const animationFrameRef = useRef<number | null>(null);
+  const [rendererReady, setRendererReady] = useState(false);
   isPlayingRef.current = isPlaying;
 
   useEffect(() => {
@@ -68,23 +73,9 @@ const Visualizer = ({ isPlaying, colors, presetName, preset }: VisualizerProps) 
   }, [isPlaying]);
 
   useEffect(() => {
-    if (isPlaying) {
-      drawRef.current?.();
-    } else if (animationFrameRef.current !== null) {
-      window.cancelAnimationFrame(animationFrameRef.current);
-      animationFrameRef.current = null;
-    }
-  }, [isPlaying]);
-
-  useEffect(() => {
     const canvas = canvasRef.current;
-    if (!canvas || !preset) return;
+    if (!canvas) return;
     let cancelled = false;
-    let visualizer: ButterchurnInstance | undefined;
-    let lastTime = performance.now();
-    let elapsedTime = 0;
-    let frame = 0;
-    const current = Array(BAND_COUNT).fill(0) as number[];
 
     const resize = () => {
       const bounds = canvas.getBoundingClientRect();
@@ -93,7 +84,7 @@ const Visualizer = ({ isPlaying, colors, presetName, preset }: VisualizerProps) 
       const height = Math.max(1, Math.floor(bounds.height * ratio));
       canvas.width = width;
       canvas.height = height;
-      visualizer?.setRendererSize(width, height);
+      visualizerRef.current?.setRendererSize(width, height);
     };
     const observer = new ResizeObserver(resize);
 
@@ -103,40 +94,14 @@ const Visualizer = ({ isPlaying, colors, presetName, preset }: VisualizerProps) 
         if (cancelled) return;
         const factory = module.default as unknown as { createVisualizer: (..._args: [null, HTMLCanvasElement, Record<string, unknown>]) => ButterchurnInstance };
         resize();
-        visualizer = factory.createVisualizer(null, canvas, {
+        visualizerRef.current = factory.createVisualizer(null, canvas, {
           width: canvas.width,
           height: canvas.height,
           pixelRatio: 1,
           textureCheck: false,
         });
-        visualizer.loadPreset(preset, 1.5);
         observer.observe(canvas);
-
-        const draw = (now: number) => {
-          if (cancelled || !visualizer || !isPlayingRef.current) return;
-          elapsedTime += Math.min(now - lastTime, 100) / 1000;
-          lastTime = now;
-          frame += 1;
-          const target = levelsRef.current;
-          for (let index = 0; index < BAND_COUNT; index += 1) {
-            current[index] += ((target[index] ?? 0) - current[index]) * (target[index] > current[index] ? 0.55 : 0.12);
-          }
-          const left = createWaveform(current, frame, 0);
-          const right = createWaveform(current, frame, 1);
-          const mono = createWaveform(current, frame, 0.5);
-          visualizer.render({ elapsedTime, audioLevels: { timeByteArray: mono, timeByteArrayL: left, timeByteArrayR: right } });
-          animationFrameRef.current = window.requestAnimationFrame(draw);
-        };
-        drawRef.current = () => {
-          if (!cancelled && visualizer && animationFrameRef.current === null) {
-            animationFrameRef.current = window.requestAnimationFrame(draw);
-          }
-        };
-        if (isPlayingRef.current) drawRef.current();
-        else {
-          const silent = new Uint8Array(FFT_SIZE).fill(128);
-          visualizer.render({ elapsedTime, audioLevels: { timeByteArray: silent, timeByteArrayL: silent, timeByteArrayR: silent } });
-        }
+        setRendererReady(true);
       } catch (error) {
         console.error('Unable to initialize Butterchurn visualizer', error);
       }
@@ -146,11 +111,62 @@ const Visualizer = ({ isPlaying, colors, presetName, preset }: VisualizerProps) 
     return () => {
       cancelled = true;
       observer.disconnect();
+      visualizerRef.current?.destroy?.();
+      visualizerRef.current = null;
+    };
+  }, []);
+
+  useEffect(() => {
+    if (rendererReady && preset) visualizerRef.current?.loadPreset(preset, 1.5);
+  }, [preset, presetName, rendererReady]);
+
+  useEffect(() => {
+    if (!rendererReady) return;
+    let lastTime = performance.now();
+    let elapsedTime = 0;
+    let frame = 0;
+    const current = Array(BAND_COUNT).fill(0) as number[];
+
+    const draw = (now: number) => {
+      if (!visualizerRef.current || !isPlayingRef.current) {
+        animationFrameRef.current = null;
+        return;
+      }
+      elapsedTime += Math.min(now - lastTime, 100) / 1000;
+      lastTime = now;
+      frame += 1;
+      const target = levelsRef.current;
+      for (let index = 0; index < BAND_COUNT; index += 1) {
+        current[index] += ((target[index] ?? 0) - current[index]) * (target[index] > current[index] ? 0.55 : 0.12);
+      }
+      const left = createWaveform(current, frame, 0);
+      const right = createWaveform(current, frame, 1);
+      const mono = createWaveform(current, frame, 0.5);
+      visualizerRef.current.render({ elapsedTime, audioLevels: { timeByteArray: mono, timeByteArrayL: left, timeByteArrayR: right } });
+      animationFrameRef.current = window.requestAnimationFrame(draw);
+    };
+
+    drawRef.current = () => {
+      if (animationFrameRef.current === null) {
+        animationFrameRef.current = window.requestAnimationFrame(draw);
+      }
+    };
+    if (isPlayingRef.current) drawRef.current();
+    return () => {
       drawRef.current = null;
       if (animationFrameRef.current !== null) window.cancelAnimationFrame(animationFrameRef.current);
       animationFrameRef.current = null;
     };
-  }, [preset, presetName]);
+  }, [rendererReady]);
+
+  useEffect(() => {
+    if (isPlaying) {
+      drawRef.current?.();
+    } else if (animationFrameRef.current !== null) {
+      window.cancelAnimationFrame(animationFrameRef.current);
+      animationFrameRef.current = null;
+    }
+  }, [isPlaying]);
 
   return (
     <>
