@@ -35,6 +35,7 @@ const colorLabels = ['visualizer.colorPrimary', 'visualizer.colorSecondary', 'vi
 const VisualizerAppearance = () => {
   const { t } = useI18n();
   const [config, setConfig] = useState<VisualizerConfig>(loadVisualizerConfig);
+  const [randomIntervalDraft, setRandomIntervalDraft] = useState(String(config.randomIntervalSeconds));
   const [presetNames, setPresetNames] = useState<string[]>([]);
   const [visualizer, setVisualizer] = useState(config.selectedPresetName ?? '');
   const [creating, setCreating] = useState(false);
@@ -47,27 +48,35 @@ const VisualizerAppearance = () => {
 
   useEffect(() => {
     let cancelled = false;
-    void loadButterchurnPresets().then((presets) => {
-      if (cancelled) return;
-      const names = Object.keys(presets).sort((first, second) => first.localeCompare(second));
-      setPresetNames(names);
-      const latestConfig = loadVisualizerConfig();
-      const current = latestConfig.selectedPresetName && presets[latestConfig.selectedPresetName] ? latestConfig.selectedPresetName : names[0] ?? '';
-      if (current) {
-        setVisualizer(current);
-        const next = {
-          ...latestConfig,
-          selectedPresetName: current,
-          selectedPaletteIds: {
-            ...latestConfig.selectedPaletteIds,
-            [current]: latestConfig.selectedPaletteIds[current] ?? 'builtin-neon',
-          },
-        };
-        setConfig(next);
-        saveVisualizerConfig(next);
-      }
-    }).catch((error) => console.error('Unable to load Butterchurn presets', error));
-    return () => { cancelled = true; };
+    void loadButterchurnPresets()
+      .then((presets) => {
+        if (cancelled) return;
+        const names = Object.keys(presets).sort((first, second) => first.localeCompare(second));
+        setPresetNames(names);
+        const latestConfig = loadVisualizerConfig();
+        setRandomIntervalDraft(String(latestConfig.randomIntervalSeconds));
+        const current =
+          latestConfig.selectedPresetName && presets[latestConfig.selectedPresetName]
+            ? latestConfig.selectedPresetName
+            : (names[0] ?? '');
+        if (current) {
+          setVisualizer(current);
+          const next = {
+            ...latestConfig,
+            selectedPresetName: current,
+            selectedPaletteIds: {
+              ...latestConfig.selectedPaletteIds,
+              [current]: latestConfig.selectedPaletteIds[current] ?? 'builtin-neon',
+            },
+          };
+          setConfig(next);
+          saveVisualizerConfig(next);
+        }
+      })
+      .catch((error) => console.error('Unable to load Butterchurn presets', error));
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const persist = (next: VisualizerConfig) => {
@@ -91,7 +100,11 @@ const VisualizerAppearance = () => {
     const palette = config.palettesByVisualizer[visualizer]?.find((entry) => entry.id === id);
     if (!palette) return;
     setColors(palette.colors);
-    persist({ ...config, selectedPresetName: visualizer, selectedPaletteIds: { ...config.selectedPaletteIds, [visualizer]: id } });
+    persist({
+      ...config,
+      selectedPresetName: visualizer,
+      selectedPaletteIds: { ...config.selectedPaletteIds, [visualizer]: id },
+    });
   };
 
   const toggleFavoritePreset = (preset: string) => {
@@ -173,13 +186,27 @@ const VisualizerAppearance = () => {
             type="number"
             min={5}
             max={600}
-            step={5}
-            value={config.randomIntervalSeconds}
-            disabled={!config.randomEnabled}
+            step={1}
+            value={randomIntervalDraft}
             onChange={(event) => {
-              const seconds = Number(event.target.value);
+              const value = event.target.value;
+              setRandomIntervalDraft(value);
+              if (value === '') return;
+              const seconds = Number(value);
               if (Number.isFinite(seconds) && seconds >= 5 && seconds <= 600) {
                 persist({ ...config, randomIntervalSeconds: seconds });
+              }
+            }}
+            onBlur={() => {
+              const seconds = Number(randomIntervalDraft);
+              if (!randomIntervalDraft || !Number.isFinite(seconds)) {
+                setRandomIntervalDraft(String(config.randomIntervalSeconds));
+                return;
+              }
+              const normalized = Math.max(5, Math.min(600, Math.round(seconds)));
+              setRandomIntervalDraft(String(normalized));
+              if (normalized !== config.randomIntervalSeconds) {
+                persist({ ...config, randomIntervalSeconds: normalized });
               }
             }}
           />
@@ -214,7 +241,9 @@ const VisualizerAppearance = () => {
               />
             </ThemeTextField>
           </ThemeRow>
-          {duplicateName && name.trim() && <ThemeNameError role="alert">{t('visualizer.paletteDuplicate')}</ThemeNameError>}
+          {duplicateName && name.trim() && (
+            <ThemeNameError role="alert">{t('visualizer.paletteDuplicate')}</ThemeNameError>
+          )}
           <ThemeColorGrid>
             {colors.map((color, index) => (
               <ThemeColorField key={`${colorLabels[index]}-${index}`}>
@@ -224,7 +253,12 @@ const VisualizerAppearance = () => {
                   type="color"
                   value={color}
                   onChange={(event) =>
-                    setColors((previous) => previous.map((value, colorIndex) => (colorIndex === index ? event.target.value : value)) as VisualizerColors)
+                    setColors(
+                      (previous) =>
+                        previous.map((value, colorIndex) =>
+                          colorIndex === index ? event.target.value : value,
+                        ) as VisualizerColors,
+                    )
                   }
                 />
               </ThemeColorField>
