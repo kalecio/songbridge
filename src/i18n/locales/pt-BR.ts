@@ -161,7 +161,7 @@ const ptBR: Record<TranslationKey, string> = {
   'visualizer.randomScope': 'Escolher presets entre',
   'visualizer.randomAll': 'Todos os presets',
   'visualizer.randomFavorites': 'Somente favoritos',
-  'visualizer.randomNeedsFavorites': 'Adicione presets aos favoritos para usar somente os favoritos.',
+  'visualizer.randomNeedsFavorites': 'Adicione pelo menos dois presets aos favoritos para alternar entre eles.',
   'visualizer.style': 'Visualizador',
   'visualizer.preset': 'Preset MilkDrop',
   'home.searchPresets': 'Buscar visualizers...',

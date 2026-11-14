@@ -161,7 +161,7 @@ const esES: Record<TranslationKey, string> = {
   'visualizer.randomScope': 'Elegir presets de',
   'visualizer.randomAll': 'Todos los presets',
   'visualizer.randomFavorites': 'Solo favoritos',
-  'visualizer.randomNeedsFavorites': 'Añade presets a Favoritos para usar solo los favoritos.',
+  'visualizer.randomNeedsFavorites': 'Añade al menos dos presets a Favoritos para alternar entre ellos.',
   'visualizer.style': 'Visualizador',
   'visualizer.preset': 'Preset MilkDrop',
   'home.searchPresets': 'Buscar visualizadores...',

@@ -158,7 +158,7 @@ const enUS = {
   'visualizer.randomScope': 'Choose presets from',
   'visualizer.randomAll': 'All presets',
   'visualizer.randomFavorites': 'Favorites only',
-  'visualizer.randomNeedsFavorites': 'Add presets to Favorites to use favorites-only rotation.',
+  'visualizer.randomNeedsFavorites': 'Add at least two presets to Favorites to rotate between them.',
   'visualizer.style': 'Visualizer',
   'visualizer.preset': 'MilkDrop preset',
   'home.searchPresets': 'Search visualizers...',

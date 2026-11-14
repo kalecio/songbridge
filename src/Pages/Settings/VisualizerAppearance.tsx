@@ -196,7 +196,7 @@ const VisualizerAppearance = () => {
           </ThemeSelect>
         </ThemeTextField>
       </ThemeRow>
-      {config.randomEnabled && config.randomFavoritesOnly && config.favoritePresets.length === 0 && (
+      {config.randomEnabled && config.randomFavoritesOnly && config.favoritePresets.length < 2 && (
         <p>{t('visualizer.randomNeedsFavorites')}</p>
       )}
       {creating && (
