@@ -349,6 +349,37 @@ export const ThemeTextField = styled.label`
   font-size: 0.8rem;
 `;
 
+export const VisualizerRandomToggle = styled.label`
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  color: ${({ theme }) => theme.textPrimary};
+  font-size: 0.9rem;
+  cursor: pointer;
+
+  input {
+    width: 1rem;
+    height: 1rem;
+    accent-color: ${({ theme }) => theme.primary};
+  }
+`;
+
+export const VisualizerIntervalInput = styled.input`
+  width: 7rem;
+  min-height: 2.5rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid ${({ theme }) => theme.borderLight};
+  border-radius: 0.4rem;
+  background: ${({ theme }) => theme.background};
+  color: ${({ theme }) => theme.textPrimary};
+  font: inherit;
+
+  &:focus {
+    border-color: ${({ theme }) => theme.accent};
+    outline: none;
+  }
+`;
+
 export const ThemeSourceField = styled(ThemeTextField)`
   max-width: 260px;
 `;
