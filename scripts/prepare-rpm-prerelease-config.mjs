@@ -13,7 +13,21 @@ if (!match) {
   throw new Error(`Expected a SemVer prerelease version, got ${version}`);
 }
 
-// RPM versions reject hyphens. Tilde sorts prereleases before the corresponding stable version.
-const rpmVersion = `${match[1]}~${match[2].replaceAll('-', '.')}`;
-await writeFile(rpmConfigPath, `${JSON.stringify({ version: rpmVersion }, null, 2)}\n`);
-process.stdout.write(`Using RPM package version ${rpmVersion}; app version remains ${version}\n`);
+// Keep Version SemVer-compatible and sort prereleases below the stable RPM
+// release by setting the package release field to 0.<prerelease>.
+const rpmRelease = `0.${match[2].replaceAll('-', '.')}`;
+const rpmConfig = {
+  version: match[1],
+  bundle: {
+    linux: {
+      rpm: {
+        release: rpmRelease,
+      },
+    },
+  },
+};
+
+await writeFile(rpmConfigPath, `${JSON.stringify(rpmConfig, null, 2)}\n`);
+process.stdout.write(
+  `Using RPM version ${match[1]}-${rpmRelease}; app version remains ${version}\n`,
+);
