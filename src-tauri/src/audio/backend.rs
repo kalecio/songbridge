@@ -11,9 +11,7 @@ const FFT_SIZE: usize = 512;
 const VISUALIZER_BANDS: usize = 32;
 
 fn track_file_name(path: &str) -> &str {
-    path.rsplit(|character| character == '/' || character == '\\')
-        .next()
-        .unwrap_or(path)
+    path.rsplit(['/', '\\']).next().unwrap_or(path)
 }
 
 struct AnalyzedSource<S> {

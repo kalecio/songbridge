@@ -116,6 +116,19 @@ For builds:
 NO_STRIP=true npm run tauri build
 ```
 
+### macOS
+
+If macOS blocks the app from opening, and you trust that it came from the official
+Songbridge release, remove its quarantine attribute with:
+
+```sh
+xattr -d com.apple.quarantine /Applications/songbridge.app
+```
+
+This is a workaround, not the expected installation step for a properly signed
+and notarized release. If the attribute is not present, `xattr` may report an
+error and no change is needed.
+
 ### Log files
 
 Songbridge writes timestamped logs to a file for debugging. The location depends on your OS:
@@ -124,7 +137,7 @@ Songbridge writes timestamped logs to a file for debugging. The location depends
 |---|---|
 | macOS | `~/Library/Logs/com.songbridge.app/songbridge.log` |
 | Linux | `~/.local/share/com.songbridge.app/logs/songbridge.log` |
-| Windows | `%APPDATA%\com.songbridge.app\logs\songbridge.log` |
+| Windows | `%LOCALAPPDATA%\com.songbridge.app\logs\songbridge.log` (`C:\Users\<user>\AppData\Local\com.songbridge.app\logs\songbridge.log`) |
 
 When reporting a bug, attaching this log file helps us diagnose the issue faster.
 
