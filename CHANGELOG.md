@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0-rc.1] - 2026-11-13
+
+### Added
+- **Playback and runtime diagnostics** — logs include the app version, operating system and Linux distribution, playback end and queue decisions, decoder errors, and Last.fm configuration status
+
+### Changed
+- **Large library scanning** — defer embedded artwork loading until requested, reducing memory pressure during scans
+- **Linux AppImages** — update Tauri bundling tools to improve compatibility with current Mesa and Arch systems and use native Wayland where available
+
+### Fixed
+- **Windows pre-release installers** — map release-candidate versions to a valid MSI version while keeping the app's SemVer version unchanged
+
 ## [1.0.0-rc] - 2026-11-13
 
 Release-candidate notes for the planned 1.0.0 release, covering expanded library controls, Last.fm integration, audio visualizers, and in-app updates.
