@@ -10,6 +10,12 @@ use rodio::{decoder::DecoderBuilder, source::SeekError, OutputStreamBuilder, Sin
 const FFT_SIZE: usize = 512;
 const VISUALIZER_BANDS: usize = 32;
 
+fn track_file_name(path: &str) -> &str {
+    path.rsplit(|character| character == '/' || character == '\\')
+        .next()
+        .unwrap_or(path)
+}
+
 struct AnalyzedSource<S> {
     source: S,
     levels: Arc<Mutex<Vec<f32>>>,
@@ -155,19 +161,50 @@ fn calculate_frequency_bands(samples: &[f32]) -> Vec<f32> {
 /// Load a track from path and append to sink.
 /// Returns true if track was successfully loaded and appended.
 fn load_track(sink: &Sink, path: &str, levels: Arc<Mutex<Vec<f32>>>) -> bool {
-    let Ok(file) = File::open(path) else {
-        return false;
+    let file = match File::open(path) {
+        Ok(file) => file,
+        Err(error) => {
+            log::error!(
+                "Audio source open failed: track='{}', error={}",
+                track_file_name(path),
+                error
+            );
+            return false;
+        }
     };
-    let byte_len = file.metadata().map(|m| m.len()).unwrap_or(0);
-    let Ok(source) = DecoderBuilder::new()
+    let byte_len = file
+        .metadata()
+        .map(|metadata| metadata.len())
+        .unwrap_or_else(|error| {
+            log::warn!(
+                "Audio source size unavailable: track='{}', error={}",
+                track_file_name(path),
+                error
+            );
+            0
+        });
+    let source = match DecoderBuilder::new()
         .with_data(BufReader::new(file))
         .with_byte_len(byte_len)
         .with_seekable(true)
         .build()
-    else {
-        return false;
+    {
+        Ok(source) => source,
+        Err(error) => {
+            log::error!(
+                "Audio decoder rejected track: track='{}', error={:?}",
+                track_file_name(path),
+                error
+            );
+            return false;
+        }
     };
     sink.append(AnalyzedSource::new(source, levels));
+    log::info!(
+        "Audio source loaded: track='{}', bytes={}",
+        track_file_name(path),
+        byte_len
+    );
     true
 }
 
@@ -292,6 +329,14 @@ pub fn spawn_audio_thread(levels: Arc<Mutex<Vec<f32>>>) -> Sender<AudioCommand> 
                     let report_ended = is_ended && !ended_reported;
                     if report_ended {
                         ended_reported = true;
+                        log::info!(
+                            "Audio backend detected natural track end: track='{}', last_position_seconds={:.3}",
+                            current_path
+                                .as_deref()
+                                .map(track_file_name)
+                                .unwrap_or("unknown"),
+                            max_pos.as_secs_f64()
+                        );
                     }
                     let _ = resp.send(PositionReport {
                         position: pos,

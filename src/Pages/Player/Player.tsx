@@ -3,7 +3,7 @@ import { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { useNavigate, useLocation, useNavigationType, Route, Routes } from 'react-router';
 import { FaArrowLeft, FaArrowRight, FaCompress, FaExpand } from 'react-icons/fa6';
 import { getCurrentWindow } from '@tauri-apps/api/window';
-import { error as logError } from '../../logger';
+import { error as logError, info as logInfo } from '../../logger';
 import Controls from '../../Components/Controls/Controls';
 import ProgressBar from '../../Components/ProgressBar/ProgressBar';
 import Song from '../../Components/Song/Song';
@@ -52,6 +52,8 @@ import Lyrics from '../Lyrics/Lyrics';
 import Home from '../Home/Home';
 import CreatePlaylist from '../Playlist/Create';
 import { useI18n } from '../../i18n/I18nProvider';
+
+const trackFileName = (path?: string) => path?.split(/[\\/]/).pop() || 'unknown';
 
 const Player = () => {
   const { t } = useI18n();
@@ -220,7 +222,7 @@ const Player = () => {
         // Check for track end using interpolated progress
         if (interpolated >= 1 && !endedRef.current) {
           endedRef.current = true;
-          handleTrackEnd();
+          void handleTrackEnd('interpolated', interpolated * durationSeconds);
         }
       }
       animationFrameRef.current = window.requestAnimationFrame(animate);
@@ -240,7 +242,7 @@ const Player = () => {
           // If track ended, handle repeat/advance
           if (currentProgress >= durationSeconds && !endedRef.current) {
             endedRef.current = true;
-            handleTrackEnd();
+            void handleTrackEnd('backend', currentProgress);
           }
         }
       } catch (error) {
@@ -269,29 +271,75 @@ const Player = () => {
       }
     };
 
-    const handleTrackEnd = async () => {
+    const handleTrackEnd = async (
+      source: 'interpolated' | 'backend',
+      positionSeconds: number,
+    ) => {
+      const currentIndex = currentPlaylist.indexOf(path ?? '');
+      const queueIndex = currentIndex === -1 ? 'not-found' : `${currentIndex + 1}/${currentPlaylist.length}`;
+      logInfo(
+        [
+          `Track end detected: source=${source}`,
+          `track="${trackFileName(path)}"`,
+          `position_seconds=${positionSeconds}`,
+          `duration_seconds=${metadata?.duration?.duration_seconds ?? 0}`,
+          `queue_index=${queueIndex}`,
+          `queue_length=${currentPlaylist.length}`,
+          `repeat=${onRepeat}`,
+          `shuffle=${onShuffle}`,
+        ].join(', '),
+      ).catch(() => {});
+
       if (onRepeat === 'one') {
+        logInfo(`Queue action: replay current track="${trackFileName(path)}"`).catch(() => {});
         await replayCurrent();
       } else if (onShuffle) {
         try {
           if (currentPlaylist && currentPlaylist.length > 0) {
             const randomIndex = Math.floor(Math.random() * currentPlaylist.length);
             const randomPath = currentPlaylist[randomIndex];
-            if (randomPath === path) await replayCurrent();
-            else setCurrentPath?.(randomPath);
+            if (randomPath === path) {
+              logInfo(`Queue action: shuffle selected current track="${trackFileName(path)}"`).catch(() => {});
+              await replayCurrent();
+            } else {
+              logInfo(
+                `Queue action: shuffle selected track="${trackFileName(randomPath)}", index=${randomIndex + 1}/${currentPlaylist.length}`,
+              ).catch(() => {});
+              setCurrentPath?.(randomPath);
+            }
+          } else {
+            logInfo('Queue action: shuffle has no tracks to select').catch(() => {});
           }
         } catch (err) {
           logError(`Shuffle failed: ${err}`).catch(() => {});
         }
       } else if (currentPlaylist && currentPlaylist.length > 0) {
-        const currentIndex = currentPlaylist.indexOf(path ?? '');
-        if (currentIndex !== -1 && currentIndex < currentPlaylist.length - 1) {
+        if (currentIndex === -1) {
+          logError(
+            `Queue advance skipped: current track="${trackFileName(path)}" was not found in the queue (queue_length=${currentPlaylist.length})`,
+          ).catch(() => {});
+          return;
+        }
+
+        if (currentIndex < currentPlaylist.length - 1) {
           const nextPath = currentPlaylist[currentIndex + 1];
+          logInfo(
+            `Queue action: advance from="${trackFileName(path)}" to="${trackFileName(nextPath)}", index=${currentIndex + 2}/${currentPlaylist.length}`,
+          ).catch(() => {});
           setCurrentPath?.(nextPath);
         } else if (onRepeat === 'all') {
-          if (currentPlaylist[0] === path) await replayCurrent();
-          else setCurrentPath?.(currentPlaylist[0]);
+          if (currentPlaylist[0] === path) {
+            logInfo(`Queue action: repeat all selected current track="${trackFileName(path)}"`).catch(() => {});
+            await replayCurrent();
+          } else {
+            logInfo(`Queue action: repeat all wrapping to track="${trackFileName(currentPlaylist[0])}"`).catch(() => {});
+            setCurrentPath?.(currentPlaylist[0]);
+          }
+        } else {
+          logInfo(`Queue finished after track="${trackFileName(path)}"`).catch(() => {});
         }
+      } else {
+        logInfo(`Queue finished after track="${trackFileName(path)}" (queue is empty)`).catch(() => {});
       }
     };
 

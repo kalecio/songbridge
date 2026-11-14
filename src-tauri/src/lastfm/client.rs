@@ -28,11 +28,25 @@ impl Client {
     pub fn new() -> Result<Self, reqwest::Error> {
         let key = option_env!("LASTFM_API_KEY").unwrap_or("").trim();
         let worker_url = option_env!("LASTFM_WORKER_URL").unwrap_or("").trim();
+        let api_key_present = !key.is_empty();
+        let worker_url_present = !worker_url.is_empty();
+        let worker_url_valid = valid_worker_url(worker_url);
         log::info!(
-            "Last.fm configuration at build time: api_key_present={}, worker_url_present={}",
-            !key.is_empty(),
-            !worker_url.is_empty()
+            "Last.fm configuration at build time: api_key_present={}, worker_url_present={}, worker_url_valid={}",
+            api_key_present,
+            worker_url_present,
+            worker_url_valid
         );
+        if !api_key_present {
+            log::error!("Last.fm disabled: build-time variable LASTFM_API_KEY is missing");
+        }
+        if !worker_url_present {
+            log::error!("Last.fm disabled: build-time variable LASTFM_WORKER_URL is missing");
+        } else if !worker_url_valid {
+            log::error!(
+                "Last.fm disabled: LASTFM_WORKER_URL is invalid; expected an HTTPS URL (HTTP is allowed only for localhost)"
+            );
+        }
         Ok(Self {
             http: reqwest::Client::builder()
                 .timeout(Duration::from_secs(20))
@@ -45,12 +59,7 @@ impl Client {
         })
     }
     pub fn configured(&self) -> bool {
-        !self.key.is_empty()
-            && url::Url::parse(&self.worker_url).is_ok_and(|url| {
-                (url.scheme() == "https" && url.host_str().is_some())
-                    || (url.scheme() == "http"
-                        && matches!(url.host_str(), Some("localhost" | "127.0.0.1" | "::1")))
-            })
+        !self.key.is_empty() && valid_worker_url(&self.worker_url)
     }
     pub fn auth_url(&self, token: &str) -> String {
         let mut url = url::Url::parse("https://www.last.fm/api/auth/").expect("static URL");
@@ -66,6 +75,7 @@ impl Client {
         session: Option<&str>,
     ) -> Result<Value, ApiError> {
         if !self.configured() {
+            log::warn!("Last.fm request skipped: build-time configuration is missing or invalid, method={method}");
             return Err(ApiError::new("not_configured"));
         }
         if !allowed_method(method) {
@@ -154,6 +164,14 @@ impl Client {
                     .ok_or_else(|| ApiError::new("invalid_response"))
             })
     }
+}
+
+fn valid_worker_url(worker_url: &str) -> bool {
+    url::Url::parse(worker_url).is_ok_and(|url| {
+        (url.scheme() == "https" && url.host_str().is_some())
+            || (url.scheme() == "http"
+                && matches!(url.host_str(), Some("localhost" | "127.0.0.1" | "::1")))
+    })
 }
 
 fn allowed_method(method: &str) -> bool {

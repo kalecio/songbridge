@@ -25,6 +25,49 @@ pub use audio::state::AudioState;
 pub use metadata::utils::apply_tags_from_revision;
 pub use metadata::utils::{determine_mime_type, extract_album_art_probed};
 
+fn os_release_value(contents: &str, key: &str) -> Option<String> {
+    contents.lines().find_map(|line| {
+        let (name, value) = line.split_once('=')?;
+        if name != key {
+            return None;
+        }
+
+        let value = value.trim();
+        let value = value
+            .strip_prefix('"')
+            .and_then(|value| value.strip_suffix('"'))
+            .or_else(|| {
+                value
+                    .strip_prefix('\'')
+                    .and_then(|value| value.strip_suffix('\''))
+            })
+            .unwrap_or(value);
+        Some(value.replace("\\\"", "\"").replace("\\\\", "\\"))
+    })
+}
+
+fn platform_label() -> String {
+    match std::env::consts::OS {
+        "linux" => {
+            let distribution = std::fs::read_to_string("/etc/os-release")
+                .ok()
+                .and_then(|contents| {
+                    os_release_value(&contents, "PRETTY_NAME").or_else(|| {
+                        let id = os_release_value(&contents, "ID")?;
+                        let version = os_release_value(&contents, "VERSION_ID");
+                        Some(match version {
+                            Some(version) => format!("{id} {version}"),
+                            None => id,
+                        })
+                    })
+                })
+                .unwrap_or_else(|| "unknown distribution".into());
+            format!("linux ({distribution})")
+        }
+        other => other.to_string(),
+    }
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     let audio_state = Arc::new(Mutex::new(AudioState::new()));
@@ -50,6 +93,12 @@ pub fn run() {
         .manage(audio_state)
         .manage(library_state)
         .setup(|app| {
+            log::info!(
+                "Application runtime: version={}, platform={}, architecture={}",
+                env!("CARGO_PKG_VERSION"),
+                platform_label(),
+                std::env::consts::ARCH
+            );
             let data_dir = app.path().app_data_dir()?;
             std::fs::create_dir_all(&data_dir)?;
             let db_path = data_dir.join("songbridge.db");
