@@ -2,7 +2,7 @@ use crate::db::commands::{
     delete_tracks, get_cached_track_mtimes, get_cached_tracks, upsert_track,
 };
 use crate::db::state::DbState;
-use crate::metadata::commands::get_metadata;
+use crate::metadata::commands::get_metadata_without_art;
 use crate::metadata::types::AudioMetadata;
 use crate::music_library::state::LibraryState;
 use serde::Serialize;
@@ -134,7 +134,7 @@ pub async fn scan_music_library(
                     }
                 } else {
                     // New or modified → parse and upsert.
-                    match get_metadata(&path_str) {
+                    match get_metadata_without_art(&path_str) {
                         Ok(meta) => {
                             let conn = conn_arc.lock().map_err(|e| e.to_string())?;
                             if let Err(e) = upsert_track(&conn, &meta, mtime) {
