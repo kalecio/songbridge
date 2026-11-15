@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **Queue auto-advance after track completion** — keep the backend end-of-track state available across progress polls until another track is loaded, so a missed poll does not leave playback stuck at the end
+- **Windows now-playing album art** — pass the native Windows temp-file path to the media controls, avoiding the malformed `/C:/...` path that caused SMTC to reject covers
+
 ## [1.0.0-rc.3] - 2026-11-15
 
 ### Added

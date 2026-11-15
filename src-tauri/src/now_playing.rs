@@ -84,7 +84,14 @@ fn detect_image_kind(bytes: &[u8]) -> Option<&'static str> {
 /// Reverse of `cover_path_to_url` — used by the diagnostic log to confirm the
 /// file we just promised SMTC actually exists on disk.
 fn file_url_to_path(url: &str) -> Option<PathBuf> {
-    Url::parse(url).ok()?.to_file_path().ok()
+    #[cfg(target_os = "windows")]
+    {
+        return url.strip_prefix("file://").map(PathBuf::from);
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        Url::parse(url).ok()?.to_file_path().ok()
+    }
 }
 
 /// Build a properly-formatted `file://` URL for an absolute filesystem path.
@@ -96,11 +103,29 @@ fn file_url_to_path(url: &str) -> Option<PathBuf> {
 /// cases, surfacing as the cryptic
 /// `HRESULT(0x800700A1) … "(UNABLE_TO_MASK_PATH) … 1440741640"`.
 ///
-/// `Url::from_file_path` does the right thing on every platform: the path is
-/// percent-encoded, backslashes become forward slashes on Windows, and we
-/// always get the canonical three-slash `file:///` form.
+/// On non-Windows platforms, `Url::from_file_path` produces a canonical URL.
+/// On Windows, souvlaki 0.8 strips the `file://` prefix and passes the rest
+/// directly to `StorageFile::GetFileFromPathAsync`; therefore the value must
+/// contain the native `C:\...` path immediately after the prefix. A canonical
+/// `file:///C:/...` URL leaves `/C:/...` after stripping and makes WinRT
+/// report the misleading ERROR_BAD_PATHNAME / UNABLE_TO_MASK_PATH error.
 fn cover_path_to_url(path: &Path) -> Option<String> {
-    Url::from_file_path(path).ok().map(|u| u.to_string())
+    #[cfg(target_os = "windows")]
+    {
+        if !path.is_absolute() {
+            return None;
+        }
+        Some(windows_cover_path_to_url(path))
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        Url::from_file_path(path).ok().map(|u| u.to_string())
+    }
+}
+
+#[cfg(any(target_os = "windows", test))]
+fn windows_cover_path_to_url(path: &Path) -> String {
+    format!("file://{}", path.to_string_lossy())
 }
 
 /// Resolve the temp-file path we write album art to.
@@ -401,10 +426,18 @@ mod tests {
     fn produces_a_valid_file_url_for_a_simple_path() {
         let path = std::env::temp_dir().join("songbridge-cover.jpg");
         let url = cover_path_to_url(&path).unwrap();
+        #[cfg(target_os = "windows")]
+        assert!(
+            url.starts_with("file://") && !url.starts_with("file:///"),
+            "got: {}",
+            url
+        );
+        #[cfg(not(target_os = "windows"))]
         assert!(url.starts_with("file:///"), "got: {}", url);
         assert!(url.ends_with("songbridge-cover.jpg"));
     }
 
+    #[cfg(not(target_os = "windows"))]
     #[test]
     fn percent_encodes_spaces_in_the_path() {
         let path = std::env::temp_dir()
@@ -423,6 +456,7 @@ mod tests {
         );
     }
 
+    #[cfg(not(target_os = "windows"))]
     #[test]
     fn percent_encodes_non_ascii_characters() {
         // Common real-world case: usernames with accents.
@@ -436,6 +470,7 @@ mod tests {
         );
     }
 
+    #[cfg(not(target_os = "windows"))]
     #[test]
     fn percent_encodes_uri_reserved_characters() {
         // `#`, `?`, and `%` would all break a URL parser if pasted in raw.
@@ -453,15 +488,6 @@ mod tests {
         // we want: a relative path would silently produce a bogus URL.
         let path = PathBuf::from("relative/path/cover.jpg");
         assert!(cover_path_to_url(&path).is_none());
-    }
-
-    #[cfg(target_os = "windows")]
-    #[test]
-    fn windows_paths_use_forward_slashes_and_three_slashes() {
-        let path = PathBuf::from(r"C:\Users\Foo\AppData\Local\Temp\songbridge-cover.jpg");
-        let url = cover_path_to_url(&path).unwrap();
-        assert!(url.starts_with("file:///C:/"), "got: {}", url);
-        assert!(!url.contains('\\'), "got: {}", url);
     }
 
     // ── cover_temp_path ─────────────────────────────────────────────────
