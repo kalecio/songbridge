@@ -4609,6 +4609,7 @@ dependencies = [
  "reqwest 0.12.28",
  "rodio",
  "rusqlite",
+ "semver",
  "serde",
  "serde_json",
  "souvlaki",
