@@ -212,6 +212,7 @@ fn load_track(sink: &Sink, path: &str, levels: Arc<Mutex<Vec<f32>>>) -> bool {
 /// frontend can recover if it misses an individual position poll.
 #[derive(Debug)]
 pub struct PositionReport {
+    pub track_path: Option<String>,
     pub position: Duration,
     pub ended: bool,
 }
@@ -388,6 +389,7 @@ pub fn spawn_audio_thread(levels: Arc<Mutex<Vec<f32>>>) -> Sender<AudioCommand> 
                         );
                     }
                     let _ = response.send(PositionReport {
+                        track_path: current_path.clone(),
                         position: pos,
                         ended: is_ended,
                     });

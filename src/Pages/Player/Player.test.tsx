@@ -84,7 +84,7 @@ describe('Player interpolation', () => {
 
   it('updates progress via setProgress when playing', async () => {
     mockInvoke.mockImplementation((cmd) => {
-      if (cmd === 'get_progress') return Promise.resolve(50);
+      if (cmd === 'get_progress') return Promise.resolve({ path: '/test/song.mp3', position_seconds: 50 });
       return Promise.resolve(undefined);
     });
 

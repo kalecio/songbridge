@@ -56,11 +56,16 @@ pub fn set_volume(state: tauri::State<Arc<Mutex<AudioState>>>, volume: f32) {
 }
 
 #[tauri::command]
-pub fn get_progress(state: tauri::State<Arc<Mutex<AudioState>>>) -> u64 {
+pub fn get_progress(
+    state: tauri::State<Arc<Mutex<AudioState>>>,
+) -> crate::audio::state::PlaybackProgress {
     if let Ok(audio) = state.lock() {
-        audio.current_position().as_secs()
+        audio.current_progress()
     } else {
-        0
+        crate::audio::state::PlaybackProgress {
+            path: None,
+            position_seconds: 0,
+        }
     }
 }
 
