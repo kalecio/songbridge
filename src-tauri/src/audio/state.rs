@@ -7,6 +7,12 @@ use std::{
     time::Duration,
 };
 
+#[derive(serde::Serialize)]
+pub struct PlaybackProgress {
+    pub path: Option<String>,
+    pub position_seconds: u64,
+}
+
 pub struct AudioState {
     pub path: String,
     audio_tx: Sender<AudioCommand>,
@@ -91,7 +97,7 @@ impl AudioState {
         let _ = self.audio_tx.send(AudioCommand::SetVolume(volume));
     }
 
-    pub fn current_position(&self) -> Duration {
+    pub fn current_progress(&self) -> PlaybackProgress {
         let (tx, rx) = mpsc::channel();
         let expected_duration = self
             .track_duration
@@ -101,7 +107,12 @@ impl AudioState {
             response: tx,
             expected_duration,
         });
-        let PositionReport { position, ended } = rx.recv().unwrap_or(PositionReport {
+        let PositionReport {
+            track_path,
+            position,
+            ended,
+        } = rx.recv().unwrap_or(PositionReport {
+            track_path: None,
             position: Duration::from_secs(0),
             ended: false,
         });
@@ -110,12 +121,24 @@ impl AudioState {
         // is what makes the frontend's `progress >= duration` auto-advance
         // check fire even though rodio's `get_pos()` resets when the queue
         // empties.
-        if ended {
+        let belongs_to_current_track = track_path.as_deref() == Some(self.path.as_str());
+        let position = if ended && belongs_to_current_track {
             if let Some(d) = self.track_duration.duration_seconds {
-                return Duration::from_secs(d);
+                Duration::from_secs(d)
+            } else {
+                position
             }
+        } else {
+            position
+        };
+        PlaybackProgress {
+            path: track_path,
+            position_seconds: position.as_secs(),
         }
-        position
+    }
+
+    pub fn current_position(&self) -> Duration {
+        Duration::from_secs(self.current_progress().position_seconds)
     }
 
     pub fn seek(&mut self, position: Duration) {
@@ -247,6 +270,7 @@ mod tests {
                 match cmd {
                     AudioCommand::GetPosition { response, .. } => {
                         let _ = response.send(PositionReport {
+                            track_path: Some(String::new()),
                             position: StdDuration::from_secs(7),
                             ended: false,
                         });
@@ -283,6 +307,7 @@ mod tests {
                 // surface the track's duration so the frontend's
                 // `progress >= duration` auto-advance check fires.
                 let _ = response.send(PositionReport {
+                    track_path: Some(String::new()),
                     position: StdDuration::from_secs(0),
                     ended: true,
                 });
@@ -311,6 +336,7 @@ mod tests {
         let responder = thread::spawn(move || {
             if let Ok(AudioCommand::GetPosition { response, .. }) = rx.recv() {
                 let _ = response.send(PositionReport {
+                    track_path: Some(String::new()),
                     position: StdDuration::from_secs(0),
                     ended: true,
                 });

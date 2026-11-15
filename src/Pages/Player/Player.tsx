@@ -80,6 +80,8 @@ const Player = () => {
     setCurrentPlaylist,
     setProgress,
   } = context;
+  const currentPathRef = useRef(path);
+  currentPathRef.current = path;
   const intervalRef = useRef<number | null>(null);
   const animationFrameRef = useRef<number | null>(null);
   const endedRef = useRef(false);
@@ -217,7 +219,7 @@ const Player = () => {
       const now = performance.now();
       const durationSeconds = metadata?.duration?.duration_seconds ?? 0;
 
-      if (durationSeconds > 0 && isPlaying) {
+      if (currentPathRef.current === path && durationSeconds > 0 && isPlaying) {
         const elapsedSincePoll = (now - lastPolledTimeRef.current) / 1000; // seconds
         // Interpolate: last known progress + elapsed time since poll
         let interpolated = lastPolledProgressRef.current + elapsedSincePoll / durationSeconds;
@@ -238,7 +240,9 @@ const Player = () => {
     // Backend polling - runs every 1s to sync with actual playback position
     const pollBackend = async () => {
       try {
-        const currentProgress = await invoke<number>('get_progress');
+        const playback = await invoke<{ path: string | null; position_seconds: number }>('get_progress');
+        if (currentPathRef.current !== path || playback.path !== path) return;
+        const currentProgress = playback.position_seconds;
         const durationSeconds = metadata?.duration?.duration_seconds ?? 0;
 
         if (durationSeconds > 0) {
@@ -283,7 +287,9 @@ const Player = () => {
           await invoke('load_song', { path });
           await invoke('play_song');
           await new Promise((resolve) => setTimeout(resolve, 200));
-          const verifyProgress = await invoke<number>('get_progress');
+          const playback = await invoke<{ path: string | null; position_seconds: number }>('get_progress');
+          if (currentPathRef.current !== path || playback.path !== path) return;
+          const verifyProgress = playback.position_seconds;
           const durationSeconds = metadata?.duration?.duration_seconds ?? 0;
           if (verifyProgress < durationSeconds * 0.1) {
             endedRef.current = false;
@@ -302,6 +308,7 @@ const Player = () => {
       source: 'interpolated' | 'backend',
       positionSeconds: number,
     ) => {
+      if (currentPathRef.current !== path) return;
       const currentIndex = currentPlaylist.indexOf(path ?? '');
       const queueIndex = currentIndex === -1 ? 'not-found' : `${currentIndex + 1}/${currentPlaylist.length}`;
       logInfo(
