@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0-rc.5] - 2026-11-15
+
+### Fixed
+- **Pre-release update prompts** — detect newer release candidates and transition to the final stable release while preserving stable-only updates for stable builds
+
 ## [1.0.0-rc.4] - 2026-11-15
 
 ### Fixed
