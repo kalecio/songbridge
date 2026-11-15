@@ -12,6 +12,7 @@ mod lyrics_api;
 mod metadata;
 mod music_library;
 mod now_playing;
+mod updates;
 
 // Re-export a minimal API for integration tests and external callers.
 pub use audio::utils::{calculate_track_duration, get_audio_probe};
@@ -157,6 +158,8 @@ pub fn run() {
             db::commands::db_load_tracks,
             now_playing::set_now_playing,
             now_playing::set_playback_state,
+            updates::check_for_update,
+            updates::install_update,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

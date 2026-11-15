@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react';
-import { check, type Update } from '@tauri-apps/plugin-updater';
+import { listen } from '@tauri-apps/api/event';
+import { invoke } from '@tauri-apps/api/core';
 import { relaunch } from '@tauri-apps/plugin-process';
 import Modal from '../Modal/Modal';
 import { Button, Message } from '../Modal/styles';
@@ -7,6 +8,12 @@ import { useI18n } from '../../i18n/I18nProvider';
 
 const REMINDER_KEY = 'songbridge-update-reminder';
 const DAY_MS = 24 * 60 * 60 * 1000;
+
+type AvailableUpdate = { currentVersion: string; version: string; body?: string | null };
+type UpdateProgressEvent = {
+  event: 'Started' | 'Progress' | 'Finished';
+  data: { contentLength?: number; chunkLength?: number };
+};
 
 const formatNotes = (notes: string) =>
   notes
@@ -22,7 +29,6 @@ const formatNotes = (notes: string) =>
 
 const UpdatePrompt = () => {
   const { t } = useI18n();
-  const [update, setUpdate] = useState<Update | null>(null);
   const [releaseInfo, setReleaseInfo] = useState<{ current: string; latest: string; notes: string } | null>(null);
   const [isOpen, setIsOpen] = useState(false);
   const [installing, setInstalling] = useState(false);
@@ -31,9 +37,8 @@ const UpdatePrompt = () => {
 
   const checkForUpdate = useCallback(async () => {
     try {
-      const available = await check();
+      const available = await invoke<AvailableUpdate | null>('check_for_update');
       if (!available) return;
-      setUpdate(available);
       setReleaseInfo({
         current: available.currentVersion,
         latest: available.version,
@@ -73,27 +78,30 @@ const UpdatePrompt = () => {
   }, [checkForUpdate, isOpen, releaseInfo]);
 
   const remindLater = async () => {
-    if (update) await update.close();
-    setUpdate(null);
     setIsOpen(false);
   };
 
   const installNow = async () => {
-    if (!update) return;
+    if (!releaseInfo) return;
     setInstalling(true);
     setError(false);
     setProgress(null);
+    let unlisten: (() => void) | undefined;
     try {
-      await update.downloadAndInstall((event) => {
-        if (event.event === 'Started' && event.data.contentLength) setProgress(0);
-        if (event.event === 'Progress' && event.data.chunkLength) {
-          setProgress((current) => (current === null ? event.data.chunkLength : current + event.data.chunkLength));
+      unlisten = await listen<UpdateProgressEvent>('songbridge-update-progress', (event) => {
+        if (event.payload.event === 'Started') setProgress(0);
+        if (event.payload.event === 'Progress' && event.payload.data.chunkLength) {
+          const chunkLength = event.payload.data.chunkLength;
+          setProgress((current) => (current === null ? chunkLength : current + chunkLength));
         }
       });
+      await invoke('install_update', { expectedVersion: releaseInfo.latest });
       await relaunch();
     } catch {
       setError(true);
       setInstalling(false);
+    } finally {
+      unlisten?.();
     }
   };
 
