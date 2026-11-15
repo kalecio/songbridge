@@ -115,17 +115,12 @@ fn cover_path_to_url(path: &Path) -> Option<String> {
         if !path.is_absolute() {
             return None;
         }
-        Some(windows_cover_path_to_url(path))
+        Some(format!("file://{}", path.to_string_lossy()))
     }
     #[cfg(not(target_os = "windows"))]
     {
         Url::from_file_path(path).ok().map(|u| u.to_string())
     }
-}
-
-#[cfg(any(target_os = "windows", test))]
-fn windows_cover_path_to_url(path: &Path) -> String {
-    format!("file://{}", path.to_string_lossy())
 }
 
 /// Resolve the temp-file path we write album art to.
