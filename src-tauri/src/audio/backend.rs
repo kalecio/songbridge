@@ -207,10 +207,9 @@ fn load_track(sink: &Sink, path: &str, levels: Arc<Mutex<Vec<f32>>>) -> bool {
 }
 
 /// Reply from a `GetPosition` request: the current playhead position plus
-/// a one-shot "track just ended naturally" flag. The flag fires exactly
-/// once per Load (after the rodio sink has actually played at least a
-/// fraction of a second, so the in-between window during `Load` doesn't
-/// look like an ended track).
+/// a "track ended naturally" flag. The flag stays set while the sink is
+/// empty after a track has played at least a fraction of a second, so the
+/// frontend can recover if it misses an individual position poll.
 #[derive(Debug)]
 pub struct PositionReport {
     pub position: Duration,
@@ -245,10 +244,9 @@ pub fn spawn_audio_thread(levels: Arc<Mutex<Vec<f32>>>) -> Sender<AudioCommand> 
 
         // Track end-of-track detection state. `max_pos` lets us tell apart
         // "sink is empty because we haven't started yet" from "sink is empty
-        // because the source ran out". `ended_reported` makes the `ended`
-        // flag a one-shot per Load, so the frontend can't trigger
-        // auto-advance more than once for the same track if multiple polls
-        // race during the hand-off.
+        // because the source ran out". `ended_reported` only gates the log;
+        // the ended state remains true on subsequent polls until Load/Seek so
+        // a missed frontend poll cannot strand the queue at the final second.
         let mut max_pos: Duration = Duration::from_secs(0);
         let mut ended_reported = false;
         let mut empty_without_end_reported = false;
@@ -391,7 +389,7 @@ pub fn spawn_audio_thread(levels: Arc<Mutex<Vec<f32>>>) -> Sender<AudioCommand> 
                     }
                     let _ = response.send(PositionReport {
                         position: pos,
-                        ended: report_ended,
+                        ended: is_ended,
                     });
                 }
             }
