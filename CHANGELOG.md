@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0-rc.3] - 2026-11-15
+
+### Added
+- **Playback stall diagnostics** — logs capture play and resume requests, backend command receipt, stalled playback progress, and audio sinks that empty before a track end is confirmed
+
 ## [1.0.0-rc.2] - 2026-11-14
 
 ### Added
