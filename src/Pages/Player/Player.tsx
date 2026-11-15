@@ -3,7 +3,7 @@ import { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { useNavigate, useLocation, useNavigationType, Route, Routes } from 'react-router';
 import { FaArrowLeft, FaArrowRight, FaCompress, FaExpand } from 'react-icons/fa6';
 import { getCurrentWindow } from '@tauri-apps/api/window';
-import { error as logError, info as logInfo } from '../../logger';
+import { error as logError, info as logInfo, warn as logWarn } from '../../logger';
 import Controls from '../../Components/Controls/Controls';
 import ProgressBar from '../../Components/ProgressBar/ProgressBar';
 import Song from '../../Components/Song/Song';
@@ -54,6 +54,7 @@ import CreatePlaylist from '../Playlist/Create';
 import { useI18n } from '../../i18n/I18nProvider';
 
 const trackFileName = (path?: string) => path?.split(/[\\/]/).pop() || 'unknown';
+const PLAYBACK_STALL_THRESHOLD_MS = 5000;
 
 const Player = () => {
   const { t } = useI18n();
@@ -82,6 +83,12 @@ const Player = () => {
   const intervalRef = useRef<number | null>(null);
   const animationFrameRef = useRef<number | null>(null);
   const endedRef = useRef(false);
+  const backendProgressRef = useRef<{
+    path: string | undefined;
+    position: number;
+    lastAdvancedAt: number;
+    stallReported: boolean;
+  } | null>(null);
   // Interpolation state
   const lastPolledProgressRef = useRef<number>(0); // 0-1
   const lastPolledTimeRef = useRef<number>(0); // timestamp
@@ -235,6 +242,26 @@ const Player = () => {
         const durationSeconds = metadata?.duration?.duration_seconds ?? 0;
 
         if (durationSeconds > 0) {
+          const now = performance.now();
+          let watchdog = backendProgressRef.current;
+          if (!watchdog || watchdog.path !== path) {
+            watchdog = { path, position: currentProgress, lastAdvancedAt: now, stallReported: false };
+            backendProgressRef.current = watchdog;
+          } else if (watchdog.position !== currentProgress) {
+            watchdog.position = currentProgress;
+            watchdog.lastAdvancedAt = now;
+            watchdog.stallReported = false;
+          } else if (
+            !watchdog.stallReported &&
+            currentProgress < durationSeconds &&
+            now - watchdog.lastAdvancedAt >= PLAYBACK_STALL_THRESHOLD_MS
+          ) {
+            watchdog.stallReported = true;
+            logWarn(
+              `Playback stalled: UI reports playing but backend position has not changed for ${PLAYBACK_STALL_THRESHOLD_MS}ms: track="${trackFileName(path)}", position_seconds=${currentProgress}, duration_seconds=${durationSeconds}`,
+            ).catch(() => {});
+          }
+
           const progressRatio = currentProgress / durationSeconds;
           lastPolledProgressRef.current = progressRatio;
           lastPolledTimeRef.current = performance.now();
@@ -345,6 +372,7 @@ const Player = () => {
 
     if (isPlaying) {
       // Initialize interpolation state
+      backendProgressRef.current = null;
       lastPolledTimeRef.current = performance.now();
       animate();
       intervalRef.current = window.setInterval(pollBackend, 1000);
@@ -356,6 +384,7 @@ const Player = () => {
         window.clearInterval(intervalRef.current);
         intervalRef.current = null;
       }
+      backendProgressRef.current = null;
       if (animationFrameRef.current !== null) {
         window.cancelAnimationFrame(animationFrameRef.current);
         animationFrameRef.current = null;

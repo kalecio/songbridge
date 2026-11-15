@@ -226,7 +226,10 @@ pub enum AudioCommand {
     Resume,
     SetVolume(f32),
     Seek(Duration),
-    GetPosition(StdSender<PositionReport>),
+    GetPosition {
+        response: StdSender<PositionReport>,
+        expected_duration: Option<Duration>,
+    },
 }
 
 /// Spawn the audio thread and return a `Sender` to send `AudioCommand`s to it.
@@ -248,6 +251,9 @@ pub fn spawn_audio_thread(levels: Arc<Mutex<Vec<f32>>>) -> Sender<AudioCommand> 
         // race during the hand-off.
         let mut max_pos: Duration = Duration::from_secs(0);
         let mut ended_reported = false;
+        let mut empty_without_end_reported = false;
+        let mut track_loaded = false;
+        let mut playback_started = false;
         let started_threshold = Duration::from_millis(500);
         // Store the last loaded path so we can reload the track when seeking
         // on an empty sink (e.g., repeat-one after track ends).
@@ -278,18 +284,38 @@ pub fn spawn_audio_thread(levels: Arc<Mutex<Vec<f32>>>) -> Sender<AudioCommand> 
                     sink.pause();
                     max_pos = Duration::from_secs(0);
                     ended_reported = false;
-                    let loaded = load_track(&sink, &path, Arc::clone(&levels));
-                    if loaded {
+                    empty_without_end_reported = false;
+                    playback_started = false;
+                    track_loaded = load_track(&sink, &path, Arc::clone(&levels));
+                    if track_loaded {
                         sink.pause();
                     }
                     crate::lastfm::audio_event(crate::lastfm::AudioEvent::Loaded(
                         path,
-                        loaded,
+                        track_loaded,
                         Instant::now(),
                     ));
                 }
-                AudioCommand::Play | AudioCommand::Resume => {
+                command @ (AudioCommand::Play | AudioCommand::Resume) => {
+                    let action = match command {
+                        AudioCommand::Play => "play",
+                        AudioCommand::Resume => "resume",
+                        _ => unreachable!(),
+                    };
+                    log::info!(
+                        "Audio backend received playback command: action={}, track='{}', track_loaded={}, sink_empty={}, paused={}, position_seconds={:.3}",
+                        action,
+                        current_path
+                            .as_deref()
+                            .map(track_file_name)
+                            .unwrap_or("unknown"),
+                        track_loaded,
+                        sink.empty(),
+                        sink.is_paused(),
+                        sink.get_pos().as_secs_f64()
+                    );
                     sink.play();
+                    playback_started |= track_loaded;
                     // Capture the start instant, not the next periodic poll.
                     crate::lastfm::audio_event(crate::lastfm::AudioEvent::Sample {
                         position: sink.get_pos().as_secs_f64(),
@@ -305,10 +331,10 @@ pub fn spawn_audio_thread(levels: Arc<Mutex<Vec<f32>>>) -> Sender<AudioCommand> 
                     // If the sink is empty (track ended), reload the track first
                     if sink.empty() {
                         if let Some(path) = &current_path {
-                            let loaded = load_track(&sink, path, Arc::clone(&levels));
+                            track_loaded = load_track(&sink, path, Arc::clone(&levels));
                             crate::lastfm::audio_event(crate::lastfm::AudioEvent::Loaded(
                                 path.clone(),
-                                loaded,
+                                track_loaded,
                                 Instant::now(),
                             ));
                         }
@@ -317,13 +343,18 @@ pub fn spawn_audio_thread(levels: Arc<Mutex<Vec<f32>>>) -> Sender<AudioCommand> 
                     crate::lastfm::audio_event(crate::lastfm::AudioEvent::Seek);
                     max_pos = Duration::from_secs(0);
                     ended_reported = false;
+                    empty_without_end_reported = false;
                 }
-                AudioCommand::GetPosition(resp) => {
+                AudioCommand::GetPosition {
+                    response,
+                    expected_duration,
+                } => {
                     let pos = sink.get_pos();
                     if pos > max_pos {
                         max_pos = pos;
                     }
-                    let is_ended = sink.empty() && max_pos >= started_threshold;
+                    let sink_empty = sink.empty();
+                    let is_ended = sink_empty && max_pos >= started_threshold;
                     let report_ended = is_ended && !ended_reported;
                     if report_ended {
                         ended_reported = true;
@@ -336,7 +367,29 @@ pub fn spawn_audio_thread(levels: Arc<Mutex<Vec<f32>>>) -> Sender<AudioCommand> 
                             max_pos.as_secs_f64()
                         );
                     }
-                    let _ = resp.send(PositionReport {
+                    if sink_empty
+                        && track_loaded
+                        && playback_started
+                        && !report_ended
+                        && !ended_reported
+                        && !empty_without_end_reported
+                    {
+                        empty_without_end_reported = true;
+                        log::warn!(
+                            "Audio backend found empty sink without confirming natural track end: track='{}', last_position_seconds={:.3}, expected_duration_seconds={}, threshold_seconds={:.3}, paused={}",
+                            current_path
+                                .as_deref()
+                                .map(track_file_name)
+                                .unwrap_or("unknown"),
+                            max_pos.as_secs_f64(),
+                            expected_duration
+                                .map(|duration| format!("{:.3}", duration.as_secs_f64()))
+                                .unwrap_or_else(|| "unknown".to_string()),
+                            started_threshold.as_secs_f64(),
+                            sink.is_paused()
+                        );
+                    }
+                    let _ = response.send(PositionReport {
                         position: pos,
                         ended: report_ended,
                     });
@@ -400,8 +453,11 @@ mod tests {
 
         // GetPosition contains a StdSender -- just ensure we can construct it
         let (tx, _rx) = channel::<PositionReport>();
-        match AudioCommand::GetPosition(tx) {
-            AudioCommand::GetPosition(_) => {}
+        match (AudioCommand::GetPosition {
+            response: tx,
+            expected_duration: None,
+        }) {
+            AudioCommand::GetPosition { .. } => {}
             _ => panic!("expected GetPosition"),
         }
 

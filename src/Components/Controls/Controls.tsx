@@ -14,12 +14,14 @@ import {
 } from './styles';
 import { invoke } from '@tauri-apps/api/core';
 import { AppContext } from '../../Context/AppContext';
-import { error as logError } from '../../logger';
+import { error as logError, info as logInfo } from '../../logger';
 import { MetadataType, RepeatMode } from '../../types';
 import { AUDIO_EVENTS } from '../../audioEvents';
 import ProgressBar from '../ProgressBar/ProgressBar';
 import { TbRepeat, TbRepeatOnce } from 'react-icons/tb';
 import { useI18n } from '../../i18n/I18nProvider';
+
+const trackFileName = (path?: string) => path?.split(/[\\/]/).pop() || 'unknown';
 
 const Controls = ({ onSeek }: { onSeek?: (_ratio: number) => void }) => {
   const { t } = useI18n();
@@ -43,9 +45,11 @@ const Controls = ({ onSeek }: { onSeek?: (_ratio: number) => void }) => {
 
   const playNewSong = useCallback(async () => {
     try {
+      logInfo(`Playback command requested: action=load_and_play, track="${trackFileName(path)}"`).catch(() => {});
       const metadata = await invoke<MetadataType>('get_metadata', { path });
       await invoke('load_song', { path });
       await invoke('play_song');
+      logInfo(`Playback command acknowledged: action=load_and_play, track="${trackFileName(path)}"`).catch(() => {});
       setCurrentPath?.(path);
       setIsPlaying?.(true);
       setMetadata?.(metadata);
@@ -88,7 +92,9 @@ const Controls = ({ onSeek }: { onSeek?: (_ratio: number) => void }) => {
 
   const pause = async () => {
     try {
+      logInfo(`Playback command requested: action=pause, track="${trackFileName(path)}"`).catch(() => {});
       await invoke('pause');
+      logInfo(`Playback command acknowledged: action=pause, track="${trackFileName(path)}"`).catch(() => {});
       setIsPlaying?.(false);
     } catch (error) {
       logError(`Pause failed: ${error}`).catch(() => {});
@@ -97,7 +103,9 @@ const Controls = ({ onSeek }: { onSeek?: (_ratio: number) => void }) => {
 
   const resume = async () => {
     try {
+      logInfo(`Playback command requested: action=resume, track="${trackFileName(path)}"`).catch(() => {});
       await invoke('resume');
+      logInfo(`Playback command acknowledged: action=resume, track="${trackFileName(path)}"`).catch(() => {});
       setIsPlaying?.(true);
     } catch (error) {
       logError(`Resume failed: ${error}`).catch(() => {});

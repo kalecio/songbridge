@@ -93,7 +93,14 @@ impl AudioState {
 
     pub fn current_position(&self) -> Duration {
         let (tx, rx) = mpsc::channel();
-        let _ = self.audio_tx.send(AudioCommand::GetPosition(tx));
+        let expected_duration = self
+            .track_duration
+            .duration_seconds
+            .map(Duration::from_secs);
+        let _ = self.audio_tx.send(AudioCommand::GetPosition {
+            response: tx,
+            expected_duration,
+        });
         let PositionReport { position, ended } = rx.recv().unwrap_or(PositionReport {
             position: Duration::from_secs(0),
             ended: false,
@@ -238,8 +245,8 @@ mod tests {
         let responder = thread::spawn(move || {
             if let Ok(cmd) = rx.recv() {
                 match cmd {
-                    AudioCommand::GetPosition(resp) => {
-                        let _ = resp.send(PositionReport {
+                    AudioCommand::GetPosition { response, .. } => {
+                        let _ = response.send(PositionReport {
                             position: StdDuration::from_secs(7),
                             ended: false,
                         });
@@ -269,13 +276,13 @@ mod tests {
         };
 
         let responder = thread::spawn(move || {
-            if let Ok(AudioCommand::GetPosition(resp)) = rx.recv() {
+            if let Ok(AudioCommand::GetPosition { response, .. }) = rx.recv() {
                 // Simulates rodio's behaviour when the source has finished:
                 // `get_pos()` returns 0 but the sink is empty. The backend
                 // then sets `ended: true`, and `current_position` must
                 // surface the track's duration so the frontend's
                 // `progress >= duration` auto-advance check fires.
-                let _ = resp.send(PositionReport {
+                let _ = response.send(PositionReport {
                     position: StdDuration::from_secs(0),
                     ended: true,
                 });
@@ -302,8 +309,8 @@ mod tests {
         };
 
         let responder = thread::spawn(move || {
-            if let Ok(AudioCommand::GetPosition(resp)) = rx.recv() {
-                let _ = resp.send(PositionReport {
+            if let Ok(AudioCommand::GetPosition { response, .. }) = rx.recv() {
+                let _ = response.send(PositionReport {
                     position: StdDuration::from_secs(0),
                     ended: true,
                 });
