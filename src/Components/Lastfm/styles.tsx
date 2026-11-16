@@ -1,4 +1,5 @@
 import { styled } from 'styled-components';
+import { Card, ArtWrapper, CardInfo, CardTitle, CardArtist, CardCount } from '../../Pages/Albuns/styles';
 
 export const Panel = styled.div`
   display: flex;
@@ -27,6 +28,42 @@ export const Actions = styled.div`
   display: flex;
   gap: 0.5rem;
   flex-wrap: wrap;
+`;
+export const ResultsGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(8.5rem, 1fr));
+  gap: 0.8rem;
+`;
+export const AlbumCard = styled(Card).attrs({ as: 'button' })`
+  padding: 0;
+  border: 0;
+  color: inherit;
+  text-align: left;
+  &:focus-visible {
+    outline: 2px solid ${({ theme }) => theme.primary};
+    outline-offset: 2px;
+  }
+`;
+export const AlbumCardArt = styled(ArtWrapper)`
+  flex: none;
+  aspect-ratio: 1;
+  width: 100%;
+  & > div { width: 100%; height: 100%; }
+`;
+export const AlbumCardInfo = styled(CardInfo)`
+  padding: 0.5rem 0.15rem 0;
+  max-height: none;
+  gap: 0.2rem;
+`;
+export const AlbumCardTitle = styled(CardTitle)`
+  font-size: 0.85rem;
+`;
+export const AlbumCardArtist = styled(CardArtist)`
+  font-size: 0.75rem;
+`;
+export const AlbumCardYear = styled(CardCount)`
+  display: block;
+  margin-top: 0.1rem;
 `;
 export const History = styled.ul`
   list-style: none;

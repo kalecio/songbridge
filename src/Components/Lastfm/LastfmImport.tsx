@@ -6,14 +6,19 @@ import type { MetadataType } from '../../types';
 import { useMetadataActions, type EditFields } from '../../hooks/useMetadataActions';
 import { Button, Input } from '../Modal/styles';
 import { useLastfm, useLastfmReason } from './LastfmProvider';
-import { Actions, History, ImportPanel } from './styles';
+import { History, ImportPanel } from './styles';
 import { importFields, type ImportField, type Suggestion } from './importFields';
 import { getLastfmSearchQuery } from './searchQuery';
+import AlbumImage from '../AlbumImage/AlbumImage';
+import { AlbumCard, AlbumCardArt, AlbumCardInfo, AlbumCardTitle, AlbumCardArtist, AlbumCardYear, ResultsGrid } from './styles';
 
 interface Match {
   name: string;
   artist: string;
+  artwork?: string | null;
+  year?: string | null;
   url: string;
+  preview?: string;
 }
 interface Artwork {
   path: string;
@@ -90,7 +95,18 @@ export default function LastfmImport({
       setArtwork(null);
       setMatches([]);
       const found = await invoke<Match[]>('lastfm_search', { kind, query: query.trim(), artistName: artist.trim() });
-      setMatches(found);
+      const hydrated = await Promise.all(
+        found.map(async (match) => {
+          if (!match.artwork) return match;
+          try {
+            const image = await invoke<Artwork>('lastfm_artwork', { url: match.artwork });
+            return { ...match, preview: image.preview };
+          } catch {
+            return match;
+          }
+        }),
+      );
+      setMatches(hydrated);
       if (!found.length) setError('no_results');
     });
   const choose = (match: Match) =>
@@ -99,6 +115,9 @@ export default function LastfmImport({
       setArtwork(null);
       setUseArtwork(false);
       const value = await invoke<Suggestion>('lastfm_details', { kind, name: match.name, artistName: match.artist });
+      // album.getInfo may omit artwork even when album.search returned it.
+      if (!value.artwork && match.artwork) value.artwork = match.artwork;
+      if (!value.year && match.year) value.year = match.year;
       setSuggestion(value);
       // Compilation artists must always be an explicit choice.
       setSelected(
@@ -156,13 +175,22 @@ export default function LastfmImport({
               {t('lastfm.search')}
             </Button>
           </fieldset>
-          <Actions>
+          <ResultsGrid aria-label={t('lastfm.results')}>
             {matches.map((match, index) => (
-              <Button key={index} $variant="ghost" disabled={busy} onClick={() => choose(match)}>
-                {match.name} · {match.artist}
-              </Button>
+              <AlbumCard key={index} type="button" disabled={busy} onClick={() => choose(match)} aria-label={`${match.name} · ${match.artist}`}>
+                <AlbumCardArt>
+                  <AlbumImage metadata={{ image: match.preview, album: match.name }} height="100%" width="100%" />
+                </AlbumCardArt>
+                <AlbumCardInfo>
+                  <AlbumCardTitle>{match.name}</AlbumCardTitle>
+                  <div>
+                    <AlbumCardArtist>{match.artist || t('lastfm.unknownArtist')}</AlbumCardArtist>
+                    {match.year && <AlbumCardYear>{match.year}</AlbumCardYear>}
+                  </div>
+                </AlbumCardInfo>
+              </AlbumCard>
             ))}
-          </Actions>
+          </ResultsGrid>
           {suggestion && (
             <fieldset disabled={busy}>
               <legend>{t('lastfm.preview')}</legend>
