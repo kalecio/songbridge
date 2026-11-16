@@ -7,6 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0-rc.7] - 2026-11-16
+
+### Added
+- **Manual update checks** — check for new versions from Settings or the native application menu
+- **Open files and folders from the native menu** — add selected audio files to the queue and play immediately, or replace the queue with tracks from a selected folder
+
+### Changed
+- **Last.fm search results** — show album artwork and metadata before selecting a result, including artwork found on the album page when the search response omits it
+- **Cover editing** — show selected image previews and make errors scrollable and easy to copy
+
+### Fixed
+- **Cover image decoding** — identify image formats from file contents so image previews and metadata updates handle files with misleading extensions
+
 ## [1.0.0-rc.6] - 2026-11-16
 
 ### Added
