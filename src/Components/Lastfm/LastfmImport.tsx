@@ -6,11 +6,21 @@ import type { MetadataType } from '../../types';
 import { useMetadataActions, type EditFields } from '../../hooks/useMetadataActions';
 import { Button, Input } from '../Modal/styles';
 import { useLastfm, useLastfmReason } from './LastfmProvider';
-import { History, ImportPanel } from './styles';
+import {
+  AlbumCard,
+  AlbumCardArt,
+  AlbumCardArtist,
+  AlbumCardInfo,
+  AlbumCardTitle,
+  AlbumCardYear,
+  Actions,
+  History,
+  ImportPanel,
+  ResultsGrid,
+} from './styles';
 import { importFields, type ImportField, type Suggestion } from './importFields';
 import { getLastfmSearchQuery } from './searchQuery';
 import AlbumImage from '../AlbumImage/AlbumImage';
-import { AlbumCard, AlbumCardArt, AlbumCardInfo, AlbumCardTitle, AlbumCardArtist, AlbumCardYear, ResultsGrid } from './styles';
 
 interface Match {
   name: string;
