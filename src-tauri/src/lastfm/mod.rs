@@ -84,6 +84,9 @@ pub struct Service {
     // Serializes account lifecycle with requests; no submission can outlive a
     // completed disconnect or accidentally be sent with a different account.
     gate: tokio::sync::Mutex<()>,
+    // Prevent duplicate public album lookups when multiple tracks from one
+    // album start before the first lookup has populated SQLite.
+    pub(super) artwork_gate: tokio::sync::Mutex<()>,
 }
 
 #[derive(Serialize)]
@@ -112,6 +115,13 @@ fn init_db(db: &Db) -> Result<(), String> {
             id TEXT PRIMARY KEY, account TEXT NOT NULL, payload TEXT NOT NULL,
             status TEXT NOT NULL, created INTEGER NOT NULL);
          CREATE INDEX IF NOT EXISTS lastfm_pending ON lastfm_plays(account, status, created);
+         CREATE TABLE IF NOT EXISTS lastfm_album_artwork (
+            artist_key TEXT NOT NULL,
+            album_key TEXT NOT NULL,
+            artwork_url TEXT,
+            fetched_at INTEGER NOT NULL,
+            PRIMARY KEY (artist_key, album_key)
+         );
          UPDATE lastfm_plays SET status='interrupted' WHERE status='listening';",
         )
         .map_err(|_| "database".into())
@@ -384,6 +394,7 @@ pub fn init(app: &tauri::AppHandle) -> Result<(), String> {
             tracking_since: Instant::now(),
         }),
         gate: tokio::sync::Mutex::new(()),
+        artwork_gate: tokio::sync::Mutex::new(()),
     });
     app.manage(service.clone());
     let (tx, mut rx) = tokio::sync::mpsc::unbounded_channel();
@@ -895,6 +906,7 @@ mod tests {
                 tracking_since: Instant::now(),
             }),
             gate: tokio::sync::Mutex::new(()),
+            artwork_gate: tokio::sync::Mutex::new(()),
         }
     }
     fn track() -> Track {
