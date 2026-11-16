@@ -37,6 +37,7 @@ import {
 import { AppContext } from '../../Context/AppContext';
 import { AUDIO_EVENTS, emitAudioEvent } from '../../audioEvents';
 import { displayTitle } from '../../songDisplay';
+import { MetadataType } from '../../types';
 import { useKeyboardShortcuts } from '../../hooks/useKeyboardShortcuts';
 import { useMediaKeys } from '../../hooks/useMediaKeys';
 import Sidebar from '../../Components/Sidebar/Sidebar';
