@@ -1,6 +1,6 @@
 use music_library::state::LibraryState;
 use std::sync::{Arc, Mutex};
-use tauri::menu::{Menu, MenuItemBuilder, MenuItemKind, SubmenuBuilder};
+use tauri::menu::{Menu, MenuItemBuilder, MenuItemKind, SubmenuBuilder, HELP_SUBMENU_ID};
 use tauri::{Emitter, Manager};
 use tauri_plugin_log::{Target, TargetKind};
 
@@ -121,9 +121,10 @@ pub fn run() {
             let check_for_updates =
                 MenuItemBuilder::with_id("check-for-updates", "Check for Updates…")
                     .build(app.handle())?;
-            if let Some(MenuItemKind::Submenu(help_menu)) = menu.get("help") {
-                help_menu.append(&check_for_updates)?;
-            }
+            let Some(MenuItemKind::Submenu(help_menu)) = menu.get(HELP_SUBMENU_ID) else {
+                return Err(std::io::Error::other("Default Tauri Help menu was not found").into());
+            };
+            help_menu.append(&check_for_updates)?;
             app.set_menu(menu)?;
             Ok(())
         })

@@ -185,6 +185,7 @@ fn valid_art_url(value: &str) -> bool {
                 u.host_str(),
                 Some(
                     "lastfm.freetls.fastly.net"
+                        | "lastfm-img.freetls.fastly.net"
                         | "lastfm-img2.akamaized.net"
                         | "userserve-ak.last.fm"
                 )

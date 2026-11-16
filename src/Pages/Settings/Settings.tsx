@@ -114,6 +114,7 @@ const Settings = () => {
   const normalizedQuery = searchQuery.trim().toLocaleLowerCase();
   const settingsTabs = [
     { id: 'appearance', label: t('settings.appearance') },
+    { id: 'updates', label: t('update.checkTitle') },
     { id: 'shortcuts', label: t('settings.keyboardShortcuts') },
     { id: 'library', label: t('settings.musicLibraryPaths') },
     { id: 'lastfm', label: t('settings.categoryAccount') },
@@ -145,7 +146,7 @@ const Settings = () => {
     },
     {
       id: 'settings-updates',
-      tab: 'appearance',
+      tab: 'updates',
       label: t('update.checkForUpdates'),
       terms: 'updates update version release nova versão nova versão verificar procurar check latest atualização',
     },
@@ -352,6 +353,19 @@ const Settings = () => {
             </Section>
           </SettingsPanel>
         )}
+        {activeTab === 'updates' && (
+          <SettingsPanel id="panel-updates" role="tabpanel" aria-labelledby="tab-updates">
+            <Section id="settings-updates">
+              <SectionTitle>{t('update.checkTitle')}</SectionTitle>
+              <RescanButton
+                type="button"
+                onClick={() => void emit('songbridge-check-for-updates').catch(() => {})}
+              >
+                {t('update.checkForUpdates')}
+              </RescanButton>
+            </Section>
+          </SettingsPanel>
+        )}
         {activeTab === 'appearance' && (
           <SettingsPanel id="panel-appearance" role="tabpanel" aria-labelledby="tab-appearance">
             <Section>
@@ -503,15 +517,6 @@ const Settings = () => {
                 <SectionTitle>{t('common.lyrics')}</SectionTitle>
                 <LyricsFontControl />
                 <LyricsPreviewText style={{ fontSize }}>{t('album.welcomeTitle')}</LyricsPreviewText>
-              </Section>
-              <Section id="settings-updates">
-                <SectionTitle>{t('update.checkTitle')}</SectionTitle>
-                <RescanButton
-                  type="button"
-                  onClick={() => void emit('songbridge-check-for-updates').catch(() => {})}
-                >
-                  {t('update.checkForUpdates')}
-                </RescanButton>
               </Section>
               <VisualizerAppearance />
             </Section>
