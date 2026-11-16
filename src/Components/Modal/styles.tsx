@@ -40,6 +40,8 @@ export const Title = styled.h2`
 
 export const Body = styled.div`
   padding: 0.25rem 1.25rem 1rem;
+  max-height: min(78vh, 52rem);
+  overflow-y: auto;
   font-size: 0.9rem;
   color: ${({ theme }) => theme.textSecondary};
   display: flex;

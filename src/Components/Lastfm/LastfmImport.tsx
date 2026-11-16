@@ -9,6 +9,7 @@ import { useLastfm, useLastfmReason } from './LastfmProvider';
 import {
   AlbumCard,
   AlbumCardArt,
+  AlbumCardImageWrap,
   AlbumCardArtist,
   AlbumCardInfo,
   AlbumCardTitle,
@@ -189,7 +190,9 @@ export default function LastfmImport({
             {matches.map((match, index) => (
               <AlbumCard key={index} type="button" disabled={busy} onClick={() => choose(match)} aria-label={`${match.name} · ${match.artist}`}>
                 <AlbumCardArt>
-                  <AlbumImage metadata={{ image: match.preview, album: match.name }} height="100%" width="100%" />
+                  <AlbumCardImageWrap>
+                    <AlbumImage metadata={{ image: match.preview, album: match.name }} height="100%" width="100%" />
+                  </AlbumCardImageWrap>
                 </AlbumCardArt>
                 <AlbumCardInfo>
                   <AlbumCardTitle>{match.name}</AlbumCardTitle>

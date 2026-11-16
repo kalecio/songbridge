@@ -34,11 +34,17 @@ const UpdatePrompt = () => {
   const [installing, setInstalling] = useState(false);
   const [progress, setProgress] = useState<number | null>(null);
   const [error, setError] = useState(false);
+  const [manualStatus, setManualStatus] = useState<'checking' | 'up-to-date' | 'failed' | null>(null);
 
-  const checkForUpdate = useCallback(async () => {
+  const checkForUpdate = useCallback(async (manual = false) => {
+    if (manual) setManualStatus('checking');
     try {
       const available = await invoke<AvailableUpdate | null>('check_for_update');
-      if (!available) return;
+      if (!available) {
+        if (manual) setManualStatus('up-to-date');
+        return;
+      }
+      setManualStatus(null);
       setReleaseInfo({
         current: available.currentVersion,
         latest: available.version,
@@ -51,11 +57,20 @@ const UpdatePrompt = () => {
       );
     } catch {
       // Update checks are best-effort and should never affect startup.
+      if (manual) setManualStatus('failed');
     }
   }, [t]);
 
   useEffect(() => {
     void checkForUpdate();
+  }, [checkForUpdate]);
+
+  useEffect(() => {
+    if (!('__TAURI_INTERNALS__' in window)) return;
+    const listener = listen('songbridge-check-for-updates', () => void checkForUpdate(true));
+    return () => {
+      void listener.then((unlisten) => unlisten()).catch(() => {});
+    };
   }, [checkForUpdate]);
 
   useEffect(() => {
@@ -106,40 +121,62 @@ const UpdatePrompt = () => {
   };
 
   return (
-    <Modal
-      isOpen={isOpen && Boolean(releaseInfo)}
-      title={t('update.title')}
-      onClose={() => void remindLater()}
-      maxWidth="36rem"
-      dismissible={!installing}
-    >
-      {releaseInfo && (
-        <>
-          <Message>{t('update.available', { current: releaseInfo.current, latest: releaseInfo.latest })}</Message>
-          <div
-            style={{ maxHeight: '45vh', overflowY: 'auto', whiteSpace: 'pre-wrap', lineHeight: 1.5 }}
-            aria-label={t('update.changelog')}
-          >
-            <strong>{t('update.changelog')}</strong>
-            <p style={{ margin: '0.5rem 0 0' }}>{formatNotes(releaseInfo.notes)}</p>
-          </div>
-          {installing && (
-            <Message>
-              {progress === null ? t('update.downloading') : t('update.downloadProgress', { bytes: progress })}
-            </Message>
-          )}
-          {error && <Message role="alert">{t('update.installFailed')}</Message>}
-          <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', marginTop: '0.5rem' }}>
-            <Button type="button" $variant="ghost" onClick={() => void remindLater()} disabled={installing}>
-              {t('update.later')}
+    <>
+      <Modal
+        isOpen={isOpen && Boolean(releaseInfo)}
+        title={t('update.title')}
+        onClose={() => void remindLater()}
+        maxWidth="36rem"
+        dismissible={!installing}
+      >
+        {releaseInfo && (
+          <>
+            <Message>{t('update.available', { current: releaseInfo.current, latest: releaseInfo.latest })}</Message>
+            <div
+              style={{ maxHeight: '45vh', overflowY: 'auto', whiteSpace: 'pre-wrap', lineHeight: 1.5 }}
+              aria-label={t('update.changelog')}
+            >
+              <strong>{t('update.changelog')}</strong>
+              <p style={{ margin: '0.5rem 0 0' }}>{formatNotes(releaseInfo.notes)}</p>
+            </div>
+            {installing && (
+              <Message>
+                {progress === null ? t('update.downloading') : t('update.downloadProgress', { bytes: progress })}
+              </Message>
+            )}
+            {error && <Message role="alert">{t('update.installFailed')}</Message>}
+            <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '0.5rem', marginTop: '0.5rem' }}>
+              <Button type="button" $variant="ghost" onClick={() => void remindLater()} disabled={installing}>
+                {t('update.later')}
+              </Button>
+              <Button type="button" $variant="primary" onClick={() => void installNow()} disabled={installing}>
+                {installing ? t('update.installing') : t('update.installNow')}
+              </Button>
+            </div>
+          </>
+        )}
+      </Modal>
+      <Modal
+        isOpen={manualStatus !== null}
+        title={t('update.checkTitle')}
+        onClose={() => setManualStatus(null)}
+      >
+        <Message role={manualStatus === 'failed' ? 'alert' : undefined}>
+          {manualStatus === 'checking'
+            ? t('update.checking')
+            : manualStatus === 'up-to-date'
+              ? t('update.upToDate')
+              : t('update.checkFailed')}
+        </Message>
+        {manualStatus !== 'checking' && (
+          <div style={{ display: 'flex', justifyContent: 'flex-end' }}>
+            <Button type="button" onClick={() => setManualStatus(null)}>
+              {t('update.done')}
             </Button>
-            <Button type="button" $variant="primary" onClick={() => void installNow()} disabled={installing}>
-              {installing ? t('update.installing') : t('update.installNow')}
-            </Button>
           </div>
-        </>
-      )}
-    </Modal>
+        )}
+      </Modal>
+    </>
   );
 };
 

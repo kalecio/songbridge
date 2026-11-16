@@ -1,6 +1,7 @@
 use music_library::state::LibraryState;
 use std::sync::{Arc, Mutex};
-use tauri::Manager;
+use tauri::menu::{Menu, MenuItemBuilder, MenuItemKind, SubmenuBuilder};
+use tauri::{Emitter, Manager};
 use tauri_plugin_log::{Target, TargetKind};
 
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
@@ -110,7 +111,34 @@ pub fn run() {
             lastfm::init(app.handle())?;
             now_playing::init(app.handle());
             let _discord = discord_presence::init(app.handle());
+
+            let menu = Menu::default(app.handle())?;
+            let open_menu = SubmenuBuilder::with_id(app.handle(), "open-media", "Open")
+                .text("open-audio-files", "Audio Files…")
+                .text("open-audio-folder", "Folder…")
+                .build()?;
+            menu.insert(&open_menu, 1)?;
+            let check_for_updates =
+                MenuItemBuilder::with_id("check-for-updates", "Check for Updates…")
+                    .build(app.handle())?;
+            if let Some(MenuItemKind::Submenu(help_menu)) = menu.get("help") {
+                help_menu.append(&check_for_updates)?;
+            }
+            app.set_menu(menu)?;
             Ok(())
+        })
+        .on_menu_event(|app, event| match event.id().as_ref() {
+            "open-audio-files" | "open-audio-folder" => {
+                if let Err(error) = app.emit("songbridge-native-menu-action", event.id().as_ref()) {
+                    log::error!("Could not forward native menu action: {error}");
+                }
+            }
+            "check-for-updates" => {
+                if let Err(error) = app.emit("songbridge-check-for-updates", ()) {
+                    log::error!("Could not forward update menu action: {error}");
+                }
+            }
+            _ => {}
         })
         .invoke_handler(tauri::generate_handler![
             lastfm::lastfm_status,
@@ -143,6 +171,7 @@ pub fn run() {
             lyrics_api::commands::download_lrclib_lyrics,
             lyrics_api::commands::get_lrclib_lyrics_preview,
             music_library::commands::scan_music_library,
+            music_library::commands::scan_audio_folder,
             music_library::commands::get_all_songs,
             music_library::commands::get_songs_by_album,
             music_library::commands::get_songs_by_artist,

@@ -11,6 +11,8 @@ import {
   CoverArtButton,
   CoverArtPreview,
   CoverArtSection,
+  ErrorCopyButton,
+  ErrorPanel,
   ErrorText,
   FieldGroup,
   Label,
@@ -18,6 +20,7 @@ import {
 } from '../EditMetadataModal/styles';
 import { SubtitleText } from './styles';
 import { useI18n } from '../../i18n/I18nProvider';
+import { copyTextToClipboard } from '../../utils/clipboard';
 
 export interface GroupEditFields {
   artist?: string;
@@ -49,6 +52,7 @@ const EditGroupMetadataModal = ({ groupType, songs, onClose, onSave }: Props) =>
   const [saving, setSaving] = useState(false);
   const [importing, setImporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [errorCopied, setErrorCopied] = useState(false);
 
   useEffect(() => {
     if (!songs || songs.length === 0) return;
@@ -63,10 +67,11 @@ const EditGroupMetadataModal = ({ groupType, songs, onClose, onSave }: Props) =>
     setSaving(false);
     setImporting(false);
     setError(null);
+    setErrorCopied(false);
   }, [songs]);
 
   const existingArt = songs?.[0]?.image ?? null;
-  const displayedArt = removeCoverArt ? null : (previewUrl ?? existingArt);
+  const displayedArt = removeCoverArt ? null : coverArtPath ? previewUrl : existingArt;
   const hasArt = displayedArt !== null;
 
   const handleChangeCover = async () => {
@@ -80,13 +85,26 @@ const EditGroupMetadataModal = ({ groupType, songs, onClose, onSave }: Props) =>
     setRemoveCoverArt(false);
     setPreviewLoading(true);
     setPreviewUrl(null);
+    setError(null);
+    setErrorCopied(false);
     try {
       const preview = await invoke<string>('get_image_preview', { path });
       setPreviewUrl(preview);
-    } catch {
-      // Preview failed — backend still processes it on save.
+    } catch (cause) {
+      setError(`${t('metadata.coverPreviewFailed')}: ${String(cause)}`);
     } finally {
       setPreviewLoading(false);
+    }
+  };
+
+  const handleCopyError = async () => {
+    if (!error) return;
+    try {
+      await copyTextToClipboard(error);
+      setErrorCopied(true);
+      window.setTimeout(() => setErrorCopied(false), 1500);
+    } catch {
+      setErrorCopied(false);
     }
   };
 
@@ -94,12 +112,15 @@ const EditGroupMetadataModal = ({ groupType, songs, onClose, onSave }: Props) =>
     setCoverArtPath(null);
     setRemoveCoverArt(true);
     setPreviewUrl(null);
+    setError(null);
+    setErrorCopied(false);
   };
 
   const handleSave = async () => {
     if (saving) return;
     setSaving(true);
     setError(null);
+    setErrorCopied(false);
     try {
       const firstSong = songs?.[0];
       const updateFields: GroupEditFields['updateFields'] = [];
@@ -119,6 +140,7 @@ const EditGroupMetadataModal = ({ groupType, songs, onClose, onSave }: Props) =>
       onClose();
     } catch (e) {
       setError(String(e));
+      setErrorCopied(false);
       setSaving(false);
     }
   };
@@ -217,7 +239,14 @@ const EditGroupMetadataModal = ({ groupType, songs, onClose, onSave }: Props) =>
             </>
           )}
 
-          {error && <ErrorText>{error}</ErrorText>}
+          {error && (
+            <ErrorPanel role="alert">
+              <ErrorText>{error}</ErrorText>
+              <ErrorCopyButton type="button" onClick={() => void handleCopyError()}>
+                {errorCopied ? t('metadata.errorCopied') : t('metadata.copyError')}
+              </ErrorCopyButton>
+            </ErrorPanel>
+          )}
         </>
       )}
     </Modal>
