@@ -34,26 +34,34 @@ export const ResultsGrid = styled.div`
   grid-template-columns: repeat(auto-fill, minmax(8.5rem, 1fr));
   gap: 0.8rem;
 `;
-export const AlbumCard = styled(Card).attrs({ as: 'button' })`
+export const AlbumCard = styled.button`
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-width: 0;
   padding: 0;
   border: 0;
   color: inherit;
+  background: transparent;
   text-align: left;
+  cursor: pointer;
   &:focus-visible {
     outline: 2px solid ${({ theme }) => theme.primary};
     outline-offset: 2px;
   }
 `;
-export const AlbumCardArt = styled(ArtWrapper)`
+export const AlbumCardArt = styled(Card)`
   flex: none;
-  aspect-ratio: 1;
+  cursor: inherit;
+`;
+export const AlbumCardImageWrap = styled(ArtWrapper)`
+  flex: 1;
   width: 100%;
-  & > div { width: 100%; height: 100%; }
+  min-height: 0;
 `;
 export const AlbumCardInfo = styled(CardInfo)`
-  padding: 0.5rem 0.15rem 0;
-  max-height: none;
-  gap: 0.2rem;
+  padding: 0.55rem 0 0;
+  max-height: 5rem;
 `;
 export const AlbumCardTitle = styled(CardTitle)`
   font-size: 0.85rem;

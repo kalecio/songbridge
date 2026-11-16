@@ -3,6 +3,7 @@ import { useCallback, useContext, useEffect, useRef, useState } from 'react';
 import { useNavigate, useLocation, useNavigationType, Route, Routes } from 'react-router';
 import { FaArrowLeft, FaArrowRight, FaCompress, FaExpand } from 'react-icons/fa6';
 import { getCurrentWindow } from '@tauri-apps/api/window';
+import { listen } from '@tauri-apps/api/event';
 import { error as logError, info as logInfo, warn as logWarn } from '../../logger';
 import Controls from '../../Components/Controls/Controls';
 import ProgressBar from '../../Components/ProgressBar/ProgressBar';
@@ -70,6 +71,7 @@ const Player = () => {
     currentPlaylist,
     isPlaying,
     isScanning,
+    setIsScanning,
     scanProgress,
     shortcuts,
     metadata,
@@ -78,6 +80,8 @@ const Player = () => {
     onShuffle,
     setCurrentPath,
     setCurrentPlaylist,
+    setIsPlaying,
+    setMetadata,
     setProgress,
   } = context;
   const currentPathRef = useRef(path);
@@ -163,22 +167,67 @@ const Player = () => {
     [path, setProgress],
   );
 
-  const handleOpenFile = async () => {
+  const playImmediately = useCallback(async (selectedPath: string) => {
+    try {
+      const nextMetadata = await invoke<MetadataType>('get_metadata', { path: selectedPath });
+      await invoke('load_song', { path: selectedPath });
+      await invoke('play_song');
+      setIsPlaying?.(true);
+      setMetadata?.(nextMetadata);
+    } catch (error) {
+      logError(`Could not start selected track: ${String(error)}`).catch(() => {});
+    }
+  }, [setIsPlaying, setMetadata]);
+
+  const openSelectedFiles = useCallback((files: string[]) => {
+    if (!files.length) return;
+    const alreadyCurrent = files[0] === currentPathRef.current;
+    setCurrentPath?.(files[0]);
+    setCurrentPlaylist?.([...new Set([...currentPlaylist, ...files])]);
+    if (alreadyCurrent) void playImmediately(files[0]);
+  }, [currentPlaylist, playImmediately, setCurrentPath, setCurrentPlaylist]);
+
+  const handleOpenFile = useCallback(async () => {
     const files = await open({
       multiple: true,
       directory: false,
-      filters: [{ name: 'Audio', extensions: ['mp3', 'wav', 'flac', 'aac', 'ogg'] }],
+      filters: [{ name: 'Audio', extensions: ['mp3', 'flac', 'ogg', 'wav', 'aiff', 'aif', 'm4a', 'aac', 'opus'] }],
     });
+    if (files) openSelectedFiles(Array.isArray(files) ? files : [files]);
+  }, [openSelectedFiles]);
 
-    if (!files) {
-      return;
+  const handleOpenFolder = useCallback(async () => {
+    const folder = await open({ directory: true, multiple: false });
+    if (typeof folder !== 'string') return;
+
+    setIsScanning?.(true);
+    try {
+      const songs = await invoke<MetadataType[]>('scan_audio_folder', { path: folder });
+      const queue = songs.flatMap((song) => (song.path ? [song.path] : []));
+      if (!queue.length) {
+        logWarn(`No playable audio files found in selected folder: ${folder}`).catch(() => {});
+        return;
+      }
+      const alreadyCurrent = queue[0] === currentPathRef.current;
+      setCurrentPlaylist?.(queue);
+      setCurrentPath?.(queue[0]);
+      if (alreadyCurrent) await playImmediately(queue[0]);
+    } catch (error) {
+      logError(`Could not open audio folder: ${String(error)}`).catch(() => {});
+    } finally {
+      setIsScanning?.(false);
     }
+  }, [playImmediately, setCurrentPath, setCurrentPlaylist, setIsScanning]);
 
-    setCurrentPath?.(files[0]);
-    // Filter out files already in the current playlist
-    const filteredFiles = files.filter((file) => !currentPlaylist.includes(file));
-    setCurrentPlaylist?.([...currentPlaylist, ...filteredFiles]);
-  };
+  useEffect(() => {
+    const listener = listen<string>('songbridge-native-menu-action', ({ payload }) => {
+      if (payload === 'open-audio-files') void handleOpenFile();
+      if (payload === 'open-audio-folder') void handleOpenFolder();
+    });
+    return () => {
+      void listener.then((stop) => stop()).catch(() => {});
+    };
+  }, [handleOpenFile, handleOpenFolder]);
 
   useKeyboardShortcuts(
     {

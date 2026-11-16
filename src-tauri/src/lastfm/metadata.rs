@@ -4,6 +4,7 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::{collections::BTreeMap, sync::Arc, time::Duration};
 use tauri::Manager;
+use tokio::task::JoinSet;
 
 #[derive(Clone, Serialize, Deserialize)]
 pub struct Match {
@@ -132,7 +133,13 @@ fn html_attribute<'a>(tag: &'a str, name: &str) -> Option<&'a str> {
 async fn page_artwork(url: &str) -> Option<String> {
     let http = reqwest::Client::builder()
         .timeout(Duration::from_secs(10))
-        .redirect(reqwest::redirect::Policy::none())
+        .redirect(reqwest::redirect::Policy::custom(|attempt| {
+            if attempt.previous().len() >= 3 || !valid_page_url(attempt.url().as_str()) {
+                attempt.stop()
+            } else {
+                attempt.follow()
+            }
+        }))
         .user_agent(concat!("Songbridge/", env!("CARGO_PKG_VERSION")))
         .build()
         .ok()?;
@@ -184,6 +191,15 @@ fn valid_art_url(value: &str) -> bool {
             )
     })
 }
+fn valid_page_url(value: &str) -> bool {
+    url::Url::parse(value).ok().is_some_and(|url| {
+        url.scheme() == "https"
+            && url.username().is_empty()
+            && url.password().is_none()
+            && url.port().is_none()
+            && matches!(url.host_str(), Some("www.last.fm" | "last.fm"))
+    })
+}
 fn source_url(value: &Value) -> String {
     text(value)
         .and_then(|s| url::Url::parse(&s).ok())
@@ -226,6 +242,7 @@ pub async fn lastfm_search(
         .request(&format!("{kind}.search"), params, None)
         .await
         .map_err(|e| e.code)?;
+    drop(_gate);
     let values = &body["results"][format!("{kind}matches")][&kind];
     let rows = if let Some(a) = values.as_array() {
         a.clone()
@@ -234,7 +251,7 @@ pub async fn lastfm_search(
     } else {
         vec![]
     };
-    Ok(rows
+    let mut matches: Vec<Match> = rows
         .into_iter()
         .filter_map(|v| {
             Some(Match {
@@ -245,7 +262,32 @@ pub async fn lastfm_search(
                 url: source_url(&v["url"]),
             })
         })
-        .collect())
+        .collect();
+
+    // Search responses frequently omit album art even when the album page has
+    // it. Resolve missing images before returning so each result card can show
+    // the cover without requiring the user to select the match first.
+    let mut artwork_tasks = JoinSet::new();
+    for (index, result) in matches.iter().enumerate() {
+        if result.artwork.is_none() && result.url != "https://www.last.fm/" {
+            let url = result.url.clone();
+            artwork_tasks.spawn(async move { (index, page_artwork(&url).await) });
+        }
+    }
+    while let Some(result) = artwork_tasks.join_next().await {
+        if let Ok((index, Some(artwork))) = result {
+            matches[index].artwork = Some(artwork);
+        }
+    }
+    let cover_count = matches
+        .iter()
+        .filter(|result| result.artwork.is_some())
+        .count();
+    log::info!(
+        "Last.fm search completed: kind={kind}, matches={}, covers={cover_count}",
+        matches.len()
+    );
+    Ok(matches)
 }
 
 #[tauri::command]
@@ -392,7 +434,13 @@ pub async fn lastfm_artwork(
     }
     let http = reqwest::Client::builder()
         .timeout(Duration::from_secs(20))
-        .redirect(reqwest::redirect::Policy::none())
+        .redirect(reqwest::redirect::Policy::custom(|attempt| {
+            if attempt.previous().len() >= 3 || !valid_art_url(attempt.url().as_str()) {
+                attempt.stop()
+            } else {
+                attempt.follow()
+            }
+        }))
         .build()
         .map_err(|_| "offline")?;
     let mut response = http

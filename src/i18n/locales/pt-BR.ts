@@ -2,6 +2,11 @@ import type { TranslationKey } from '../types';
 
 const ptBR: Record<TranslationKey, string> = {
   'update.title': 'Atualização do Songbridge disponível',
+  'update.checkTitle': 'Verificar atualizações',
+  'update.checkForUpdates': 'Procurar atualizações',
+  'update.upToDate': 'O Songbridge está atualizado.',
+  'update.checkFailed': 'Não foi possível procurar atualizações. Verifique sua conexão e tente novamente.',
+  'update.done': 'Concluído',
   'update.available': 'A versão {latest} está disponível. Você está usando a versão {current}.',
   'update.changelog': 'Novidades',
   'update.noChangelog': 'As notas desta versão não estão disponíveis.',
@@ -327,6 +332,9 @@ const ptBR: Record<TranslationKey, string> = {
   'theme.savedLocally': 'Os temas personalizados ficam salvos neste dispositivo.',
   'metadata.editTitle': 'Editar metadados',
   'metadata.coverArt': 'Capa',
+  'metadata.coverPreviewFailed': 'Não foi possível visualizar a imagem',
+  'metadata.copyError': 'Copiar erro',
+  'metadata.errorCopied': 'Erro copiado',
   'metadata.title': 'Título',
   'metadata.artist': 'Artista',
   'metadata.album': 'Álbum',

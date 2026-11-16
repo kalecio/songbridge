@@ -7,12 +7,15 @@ import Modal from '../Modal/Modal';
 import { Button, Input } from '../Modal/styles';
 import { MetadataType } from '../../types';
 import { useI18n } from '../../i18n/I18nProvider';
+import { copyTextToClipboard } from '../../utils/clipboard';
 import {
   CheckboxRow,
   CoverArtActions,
   CoverArtButton,
   CoverArtPreview,
   CoverArtSection,
+  ErrorCopyButton,
+  ErrorPanel,
   ErrorText,
   Extension,
   FieldGroup,
@@ -68,6 +71,7 @@ const EditMetadataModal = ({ song, onClose, onSave }: Props) => {
   const [saving, setSaving] = useState(false);
   const [importing, setImporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [errorCopied, setErrorCopied] = useState(false);
 
   // Reset all fields when the target song changes
   useEffect(() => {
@@ -91,6 +95,7 @@ const EditMetadataModal = ({ song, onClose, onSave }: Props) => {
       setSaving(false);
       setImporting(false);
       setError(null);
+      setErrorCopied(false);
     }
   }, [song]);
 
@@ -103,7 +108,7 @@ const EditMetadataModal = ({ song, onClose, onSave }: Props) => {
     setFilename(suggested);
   }, [title, artist, useAutoFilename]);
 
-  const displayedArt = removeCoverArt ? null : (previewUrl ?? song?.image ?? null);
+  const displayedArt = removeCoverArt ? null : coverArtPath ? previewUrl : (song?.image ?? null);
   const hasArt = displayedArt !== null;
 
   const handleChangeCover = async () => {
@@ -117,13 +122,26 @@ const EditMetadataModal = ({ song, onClose, onSave }: Props) => {
     setRemoveCoverArt(false);
     setPreviewLoading(true);
     setPreviewUrl(null);
+    setError(null);
+    setErrorCopied(false);
     try {
       const preview = await invoke<string>('get_image_preview', { path });
       setPreviewUrl(preview);
-    } catch {
-      // Preview failed — the backend will still process it on save.
+    } catch (cause) {
+      setError(`${t('metadata.coverPreviewFailed')}: ${String(cause)}`);
     } finally {
       setPreviewLoading(false);
+    }
+  };
+
+  const handleCopyError = async () => {
+    if (!error) return;
+    try {
+      await copyTextToClipboard(error);
+      setErrorCopied(true);
+      window.setTimeout(() => setErrorCopied(false), 1500);
+    } catch {
+      setErrorCopied(false);
     }
   };
 
@@ -131,12 +149,15 @@ const EditMetadataModal = ({ song, onClose, onSave }: Props) => {
     setCoverArtPath(null);
     setRemoveCoverArt(true);
     setPreviewUrl(null);
+    setError(null);
+    setErrorCopied(false);
   };
 
   const handleSave = async () => {
     if (!song?.path || saving) return;
     setSaving(true);
     setError(null);
+    setErrorCopied(false);
     try {
       const trackNum = track.trim() ? parseInt(track.trim(), 10) : undefined;
       const trimmedFilename = filename.trim();
@@ -154,6 +175,7 @@ const EditMetadataModal = ({ song, onClose, onSave }: Props) => {
       onClose();
     } catch (e) {
       setError(String(e));
+      setErrorCopied(false);
       setSaving(false);
     }
   };
@@ -269,7 +291,14 @@ const EditMetadataModal = ({ song, onClose, onSave }: Props) => {
             </CheckboxRow>
           </FieldGroup>
 
-          {error && <ErrorText>{error}</ErrorText>}
+          {error && (
+            <ErrorPanel role="alert">
+              <ErrorText>{error}</ErrorText>
+              <ErrorCopyButton type="button" onClick={() => void handleCopyError()}>
+                {errorCopied ? t('metadata.errorCopied') : t('metadata.copyError')}
+              </ErrorCopyButton>
+            </ErrorPanel>
+          )}
         </>
       )}
     </Modal>

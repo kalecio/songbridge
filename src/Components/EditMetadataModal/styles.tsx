@@ -14,10 +14,46 @@ export const Label = styled.label`
   letter-spacing: 0.05em;
 `;
 
-export const ErrorText = styled.p`
-  margin: 0;
+export const ErrorPanel = styled.div`
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.5rem;
+  min-width: 0;
+  padding: 0.65rem;
+  border: 1px solid ${({ theme }) => theme.error}55;
+  border-radius: 0.5rem;
+  background: ${({ theme }) => theme.error}0d;
+`;
+
+export const ErrorText = styled.div`
+  max-height: 10rem;
+  width: 100%;
+  overflow: auto;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
   font-size: 0.82rem;
   color: ${({ theme }) => theme.error};
+`;
+
+export const ErrorCopyButton = styled.button`
+  appearance: none;
+  border: 1px solid ${({ theme }) => theme.border};
+  border-radius: 0.4rem;
+  padding: 0.35rem 0.6rem;
+  background: transparent;
+  color: ${({ theme }) => theme.textPrimary};
+  font-size: 0.78rem;
+  cursor: pointer;
+
+  &:hover {
+    background: ${({ theme }) => theme.hover};
+  }
+
+  &:focus-visible {
+    outline: 2px solid ${({ theme }) => theme.accent};
+    outline-offset: 2px;
+  }
 `;
 
 export const CoverArtSection = styled.div`

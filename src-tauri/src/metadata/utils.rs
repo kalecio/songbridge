@@ -8,6 +8,7 @@ use lofty::prelude::Accessor;
 use lofty::probe::Probe;
 use lofty::tag::items::Timestamp;
 use lofty::tag::Tag;
+use std::io::BufReader;
 use symphonia::core::meta::{MetadataRevision, StandardTagKey};
 
 pub fn apply_tags_from_revision(
@@ -91,7 +92,23 @@ pub enum CoverArtUpdate {
 
 /// Load an image from `path`, resize to max 800×800 px, and re-encode as JPEG at 90 % quality.
 pub fn process_cover_art(image_path: &str) -> Result<Vec<u8>, String> {
-    let img = image::open(image_path).map_err(|e| e.to_string())?;
+    let file = std::fs::File::open(image_path).map_err(|error| {
+        let message = format!("Could not open cover image '{image_path}': {error}");
+        log::error!("{message}");
+        message
+    })?;
+    let reader = image::ImageReader::new(BufReader::new(file))
+        .with_guessed_format()
+        .map_err(|error| {
+            let message = format!("Could not identify cover image '{image_path}': {error}");
+            log::error!("{message}");
+            message
+        })?;
+    let img = reader.decode().map_err(|error| {
+        let message = format!("Could not decode cover image '{image_path}': {error}");
+        log::error!("{message}");
+        message
+    })?;
 
     let img = if img.width() > 800 || img.height() > 800 {
         img.resize(800, 800, FilterType::Lanczos3)
@@ -109,7 +126,11 @@ pub fn process_cover_art(image_path: &str) -> Result<Vec<u8>, String> {
             rgb.height(),
             image::ExtendedColorType::Rgb8,
         )
-        .map_err(|e| e.to_string())?;
+        .map_err(|error| {
+            let message = format!("Could not encode cover image '{image_path}' as JPEG: {error}");
+            log::error!("{message}");
+            message
+        })?;
 
     Ok(output)
 }

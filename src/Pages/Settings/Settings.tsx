@@ -2,6 +2,7 @@ import LastfmSettings from '../../Components/Lastfm/LastfmSettings';
 import { useContext, useEffect, useRef, useState } from 'react';
 import { open } from '@tauri-apps/plugin-dialog';
 import { invoke } from '@tauri-apps/api/core';
+import { emit } from '@tauri-apps/api/event';
 import { AppContext } from '../../Context/AppContext';
 import Page from '../../Components/Page/Page';
 import PageHeader from '../../Components/PageHeader/PageHeader';
@@ -141,6 +142,12 @@ const Settings = () => {
       tab: 'appearance',
       label: t('settings.lyricsFontSize'),
       terms: 'lyrics letra letras font fonte tamanho size text texto',
+    },
+    {
+      id: 'settings-updates',
+      tab: 'appearance',
+      label: t('update.checkForUpdates'),
+      terms: 'updates update version release nova versão nova versão verificar procurar check latest atualização',
     },
     {
       id: 'settings-shortcuts',
@@ -496,6 +503,15 @@ const Settings = () => {
                 <SectionTitle>{t('common.lyrics')}</SectionTitle>
                 <LyricsFontControl />
                 <LyricsPreviewText style={{ fontSize }}>{t('album.welcomeTitle')}</LyricsPreviewText>
+              </Section>
+              <Section id="settings-updates">
+                <SectionTitle>{t('update.checkTitle')}</SectionTitle>
+                <RescanButton
+                  type="button"
+                  onClick={() => void emit('songbridge-check-for-updates').catch(() => {})}
+                >
+                  {t('update.checkForUpdates')}
+                </RescanButton>
               </Section>
               <VisualizerAppearance />
             </Section>
