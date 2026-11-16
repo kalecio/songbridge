@@ -66,6 +66,7 @@ const UpdatePrompt = () => {
   }, [checkForUpdate]);
 
   useEffect(() => {
+    if (!('__TAURI_INTERNALS__' in window)) return;
     const listener = listen('songbridge-check-for-updates', () => void checkForUpdate(true));
     return () => {
       void listener.then((unlisten) => unlisten()).catch(() => {});

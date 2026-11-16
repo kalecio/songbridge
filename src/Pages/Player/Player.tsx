@@ -220,6 +220,7 @@ const Player = () => {
   }, [playImmediately, setCurrentPath, setCurrentPlaylist, setIsScanning]);
 
   useEffect(() => {
+    if (!('__TAURI_INTERNALS__' in window)) return;
     const listener = listen<string>('songbridge-native-menu-action', ({ payload }) => {
       if (payload === 'open-audio-files') void handleOpenFile();
       if (payload === 'open-audio-folder') void handleOpenFolder();
