@@ -30,7 +30,7 @@ it('previews a match, preserves compilation artists and reports individual write
   batchUpdate.mockResolvedValue([{ path: '/one.mp3' }, { path: '/two.mp3', error: 'Read only' }]);
   render(<LastfmImport songs={songs} kind="album" onBack={vi.fn()} onClose={vi.fn()} onBusy={vi.fn()} />);
   fireEvent.click(screen.getByText('Search Last.fm'));
-  fireEvent.click(await screen.findByText('New album · Various Artists'));
+  fireEvent.click(await screen.findByRole('button', { name: 'New album · Various Artists' }));
   await screen.findByText(/Suggested: New album/);
   expect(batchUpdate).not.toHaveBeenCalled();
   fireEvent.click(screen.getByLabelText('Fill missing fields only'));
@@ -77,7 +77,7 @@ it('uses the actual embedded cover when filling missing fields', async () => {
     />,
   );
   fireEvent.click(screen.getByText('Search Last.fm'));
-  fireEvent.click(await screen.findByText('Song · Artist'));
+  fireEvent.click(await screen.findByRole('button', { name: 'Song · Artist' }));
   await screen.findByAltText('Cover art');
   await waitFor(() => expect(screen.getByText('Apply selected fields to files')).toBeEnabled());
   fireEvent.click(screen.getByText('Apply selected fields to files'));
