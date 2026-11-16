@@ -66,6 +66,7 @@ const esES: Record<TranslationKey, string> = {
   'lastfm.albumHelp':
     'Los campos del álbum y la portada se aplican a las pistas seleccionadas. Se conservan los títulos y números de pista. Revisa el artista en los álbumes recopilatorios.',
   'lastfm.noArtwork': 'Este resultado no tiene una portada disponible.',
+  'lastfm.unknownArtist': 'Artista desconocido',
   'lastfm.applied': 'Actualizado',
   'lastfm.unchanged': 'Ningún campo seleccionado necesitaba cambios',
   'lastfm.failed': 'No se pudo actualizar: {error}',

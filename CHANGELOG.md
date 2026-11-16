@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0-rc.6] - 2026-11-16
+
+### Added
+- **Last.fm album search cards** — show cover art, artist, album name, and release year when available
+- **Last.fm cover fallbacks** — use artwork from search results or the album page when metadata omits it
+
+### Changed
+- **macOS release signing** — allow configured Developer ID credentials to preserve a stable signing identity for Keychain access
+
 ## [1.0.0-rc.5] - 2026-11-15
 
 ### Fixed

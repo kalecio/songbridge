@@ -68,6 +68,38 @@ jobs:
         if: matrix.platform == 'windows-latest'
         run: node scripts/prepare-windows-msi-config.mjs
 
+      # The Tauri updater key signs update artifacts, not the macOS app itself.
+      # Only export Apple signing variables when the certificate is configured
+      # so open-source builds without an Apple Developer certificate stay valid.
+      - name: Configure Apple code signing
+        if: startsWith(matrix.platform, 'macos')
+        env:
+          APPLE_CERTIFICATE: ${{ secrets.APPLE_CERTIFICATE }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+          APPLE_SIGNING_IDENTITY: ${{ secrets.APPLE_SIGNING_IDENTITY }}
+        run: |
+          if [[ -z "$APPLE_CERTIFICATE" ]]; then
+            if [[ -n "$APPLE_CERTIFICATE_PASSWORD" || -n "$APPLE_SIGNING_IDENTITY" ]]; then
+              echo "::error::Set APPLE_CERTIFICATE together with its password before enabling Apple signing."
+              exit 1
+            fi
+            echo "::notice::Apple code signing is not configured; the macOS app will not have a stable Apple signing identity."
+            exit 0
+          fi
+
+          if [[ -z "$APPLE_CERTIFICATE_PASSWORD" ]]; then
+            echo "::error::APPLE_CERTIFICATE_PASSWORD is required when APPLE_CERTIFICATE is set."
+            exit 1
+          fi
+
+          {
+            printf 'APPLE_CERTIFICATE=%s\n' "$APPLE_CERTIFICATE"
+            printf 'APPLE_CERTIFICATE_PASSWORD=%s\n' "$APPLE_CERTIFICATE_PASSWORD"
+            if [[ -n "$APPLE_SIGNING_IDENTITY" ]]; then
+              printf 'APPLE_SIGNING_IDENTITY=%s\n' "$APPLE_SIGNING_IDENTITY"
+            fi
+          } >> "$GITHUB_ENV"
+
       - uses: tauri-apps/tauri-action@v0
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
