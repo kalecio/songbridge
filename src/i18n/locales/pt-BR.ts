@@ -66,6 +66,7 @@ const ptBR: Record<TranslationKey, string> = {
   'lastfm.albumHelp':
     'Os campos do álbum e a capa serão aplicados às faixas selecionadas. Títulos e números das faixas serão preservados. Confira o artista em coletâneas.',
   'lastfm.noArtwork': 'Nenhuma capa disponível para este resultado.',
+  'lastfm.unknownArtist': 'Artista desconhecido',
   'lastfm.applied': 'Atualizado',
   'lastfm.unchanged': 'Nenhum campo selecionado precisava de atualização',
   'lastfm.failed': 'Não foi possível atualizar: {error}',

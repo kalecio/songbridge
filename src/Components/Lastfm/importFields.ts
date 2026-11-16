@@ -8,6 +8,7 @@ export interface Suggestion {
   album: string | null;
   track: number | null;
   artwork: string | null;
+  year?: string | null;
   url: string;
 }
 

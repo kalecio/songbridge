@@ -64,6 +64,7 @@ const enUS = {
   'lastfm.albumHelp':
     'Album fields and cover art apply to the selected tracks. Individual song titles and track numbers are preserved. Review the artist carefully for compilation albums.',
   'lastfm.noArtwork': 'No usable cover art is available for this result.',
+  'lastfm.unknownArtist': 'Unknown artist',
   'lastfm.applied': 'Updated',
   'lastfm.unchanged': 'No selected fields needed updating',
   'lastfm.failed': 'Could not update: {error}',

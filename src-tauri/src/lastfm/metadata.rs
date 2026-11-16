@@ -9,6 +9,8 @@ use tauri::Manager;
 pub struct Match {
     pub name: String,
     pub artist: String,
+    pub artwork: Option<String>,
+    pub year: Option<String>,
     pub url: String,
 }
 #[derive(Serialize)]
@@ -18,6 +20,7 @@ pub struct Suggestion {
     pub album: Option<String>,
     pub track: Option<u32>,
     pub artwork: Option<String>,
+    pub year: Option<String>,
     pub url: String,
 }
 #[derive(Serialize)]
@@ -39,12 +42,131 @@ fn artist(value: &Value) -> String {
         .unwrap_or_default()
 }
 fn images(value: &Value) -> Option<String> {
-    value
-        .as_array()?
-        .iter()
-        .rev()
-        .filter_map(|v| v.get("#text").and_then(text))
+    let candidates: Vec<&Value> = if let Some(items) = value.as_array() {
+        items.iter().rev().collect()
+    } else if value.is_object() {
+        vec![value]
+    } else {
+        return None;
+    };
+    candidates
+        .into_iter()
+        .filter_map(|v| {
+            v.get("#text")
+                .and_then(text)
+                .or_else(|| v.get("url").and_then(text))
+        })
         .find(|s| valid_art_url(s) && !s.contains("2a96cbd8b46e442fc41c2b86b821562f"))
+}
+fn release_year(value: &Value) -> Option<String> {
+    let raw = text(value)?;
+    let bytes = raw.as_bytes();
+    let start = bytes
+        .windows(4)
+        .position(|digits| digits.iter().all(u8::is_ascii_digit))?;
+    raw.get(start..start + 4).map(str::to_owned)
+}
+fn html_attribute<'a>(tag: &'a str, name: &str) -> Option<&'a str> {
+    let bytes = tag.as_bytes();
+    let mut offset = 0;
+    while offset < bytes.len() {
+        while offset < bytes.len() && (bytes[offset].is_ascii_whitespace() || bytes[offset] == b'<')
+        {
+            offset += 1;
+        }
+        let start = offset;
+        while offset < bytes.len()
+            && !bytes[offset].is_ascii_whitespace()
+            && bytes[offset] != b'='
+            && bytes[offset] != b'>'
+        {
+            offset += 1;
+        }
+        if start == offset {
+            offset += 1;
+            continue;
+        }
+        let key = &tag[start..offset];
+        while offset < bytes.len() && bytes[offset].is_ascii_whitespace() {
+            offset += 1;
+        }
+        if offset >= bytes.len() || bytes[offset] != b'=' {
+            continue;
+        }
+        offset += 1;
+        while offset < bytes.len() && bytes[offset].is_ascii_whitespace() {
+            offset += 1;
+        }
+        if offset >= bytes.len() {
+            break;
+        }
+        let quote = if bytes[offset] == b'\'' || bytes[offset] == b'"' {
+            let q = bytes[offset];
+            offset += 1;
+            Some(q)
+        } else {
+            None
+        };
+        let value_start = offset;
+        if let Some(quote) = quote {
+            while offset < bytes.len() && bytes[offset] != quote {
+                offset += 1;
+            }
+        } else {
+            while offset < bytes.len()
+                && !bytes[offset].is_ascii_whitespace()
+                && bytes[offset] != b'>'
+            {
+                offset += 1;
+            }
+        }
+        if key.eq_ignore_ascii_case(name) {
+            return tag.get(value_start..offset);
+        }
+        if quote.is_some() && offset < bytes.len() {
+            offset += 1;
+        }
+    }
+    None
+}
+async fn page_artwork(url: &str) -> Option<String> {
+    let http = reqwest::Client::builder()
+        .timeout(Duration::from_secs(10))
+        .redirect(reqwest::redirect::Policy::none())
+        .user_agent(concat!("Songbridge/", env!("CARGO_PKG_VERSION")))
+        .build()
+        .ok()?;
+    let response = http.get(url).send().await.ok()?.error_for_status().ok()?;
+    const MAX_PAGE: usize = 2 * 1024 * 1024;
+    if response
+        .content_length()
+        .is_some_and(|n| n > MAX_PAGE as u64)
+    {
+        return None;
+    }
+    let bytes = response.bytes().await.ok()?;
+    if bytes.len() > MAX_PAGE {
+        return None;
+    }
+    let html = String::from_utf8_lossy(&bytes);
+    for tag in html.split('<').filter(|part| {
+        part.get(..4)
+            .is_some_and(|s| s.eq_ignore_ascii_case("meta"))
+    }) {
+        let tag = tag.split('>').next().unwrap_or_default();
+        let property = html_attribute(tag, "property").or_else(|| html_attribute(tag, "name"));
+        if property.is_some_and(|value| {
+            value.eq_ignore_ascii_case("og:image") || value.eq_ignore_ascii_case("twitter:image")
+        }) {
+            if let Some(image) = html_attribute(tag, "content") {
+                let image = image.replace("&amp;", "&");
+                if valid_art_url(&image) && !image.contains("2a96cbd8b46e442fc41c2b86b821562f") {
+                    return Some(image);
+                }
+            }
+        }
+    }
+    None
 }
 fn valid_art_url(value: &str) -> bool {
     url::Url::parse(value).ok().is_some_and(|u| {
@@ -118,6 +240,8 @@ pub async fn lastfm_search(
             Some(Match {
                 name: text(&v["name"])?,
                 artist: artist(&v["artist"]),
+                artwork: images(&v["image"]),
+                year: release_year(&v["releasedate"]),
                 url: source_url(&v["url"]),
             })
         })
@@ -149,17 +273,19 @@ pub async fn lastfm_details(
         )
         .await
         .map_err(|e| e.code)?;
+    drop(_gate);
     let v = &body[&kind];
     if !v.is_object() {
         return Err("no_results".into());
     }
-    Ok(if kind == "album" {
+    let mut suggestion = if kind == "album" {
         Suggestion {
             title: None,
             artist: Some(artist(&v["artist"])),
             album: text(&v["name"]),
             track: None,
             artwork: images(&v["image"]),
+            year: release_year(&v["releasedate"]),
             url: source_url(&v["url"]),
         }
     } else {
@@ -176,9 +302,14 @@ pub async fn lastfm_details(
                         .and_then(|n| n.try_into().ok())
                 }),
             artwork: images(&v["album"]["image"]),
+            year: release_year(&v["album"]["releasedate"]),
             url: source_url(&v["url"]),
         }
-    })
+    };
+    if suggestion.artwork.is_none() && suggestion.url != "https://www.last.fm/" {
+        suggestion.artwork = page_artwork(&suggestion.url).await;
+    }
+    Ok(suggestion)
 }
 
 #[tauri::command]
@@ -255,7 +386,6 @@ pub async fn lastfm_artwork(
     service: tauri::State<'_, Arc<Service>>,
     url: String,
 ) -> Result<Artwork, String> {
-    let _gate = service.gate.lock().await;
     service.session_key()?;
     if !valid_art_url(&url) {
         return Err("invalid_artwork".into());
