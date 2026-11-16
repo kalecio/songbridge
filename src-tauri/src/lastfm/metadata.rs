@@ -50,14 +50,14 @@ fn images(value: &Value) -> Option<String> {
     } else {
         return None;
     };
-    candidates
-        .into_iter()
-        .filter_map(|v| {
-            v.get("#text")
-                .and_then(text)
-                .or_else(|| v.get("url").and_then(text))
-        })
-        .find(|s| valid_art_url(s) && !s.contains("2a96cbd8b46e442fc41c2b86b821562f"))
+    candidates.into_iter().find_map(|v| {
+        let source = v
+            .get("#text")
+            .and_then(text)
+            .or_else(|| v.get("url").and_then(text))?;
+        let artwork = normalize_art_url(&source)?;
+        (!artwork.contains("2a96cbd8b46e442fc41c2b86b821562f")).then_some(artwork)
+    })
 }
 fn release_year(value: &Value) -> Option<String> {
     let raw = text(value)?;
@@ -167,8 +167,10 @@ async fn page_artwork(url: &str) -> Option<String> {
         }) {
             if let Some(image) = html_attribute(tag, "content") {
                 let image = image.replace("&amp;", "&");
-                if valid_art_url(&image) && !image.contains("2a96cbd8b46e442fc41c2b86b821562f") {
-                    return Some(image);
+                if let Some(image) = normalize_art_url(&image) {
+                    if !image.contains("2a96cbd8b46e442fc41c2b86b821562f") {
+                        return Some(image);
+                    }
                 }
             }
         }
@@ -185,11 +187,23 @@ fn valid_art_url(value: &str) -> bool {
                 u.host_str(),
                 Some(
                     "lastfm.freetls.fastly.net"
+                        | "lastfm-img.freetls.fastly.net"
                         | "lastfm-img2.akamaized.net"
                         | "userserve-ak.last.fm"
                 )
             )
     })
+}
+fn normalize_art_url(value: &str) -> Option<String> {
+    let mut url = url::Url::parse(value).ok()?;
+    if url.scheme() == "http" {
+        // Older Last.fm API responses still return userserve-ak links over
+        // HTTP. Upgrade only known image CDNs; downloads and redirects remain
+        // HTTPS-only in valid_art_url.
+        url.set_scheme("https").ok()?;
+    }
+    let normalized = url.to_string();
+    valid_art_url(&normalized).then_some(normalized)
 }
 fn valid_page_url(value: &str) -> bool {
     url::Url::parse(value).ok().is_some_and(|url| {
@@ -429,9 +443,7 @@ pub async fn lastfm_artwork(
     url: String,
 ) -> Result<Artwork, String> {
     service.session_key()?;
-    if !valid_art_url(&url) {
-        return Err("invalid_artwork".into());
-    }
+    let url = normalize_art_url(&url).ok_or("invalid_artwork")?;
     let http = reqwest::Client::builder()
         .timeout(Duration::from_secs(20))
         .redirect(reqwest::redirect::Policy::custom(|attempt| {
