@@ -20,6 +20,16 @@ fn presence_artwork(metadata: &NowPlayingPayload) -> String {
         .unwrap_or_else(|| "songbridge_logo".to_string())
 }
 
+fn truncate_chars(value: String, max_chars: usize) -> String {
+    let mut chars = value.chars();
+    let mut output: String = chars.by_ref().take(max_chars).collect();
+    if chars.next().is_some() && max_chars > 0 {
+        output.pop();
+        output.push('…');
+    }
+    output
+}
+
 #[derive(Deserialize, Default)]
 struct DiscordConfig {
     #[serde(rename = "applicationId")]
@@ -110,21 +120,30 @@ impl DiscordPresence {
         let elapsed = playback.elapsed_seconds.unwrap_or(0.0);
         let total = metadata.duration_seconds.unwrap_or(0);
 
+        let artist = metadata.artist.as_deref().unwrap_or("Unknown Artist");
+        let title = metadata.title.as_deref().unwrap_or("Unknown Title");
+        let album = metadata.album.as_deref().filter(|value| !value.is_empty());
+        let state = match metadata.lastfm_weekly_scrobbles {
+            Some(count) => {
+                let suffix = format!(" · {count} plays this week");
+                let artist_limit = 128usize.saturating_sub(suffix.chars().count());
+                format!(
+                    "{}{suffix}",
+                    truncate_chars(artist.to_string(), artist_limit)
+                )
+            }
+            None => truncate_chars(artist.to_string(), 128),
+        };
+        let details = truncate_chars(
+            match album {
+                Some(album) => format!("{title} · {album}"),
+                None => title.to_string(),
+            },
+            128,
+        );
         let mut activity = Activity::new()
-            .state(
-                metadata
-                    .artist
-                    .as_deref()
-                    .unwrap_or("Unknown Artist")
-                    .to_string(),
-            )
-            .details(
-                metadata
-                    .title
-                    .as_deref()
-                    .unwrap_or("Unknown Title")
-                    .to_string(),
-            )
+            .state(state)
+            .details(details)
             .activity_type(ActivityType::Listening);
 
         if let Some(album) = metadata.album.as_deref() {
@@ -314,6 +333,7 @@ mod tests {
             duration_seconds: Some(180),
             cover_data_url: None,
             lastfm_artwork_url: None,
+            lastfm_weekly_scrobbles: None,
         };
 
         let playback = PlaybackStatePayload {
@@ -339,6 +359,7 @@ mod tests {
             duration_seconds: Some(180),
             cover_data_url: None,
             lastfm_artwork_url: None,
+            lastfm_weekly_scrobbles: None,
         };
 
         let playback = PlaybackStatePayload {
@@ -359,6 +380,7 @@ mod tests {
             duration_seconds: None,
             cover_data_url: None,
             lastfm_artwork_url: None,
+            lastfm_weekly_scrobbles: None,
         };
 
         let playback = PlaybackStatePayload {

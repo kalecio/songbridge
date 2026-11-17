@@ -1,4 +1,4 @@
-import { useContext } from 'react';
+import { useContext, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router';
 import { AppContext } from '../../Context/AppContext';
 import { MetadataType } from '../../types';
@@ -47,8 +47,11 @@ const ArtistDetail = () => {
   const { library, currentPath, setCurrentPath, setCurrentPlaylist } = useContext(AppContext);
 
   const artistName = decodeURIComponent(id ?? '');
-  const artistSongs = library.filter((s) => splitArtists(s.artist ?? 'Unknown Artist').includes(artistName));
-  const albums = groupByAlbum(artistSongs);
+  const artistSongs = useMemo(
+    () => library.filter((s) => splitArtists(s.artist ?? 'Unknown Artist').includes(artistName)),
+    [artistName, library],
+  );
+  const albums = useMemo(() => groupByAlbum(artistSongs), [artistSongs]);
   const eagerImage = artistSongs.find((s) => s.image)?.image;
   const coverPath = artistSongs.find((s) => s.path)?.path;
   const heroImage = useLazyAlbumArt(coverPath, eagerImage);

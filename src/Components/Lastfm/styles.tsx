@@ -51,13 +51,34 @@ export const AlbumCard = styled.button`
   }
 `;
 export const AlbumCardArt = styled(Card)`
+  position: relative;
   flex: none;
+  display: block;
+  width: 100%;
+  height: auto;
+  aspect-ratio: 1;
   cursor: inherit;
 `;
 export const AlbumCardImageWrap = styled(ArtWrapper)`
-  flex: 1;
-  width: 100%;
-  min-height: 0;
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: auto;
+  height: auto;
+  background: ${({ theme }) => theme.surface};
+  & > img {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+  & > svg {
+    width: 28%;
+    height: 28%;
+    color: ${({ theme }) => theme.textMuted};
+  }
 `;
 export const AlbumCardInfo = styled(CardInfo)`
   padding: 0.55rem 0 0;
@@ -128,7 +149,7 @@ export const ImportPanel = styled(Panel)`
   padding: 0.75rem;
   max-height: 55vh;
   overflow-y: auto;
-  img {
+  fieldset img {
     width: 100px;
     height: 100px;
     object-fit: cover;

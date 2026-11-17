@@ -37,6 +37,9 @@ pub struct NowPlayingPayload {
     /// Public Last.fm artwork URL used by Discord Rich Presence.
     #[serde(default)]
     pub lastfm_artwork_url: Option<String>,
+    /// Cached weekly Last.fm scrobble count displayed in Discord Rich Presence.
+    #[serde(default)]
+    pub lastfm_weekly_scrobbles: Option<u64>,
 }
 
 #[derive(Default, Clone, serde::Deserialize)]
@@ -332,8 +335,10 @@ pub fn set_now_playing(
     let now_playing_state = state.inner().clone();
     let discord_presence = discord_state.0.clone();
     tauri::async_runtime::spawn(async move {
-        let artwork =
-            crate::lastfm::metadata::resolve_discord_artwork(&service, &artist, &album).await;
+        let (artwork, weekly_scrobbles) = tokio::join!(
+            crate::lastfm::metadata::resolve_discord_artwork(&service, &artist, &album),
+            crate::lastfm::resolve_weekly_scrobbles(&service),
+        );
         let Some((metadata, playback)) = (|| {
             let mut inner = now_playing_state.lock().ok()?;
             let metadata = inner.cached_metadata.as_mut()?;
@@ -343,6 +348,7 @@ pub fn set_now_playing(
                 return None;
             }
             metadata.lastfm_artwork_url = artwork.clone();
+            metadata.lastfm_weekly_scrobbles = weekly_scrobbles;
             Some((metadata.clone(), inner.cached_playback.clone()))
         })() else {
             return;
@@ -628,6 +634,7 @@ mod tests {
             duration_seconds: Some(180),
             cover_data_url: None,
             lastfm_artwork_url: None,
+            lastfm_weekly_scrobbles: None,
         };
 
         let mut inner = inner;
@@ -675,6 +682,7 @@ mod tests {
             duration_seconds: Some(200),
             cover_data_url: None,
             lastfm_artwork_url: None,
+            lastfm_weekly_scrobbles: None,
         };
 
         assert_eq!(payload.album.as_deref(), Some("Album"));
@@ -689,6 +697,7 @@ mod tests {
             duration_seconds: Some(200),
             cover_data_url: None,
             lastfm_artwork_url: None,
+            lastfm_weekly_scrobbles: None,
         };
 
         assert_eq!(payload.album.as_deref(), None);
@@ -705,6 +714,7 @@ mod tests {
             duration_seconds: Some(240),
             cover_data_url: None,
             lastfm_artwork_url: None,
+            lastfm_weekly_scrobbles: None,
         };
 
         let playback = PlaybackStatePayload {
@@ -728,6 +738,7 @@ mod tests {
             duration_seconds: Some(240),
             cover_data_url: None,
             lastfm_artwork_url: None,
+            lastfm_weekly_scrobbles: None,
         };
 
         let playback = PlaybackStatePayload {

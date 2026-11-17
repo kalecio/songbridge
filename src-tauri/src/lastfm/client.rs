@@ -185,6 +185,7 @@ fn allowed_method(method: &str) -> bool {
             | "album.search"
             | "track.getInfo"
             | "album.getInfo"
+            | "user.getRecentTracks"
     )
 }
 

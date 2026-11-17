@@ -68,14 +68,14 @@ const AppLogo = styled.div`
 `;
 
 const AppName = styled.span`
-  font-size: 14px;
+  font-size: 16px;
   letter-spacing: -0.6px;
   font-weight: 700;
   color: ${({ theme }) => theme.textPrimary};
 `;
 
 const SectionLabel = styled.span`
-  font-size: 9px;
+  font-size: 10px;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.18em;
@@ -131,7 +131,7 @@ const MenuItem = styled.button<{
   cursor: pointer;
   padding: 10px;
   border-radius: 4px;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: ${(p) => (p.$active ? '600' : '400')};
   background: ${(p) => (p.$active ? p.theme.active : 'transparent')};
   opacity: ${(p) => (p.$dragging ? 0.4 : 1)};
@@ -150,6 +150,82 @@ const MenuItem = styled.button<{
   }
 `;
 
+const QueueRow = styled.div<{
+  $active?: boolean;
+  $dragging?: boolean;
+  $dropAbove?: boolean;
+  $dropBelow?: boolean;
+}>`
+  display: flex;
+  align-items: center;
+  width: 100%;
+  min-width: 0;
+  flex-shrink: 0;
+  gap: 0.15rem;
+  border-radius: 4px;
+  color: ${(p) => (p.$active ? p.theme.accent : p.theme.textSecondary)};
+  background: ${(p) => (p.$active ? p.theme.active : 'transparent')};
+  opacity: ${(p) => (p.$dragging ? 0.4 : 1)};
+  transition:
+    background 0.15s,
+    color 0.15s,
+    opacity 0.15s,
+    box-shadow 0.1s;
+  ${(p) => p.$dropAbove && `box-shadow: inset 0 2px 0 0 ${p.theme.accent};`}
+  ${(p) => p.$dropBelow && `box-shadow: inset 0 -2px 0 0 ${p.theme.accent};`}
+
+  &:hover {
+    background: ${(p) => (p.$active ? p.theme.hoverActive : p.theme.hover)};
+    color: ${({ theme }) => theme.accent};
+  }
+`;
+
+const QueuePlayButton = styled.button`
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  padding: 10px;
+  color: inherit;
+  background: transparent;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+
+  &:focus-visible {
+    outline: 2px solid ${({ theme }) => theme.accent};
+    outline-offset: -2px;
+  }
+`;
+
+const QueueRemoveButton = styled.button`
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 2rem;
+  height: 2rem;
+  margin-right: 0.35rem;
+  padding: 0;
+  border: 0;
+  border-radius: 0.35rem;
+  color: ${({ theme }) => theme.textMuted};
+  background: transparent;
+  cursor: pointer;
+
+  &:hover,
+  &:focus-visible {
+    color: ${({ theme }) => theme.error};
+    background: ${({ theme }) => theme.hover};
+  }
+
+  &:focus-visible {
+    outline: 2px solid ${({ theme }) => theme.error};
+    outline-offset: 1px;
+  }
+`;
+
 const PlaylistItem = styled.button<{ $active?: boolean }>`
   border: 0;
   font-family: inherit;
@@ -162,7 +238,7 @@ const PlaylistItem = styled.button<{ $active?: boolean }>`
   cursor: pointer;
   padding: 10px;
   border-radius: 4px;
-  font-size: 11px;
+  font-size: 13px;
   font-weight: ${(p) => (p.$active ? '600' : '400')};
   background: ${(p) => (p.$active ? p.theme.active : 'transparent')};
   transition:
@@ -209,7 +285,7 @@ const QueueHeader = styled.div`
   gap: 0.5rem;
   color: ${({ theme }) => theme.textPrimary};
   font-weight: 600;
-  font-size: 11px;
+  font-size: 13px;
   cursor: pointer;
   padding: 0.5rem 0.75rem 1rem;
   flex-shrink: 0;
@@ -219,34 +295,11 @@ const QueueHeader = styled.div`
   }
 `;
 
-const QueueSortRow = styled.div`
-  display: flex;
-  justify-content: flex-end;
-  flex-shrink: 0;
-  padding-bottom: 0.25rem;
-`;
-
 const LogoImg = styled.img`
   width: 24px;
   height: 24px;
   object-fit: contain;
   flex-shrink: 0;
-`;
-
-const SidebarFooter = styled.div`
-  margin-top: auto;
-  padding: 42px 8px 18px;
-  font-size: 9px;
-  color: ${({ theme }) => theme.textSecondary};
-  display: flex;
-  align-items: center;
-  gap: 7px;
-  span {
-    width: 5px;
-    height: 5px;
-    border-radius: 50%;
-    background: ${({ theme }) => theme.accent};
-  }
 `;
 
 const HomeIcon = styled(FaHouse)`
@@ -278,7 +331,6 @@ export {
   SidebarContainer,
   SidebarContent,
   ResizeHandle,
-  SidebarFooter,
   AppLogo,
   AppName,
   LogoImg,
@@ -287,12 +339,14 @@ export {
   PlusButton,
   Menu,
   MenuItem,
+  QueueRow,
+  QueuePlayButton,
+  QueueRemoveButton,
   PlaylistItem,
   PlaylistThumb,
   FavouriteThumb,
   HeartIcon,
   QueueHeader,
-  QueueSortRow,
   HomeIcon,
   ArtistsIcon,
   AlbumsIcon,
