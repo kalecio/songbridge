@@ -25,9 +25,9 @@ const Button = styled.button`
   }
 `;
 export default function FavouriteButton({ song }: { song?: MetadataType }) {
-  const { currentPath, metadata, library } = useContext(AppContext);
+  const { currentPath, metadata } = useContext(AppContext);
   const { isFavourite, toggleFavourite } = useFavourites();
-  const track = song ?? library.find((item) => item.path === currentPath) ?? { ...metadata, path: currentPath };
+  const track = song ?? { ...metadata, path: currentPath };
   const active = isFavourite(track.path);
   return (
     <Button

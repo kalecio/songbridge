@@ -1,4 +1,4 @@
-import { useCallback, useContext, useState } from 'react';
+import { useCallback, useContext, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { FaPlay, FaListUl, FaPenToSquare } from 'react-icons/fa6';
 import { AppContext } from '../../Context/AppContext';
@@ -15,7 +15,6 @@ import EditGroupMetadataModal, {
 import { useQueueActions } from '../../hooks/useQueueActions';
 import { useMetadataActions } from '../../hooks/useMetadataActions';
 import {
-  Grid,
   GridItem,
   Card,
   ArtWrapper,
@@ -32,6 +31,7 @@ import FavouriteButton from '../../Components/Song/FavouriteButton';
 import { displayTitle } from '../../songDisplay';
 import { useI18n } from '../../i18n/I18nProvider';
 import SongSortControl from '../../Components/SongSortControl/SongSortControl';
+import VirtualizedGrid from '../../Components/VirtualizedGrid/VirtualizedGrid';
 import type { SongSortDirection } from '../../hooks/useSongSort';
 
 type AlbumSortField = 'artist' | 'year';
@@ -89,6 +89,21 @@ const Albums = ({ home = false }: { home?: boolean }) => {
     [editAlbum, batchUpdateSongsMetadata],
   );
 
+  const allAlbums = useMemo(() => groupByAlbum(library, !home), [library, home]);
+  const albums = useMemo(
+    () =>
+      [...allAlbums].sort((left, right) => {
+        const comparison =
+          sortField === 'artist'
+            ? collator.compare(left.artist ?? '', right.artist ?? '')
+            : (Number(left.year) || 0) - (Number(right.year) || 0);
+        const stableComparison = comparison || collator.compare(left.name, right.name);
+        return sortDirection === 'asc' ? stableComparison : -stableComparison;
+      }),
+    [allAlbums, sortDirection, sortField],
+  );
+  const currentTrack = currentPath ? { ...metadata, path: currentPath } : undefined;
+
   if (isScanning && !library.length && !home) {
     return (
       <Page>
@@ -96,18 +111,6 @@ const Albums = ({ home = false }: { home?: boolean }) => {
       </Page>
     );
   }
-
-  const allAlbums = groupByAlbum(library, !home);
-  const albums = [...allAlbums].sort((left, right) => {
-    const comparison =
-      sortField === 'artist'
-        ? collator.compare(left.artist ?? '', right.artist ?? '')
-        : (Number(left.year) || 0) - (Number(right.year) || 0);
-    const stableComparison = comparison || collator.compare(left.name, right.name);
-    return sortDirection === 'asc' ? stableComparison : -stableComparison;
-  });
-  const currentTrack =
-    library.find((song) => song.path === currentPath) ?? (currentPath ? { ...metadata, path: currentPath } : undefined);
 
   if (allAlbums.length === 0 && !home) {
     return (
@@ -167,10 +170,11 @@ const Albums = ({ home = false }: { home?: boolean }) => {
           />
         </AlbumSortRow>
       )}
-      <Grid>
-        {albums.map((album) => (
+      <VirtualizedGrid
+        items={albums}
+        getItemKey={(album) => album.name}
+        renderItem={(album) => (
           <GridItem
-            key={album.name}
             onClick={() => navigate(`/albums/${encodeURIComponent(album.name)}`)}
             onContextMenu={(e) => {
               e.preventDefault();
@@ -206,8 +210,8 @@ const Albums = ({ home = false }: { home?: boolean }) => {
               </CardBottom>
             </CardInfo>
           </GridItem>
-        ))}
-      </Grid>
+        )}
+      />
       {home && currentTrack && (
         <RecentTrack>
           <span className="equalizer" aria-hidden="true">

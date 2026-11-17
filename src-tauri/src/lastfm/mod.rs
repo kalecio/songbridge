@@ -122,6 +122,13 @@ fn init_db(db: &Db) -> Result<(), String> {
             fetched_at INTEGER NOT NULL,
             PRIMARY KEY (artist_key, album_key)
          );
+         CREATE TABLE IF NOT EXISTS lastfm_weekly_scrobbles (
+            account TEXT NOT NULL,
+            week_start INTEGER NOT NULL,
+            count INTEGER NOT NULL,
+            fetched_at INTEGER NOT NULL,
+            PRIMARY KEY (account, week_start)
+         );
          UPDATE lastfm_plays SET status='interrupted' WHERE status='listening';",
         )
         .map_err(|_| "database".into())
@@ -316,6 +323,15 @@ impl Service {
     fn update_result(&self, play: &mut Play, account: &str, status: String) -> Result<(), String> {
         play.status = status;
         self.save(play, account)?;
+        if play.status == "scrobbled" {
+            let conn = self.db.lock().map_err(|_| "database")?;
+            if let Err(error) = conn.execute(
+                "DELETE FROM lastfm_weekly_scrobbles WHERE account = ?1",
+                [account],
+            ) {
+                log::warn!("Failed to invalidate Last.fm weekly scrobble cache: {error}");
+            }
+        }
         let mut inner = self.inner.lock().unwrap();
         if let Some(a) = &mut inner.active {
             if a.play.id == play.id {
@@ -634,6 +650,65 @@ pub fn lastfm_status(service: tauri::State<Arc<Service>>) -> Result<Status, Stri
         pending,
         history,
     })
+}
+
+/// Return the account's scrobble count since the start of the current UTC week.
+/// The value is cached for 30 minutes so playback updates do not trigger a
+/// Last.fm request for every track.
+pub(crate) async fn resolve_weekly_scrobbles(service: &Service) -> Option<u64> {
+    const CACHE_TTL_SECONDS: i64 = 30 * 60;
+    const DAY_SECONDS: i64 = 24 * 60 * 60;
+
+    let account = service.inner.lock().ok()?.session.as_ref()?.name.clone();
+    let now = SystemTime::now().duration_since(UNIX_EPOCH).ok()?.as_secs() as i64;
+    let days_since_epoch = now / DAY_SECONDS;
+    // 1970-01-01 was Thursday; this offsets the epoch to Monday 00:00 UTC.
+    let days_since_monday = (days_since_epoch + 3) % 7;
+    let week_start = days_since_epoch * DAY_SECONDS - days_since_monday * DAY_SECONDS;
+
+    let cached = {
+        let conn = service.db.lock().ok()?;
+        conn.query_row(
+            "SELECT count, fetched_at FROM lastfm_weekly_scrobbles
+             WHERE account = ?1 AND week_start = ?2",
+            params![account, week_start],
+            |row| Ok((row.get::<_, i64>(0)?, row.get::<_, i64>(1)?)),
+        )
+        .ok()
+    };
+    if let Some((count, fetched_at)) = cached {
+        if now.saturating_sub(fetched_at) < CACHE_TTL_SECONDS {
+            return u64::try_from(count).ok();
+        }
+    }
+
+    let mut params = BTreeMap::new();
+    params.insert("user".into(), account.clone());
+    params.insert("from".into(), week_start.to_string());
+    params.insert("to".into(), now.to_string());
+    params.insert("limit".into(), "1".into());
+    let response = service
+        .client
+        .request("user.getRecentTracks", params, None)
+        .await
+        .ok()?;
+    let total = response.get("recenttracks")?.get("@attr")?.get("total")?;
+    let count = total
+        .as_u64()
+        .or_else(|| total.as_str()?.parse::<u64>().ok())?;
+    let stored_count = i64::try_from(count).ok()?;
+
+    let conn = service.db.lock().ok()?;
+    if let Err(error) = conn.execute(
+        "INSERT INTO lastfm_weekly_scrobbles(account, week_start, count, fetched_at)
+         VALUES (?1, ?2, ?3, ?4)
+         ON CONFLICT(account, week_start) DO UPDATE SET
+            count = excluded.count, fetched_at = excluded.fetched_at",
+        params![account, week_start, stored_count, now],
+    ) {
+        log::warn!("Failed to cache Last.fm weekly scrobbles: {error}");
+    }
+    Some(count)
 }
 
 #[tauri::command]

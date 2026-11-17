@@ -8,7 +8,6 @@ import { MetadataType, PlaylistType } from '../../types';
 import AlbumImage from '../AlbumImage/AlbumImage';
 import ContextMenu, { ContextMenuItem } from '../ContextMenu/ContextMenu';
 import TextMarquee from '../TextMarquee/TextMarquee';
-import SongSortControl from '../SongSortControl/SongSortControl';
 import {
   AlbumsIcon,
   HomeIcon,
@@ -18,9 +17,11 @@ import {
   BackIcon,
   HeartIcon,
   AppName,
-  SidebarFooter,
   Menu,
   MenuItem,
+  QueueRow,
+  QueuePlayButton,
+  QueueRemoveButton,
   PlaylistItem,
   PlaylistsRow,
   QueueHeader,
@@ -29,7 +30,6 @@ import {
   SidebarContent,
   ResizeHandle,
   SongsIcon,
-  QueueSortRow,
 } from './styles';
 import { isFavouritesPlaylist, sortFavouritesFirst } from '../../hooks/useFavourites';
 import { useQueueActions } from '../../hooks/useQueueActions';
@@ -40,7 +40,6 @@ import { useLyricsMenu } from '../../hooks/useLyricsMenu';
 import { useSidebarWidth, SIDEBAR_MIN_WIDTH } from '../../hooks/useSidebarWidth';
 import { displayTitle } from '../../songDisplay';
 import { useI18n } from '../../i18n/I18nProvider';
-import { sortSongs, useSongSort } from '../../hooks/useSongSort';
 
 type SidebarMenu =
   | { kind: 'queue'; x: number; y: number; song: MetadataType }
@@ -59,20 +58,8 @@ const Sidebar = () => {
   // The ref always reflects the latest value synchronously.
   const dragFromRef = useRef<number | null>(null);
   const metadataCache = useRef(new Map<string, MetadataType>());
-  const queueSortUpdateRef = useRef(false);
   const context = useContext(AppContext);
-  const {
-    showQueue,
-    setShowQueue,
-    setCurrentPath,
-    setCurrentPlaylist,
-    currentPlaylist,
-    playlists,
-    currentPath,
-    library,
-  } = context;
-  const queueSort = useSongSort(songs);
-  const { setSortField: setQueueSortField, setSortDirection: setQueueSortDirection } = queueSort;
+  const { showQueue, setShowQueue, setCurrentPath, currentPlaylist, playlists, currentPath, library } = context;
   const navigate = useNavigate();
   const location = useLocation();
   const { playSongs, addToQueue, playNext, removeFromQueue, reorderQueue } = useQueueActions();
@@ -81,37 +68,12 @@ const Sidebar = () => {
     setDragFromIndex(null);
     setDragOverIndex(null);
   };
-  const applyQueueSort = (field: typeof queueSort.sortField, direction: typeof queueSort.sortDirection) => {
-    queueSort.setSortField(field);
-    queueSort.setSortDirection(direction);
-    resetDrag();
-
-    if (field === 'original' || !setCurrentPlaylist) return;
-    const sortedPaths = sortSongs(songs, field, direction)
-      .map((song) => song.path)
-      .filter((path): path is string => Boolean(path));
-    if (
-      sortedPaths.length === currentPlaylist.length &&
-      sortedPaths.every((path, index) => path === currentPlaylist[index])
-    ) {
-      return;
-    }
-    queueSortUpdateRef.current = true;
-    setCurrentPlaylist(sortedPaths);
-  };
   const { renamePlaylist, deletePlaylist } = usePlaylistActions();
   const { recordPlaylistPlay } = usePlayHistory();
   const buildAddToPlaylistItem = useAddToPlaylistMenu();
   const buildLyricsMenuItem = useLyricsMenu();
 
   useEffect(() => {
-    if (queueSortUpdateRef.current) {
-      queueSortUpdateRef.current = false;
-    } else {
-      setQueueSortField('original');
-      setQueueSortDirection('asc');
-    }
-
     if (currentPlaylist.length === 0) {
       setSongs([]);
       return;
@@ -128,7 +90,7 @@ const Sidebar = () => {
       setSongs(currentPlaylist.map((p) => libraryMap.get(p) ?? metadataCache.current.get(p)!));
     };
     getSongs();
-  }, [currentPlaylist, library, setQueueSortDirection, setQueueSortField]);
+  }, [currentPlaylist, library]);
 
   const isActive = (path: string) => (path === '/' ? location.pathname === '/' : location.pathname.startsWith(path));
 
@@ -225,9 +187,6 @@ const Sidebar = () => {
                 <span aria-hidden="true">＋</span> {t('sidebar.newPlaylist')}
               </MenuItem>
             </Menu>
-            <SidebarFooter>
-              <span /> {t('sidebar.collectionNearby')}
-            </SidebarFooter>
           </>
         )}
 
@@ -236,79 +195,67 @@ const Sidebar = () => {
             <QueueHeader aria-label={t('sidebar.closeQueue')} onClick={() => setShowQueue?.(false)}>
               <BackIcon /> {t('sidebar.queue')}
             </QueueHeader>
-            {songs.length > 1 && (
-              <QueueSortRow>
-                <SongSortControl
-                  compact
-                  sortField={queueSort.sortField}
-                  sortDirection={queueSort.sortDirection}
-                  onSortFieldChange={(field) => applyQueueSort(field, queueSort.sortDirection)}
-                  onSortDirectionChange={(direction) => applyQueueSort(queueSort.sortField, direction)}
-                />
-              </QueueSortRow>
-            )}
             <Menu>
-              {queueSort.sortedSongs.map((song, index) => {
-                const reorderable = queueSort.sortField === 'original';
-                const isDragging = reorderable && dragFromIndex === index;
-                const showIndicator =
-                  reorderable && dragFromIndex !== null && dragOverIndex === index && dragFromIndex !== index;
+              {songs.map((song, index) => {
+                const isDragging = dragFromIndex === index;
+                const showIndicator = dragFromIndex !== null && dragOverIndex === index && dragFromIndex !== index;
                 const dropAbove = showIndicator && (dragFromIndex as number) > index;
                 const dropBelow = showIndicator && (dragFromIndex as number) < index;
                 return (
-                  <MenuItem
+                  <QueueRow
                     $active={song.path === currentPath}
                     $dragging={isDragging}
                     $dropAbove={dropAbove}
                     $dropBelow={dropBelow}
-                    draggable={reorderable}
+                    draggable
                     key={song.path ?? `${song.title}-${song.artist}`}
-                    onClick={() => setCurrentPath?.(song.path)}
                     onContextMenu={(e) => {
                       e.preventDefault();
                       setMenu({ kind: 'queue', x: e.clientX, y: e.clientY, song });
                     }}
-                    onDragStart={
-                      reorderable
-                        ? (e) => {
-                            dragFromRef.current = index;
-                            setDragFromIndex(index);
-                            if (e.dataTransfer) {
-                              e.dataTransfer.effectAllowed = 'move';
-                              // Firefox requires setData for the drag to actually start.
-                              e.dataTransfer.setData('text/plain', String(index));
-                            }
-                          }
-                        : undefined
-                    }
-                    onDragOver={
-                      reorderable
-                        ? (e) => {
-                            if (dragFromRef.current === null) return;
-                            e.preventDefault();
-                            if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
-                            if (dragOverIndex !== index) setDragOverIndex(index);
-                          }
-                        : undefined
-                    }
-                    onDrop={
-                      reorderable
-                        ? (e) => {
-                            e.preventDefault();
-                            const from = dragFromRef.current;
-                            if (from !== null && from !== index) {
-                              reorderQueue(from, index);
-                            }
-                            resetDrag();
-                          }
-                        : undefined
-                    }
-                    onDragEnd={reorderable ? resetDrag : undefined}
-                    title={displayTitle(song)}
+                    onDragStart={(e) => {
+                      dragFromRef.current = index;
+                      setDragFromIndex(index);
+                      if (e.dataTransfer) {
+                        e.dataTransfer.effectAllowed = 'move';
+                        // Firefox requires setData for the drag to actually start.
+                        e.dataTransfer.setData('text/plain', String(index));
+                      }
+                    }}
+                    onDragOver={(e) => {
+                      if (dragFromRef.current === null) return;
+                      e.preventDefault();
+                      if (e.dataTransfer) e.dataTransfer.dropEffect = 'move';
+                      if (dragOverIndex !== index) setDragOverIndex(index);
+                    }}
+                    onDrop={(e) => {
+                      e.preventDefault();
+                      const from = dragFromRef.current;
+                      if (from !== null && from !== index) {
+                        reorderQueue(from, index);
+                      }
+                      resetDrag();
+                    }}
+                    onDragEnd={resetDrag}
                   >
-                    <AlbumImage metadata={song} height="2.25rem" width="2.25rem" draggable={false} />
-                    <TextMarquee className="sidebar-item-label">{displayTitle(song)}</TextMarquee>
-                  </MenuItem>
+                    <QueuePlayButton
+                      type="button"
+                      onClick={() => setCurrentPath?.(song.path)}
+                      title={displayTitle(song)}
+                      aria-current={song.path === currentPath ? 'true' : undefined}
+                    >
+                      <AlbumImage metadata={song} height="2.25rem" width="2.25rem" draggable={false} />
+                      <TextMarquee className="sidebar-item-label">{displayTitle(song)}</TextMarquee>
+                    </QueuePlayButton>
+                    <QueueRemoveButton
+                      type="button"
+                      aria-label={`${t('common.removeFromQueue')}: ${displayTitle(song)}`}
+                      title={`${t('common.removeFromQueue')}: ${displayTitle(song)}`}
+                      onClick={() => removeFromQueue(song.path)}
+                    >
+                      <FaTrash aria-hidden="true" />
+                    </QueueRemoveButton>
+                  </QueueRow>
                 );
               })}
             </Menu>

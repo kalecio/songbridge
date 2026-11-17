@@ -4,6 +4,7 @@ import { openUrl } from '@tauri-apps/plugin-opener';
 import { useI18n } from '../../i18n/I18nProvider';
 import type { MetadataType } from '../../types';
 import { useMetadataActions, type EditFields } from '../../hooks/useMetadataActions';
+import { FaMusic } from 'react-icons/fa';
 import { Button, Input } from '../Modal/styles';
 import { useLastfm, useLastfmReason } from './LastfmProvider';
 import {
@@ -21,7 +22,6 @@ import {
 } from './styles';
 import { importFields, type ImportField, type Suggestion } from './importFields';
 import { getLastfmSearchQuery } from './searchQuery';
-import AlbumImage from '../AlbumImage/AlbumImage';
 
 interface Match {
   name: string;
@@ -188,10 +188,20 @@ export default function LastfmImport({
           </fieldset>
           <ResultsGrid aria-label={t('lastfm.results')}>
             {matches.map((match, index) => (
-              <AlbumCard key={index} type="button" disabled={busy} onClick={() => choose(match)} aria-label={`${match.name} · ${match.artist}`}>
+              <AlbumCard
+                key={index}
+                type="button"
+                disabled={busy}
+                onClick={() => choose(match)}
+                aria-label={`${match.name} · ${match.artist}`}
+              >
                 <AlbumCardArt>
                   <AlbumCardImageWrap>
-                    <AlbumImage metadata={{ image: match.preview, album: match.name }} height="100%" width="100%" />
+                    {match.preview ? (
+                      <img src={match.preview} alt={`${match.name} — ${match.artist}`} />
+                    ) : (
+                      <FaMusic aria-hidden="true" />
+                    )}
                   </AlbumCardImageWrap>
                 </AlbumCardArt>
                 <AlbumCardInfo>
