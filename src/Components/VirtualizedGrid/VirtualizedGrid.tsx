@@ -30,6 +30,23 @@ const VirtualizedGrid = <T,>({ items, getItemKey, renderItem }: Props<T>) => {
     getItemKey: (index) => (items[index * columns] ? getItemKey(items[index * columns]) : index),
   });
 
+  if (items.length <= 100) {
+    return (
+      <div
+        style={{
+          display: 'grid',
+          gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))`,
+          gap: 'clamp(16px, 1.5vw, 28px)',
+          alignItems: 'start',
+        }}
+      >
+        {items.map((item) => (
+          <div key={getItemKey(item)}>{renderItem(item)}</div>
+        ))}
+      </div>
+    );
+  }
+
   return (
     <div ref={parentRef} style={{ height: 'calc(100vh - 260px)', minHeight: 240, overflowY: 'auto', width: '100%' }}>
       <div style={{ height: virtualizer.getTotalSize(), position: 'relative', width: '100%' }}>
