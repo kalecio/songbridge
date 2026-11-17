@@ -10,16 +10,65 @@ export const Container = styled.div`
   overflow: hidden;
 `;
 
-export const LeftPanel = styled.aside`
-  width: 240px;
+export const LeftPanel = styled.aside<{ $width: number; $resizing: boolean }>`
+  position: relative;
+  width: ${({ $width }) => $width}px;
   min-width: 210px;
   flex-shrink: 0;
   background: ${({ theme }) => theme.background};
   border-right: 1px solid ${({ theme }) => theme.border};
   display: flex;
   flex-direction: column;
-  overflow-y: auto;
+  overflow: hidden;
   align-items: center;
+  ${({ $resizing }) => $resizing && 'cursor: col-resize; & * { cursor: col-resize !important; }'}
+`;
+
+export const LeftPanelContent = styled.div`
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+`;
+
+export const PlaylistDeleteError = styled.p`
+  margin: 0 0.75rem 0.75rem;
+  color: ${({ theme }) => theme.error};
+  font-size: 0.8rem;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+`;
+
+export const AsideResizeHandle = styled.div`
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 10;
+  width: 8px;
+  cursor: col-resize;
+  touch-action: none;
+
+  &:hover,
+  &:focus-visible {
+    background: ${({ theme }) => theme.accentBg};
+    outline: none;
+  }
+
+  &:hover::after,
+  &:focus-visible::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 3px;
+    width: 2px;
+    background: ${({ theme }) => theme.accent};
+  }
 `;
 
 export const NewButton = styled.button`
@@ -101,6 +150,11 @@ export const DeleteBtn = styled.button`
   flex-shrink: 0;
   transition: color 0.15s;
   max-width: 1.5rem;
+
+  &:disabled {
+    cursor: wait;
+    opacity: 0.5;
+  }
 
   &:hover {
     color: ${({ theme }) => theme.error};

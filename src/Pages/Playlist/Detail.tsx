@@ -1,4 +1,4 @@
-import { useContext } from 'react';
+import { useContext, useMemo } from 'react';
 import { useParams } from 'react-router';
 import { AppContext } from '../../Context/AppContext';
 import { MetadataType, PlaylistType } from '../../types';
@@ -11,15 +11,20 @@ const Detail = ({ playlists }: { playlists?: PlaylistType[] }) => {
   const { id } = useParams<{ id: string }>();
   const { t } = useI18n();
   const { currentPath, setCurrentPath, setCurrentPlaylist, library } = useContext(AppContext);
+  const libraryByPath = useMemo(() => new Map(library.map((song) => [song.path, song])), [library]);
   const { removeSongFromPlaylist, reorderSongsInPlaylist } = usePlaylistActions();
   const { recordPlaylistPlay } = usePlayHistory();
 
   const playlist = playlists?.find((p) => p.id === id);
-  const songs = (playlist?.songs ?? []).map((song) => {
-    const match = library.find((l) => l.path === song.path);
-    if (!match) return song;
-    return { ...match, title: song.title ?? match.title, artist: song.artist ?? match.artist };
-  });
+  const songs = useMemo(
+    () =>
+      (playlist?.songs ?? []).map((song) => {
+        const match = libraryByPath.get(song.path);
+        if (!match) return song;
+        return { ...match, title: song.title ?? match.title, artist: song.artist ?? match.artist };
+      }),
+    [libraryByPath, playlist],
+  );
 
   const playSong = (song: MetadataType, orderedSongs: MetadataType[] = songs) => {
     const paths = orderedSongs.map((s) => s.path).filter((p): p is string => Boolean(p));

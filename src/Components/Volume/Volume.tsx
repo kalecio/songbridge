@@ -14,7 +14,7 @@ const Volume = ({ showFavourite = true }: { showFavourite?: boolean }) => {
   const [volume, setVolume] = useState(70);
   const [isVolumeOff, setVolumeOff] = useState(false);
 
-  const { currentPath, metadata, library, showQueue, setShowQueue } = useContext(AppContext);
+  const { currentPath, metadata, showQueue, setShowQueue } = useContext(AppContext);
   const { isFavourite, toggleFavourite } = useFavourites();
   const navigate = useNavigate();
   const location = useLocation();
@@ -55,8 +55,7 @@ const Volume = ({ showFavourite = true }: { showFavourite?: boolean }) => {
 
   const handleToggleFavourite = () => {
     if (!currentPath) return;
-    const fromLibrary = library.find((l) => l.path === currentPath);
-    toggleFavourite(fromLibrary ?? { ...(metadata ?? {}), path: currentPath });
+    toggleFavourite({ ...(metadata ?? {}), path: currentPath });
   };
 
   return (

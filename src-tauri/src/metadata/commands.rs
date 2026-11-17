@@ -31,7 +31,11 @@ pub(crate) fn get_metadata_without_art(path: &str) -> Result<AudioMetadata, Stri
 }
 
 fn get_metadata_with_art(path: &str, include_art: bool) -> Result<AudioMetadata, String> {
-    println!("Getting metadata for file: {}", path);
+    log::debug!(
+        "Reading audio metadata for '{}'; include_art={}",
+        path,
+        include_art
+    );
     let mut probe = get_audio_probe(path)?;
     let total_duration = calculate_track_duration(&probe);
     let formatted_duration = format_duration(total_duration);
@@ -84,9 +88,14 @@ fn get_metadata_with_art(path: &str, include_art: bool) -> Result<AudioMetadata,
         None
     };
 
-    println!(
+    log::debug!(
         "Title: {:?}, Artist: {:?}, Album: {:?}, Year: {:?}, Track: {:?}, Duration: {:?}",
-        title, artist, album, year, track, duration
+        title,
+        artist,
+        album,
+        year,
+        track,
+        duration
     );
     Ok(AudioMetadata {
         title,

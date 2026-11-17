@@ -29,8 +29,11 @@ const ALLOWED_FIELDS = new Set([
   'trackAuth',
   'limit',
   'page',
+  'from',
+  'to',
   'autocorrect',
   'username',
+  'user',
 ]);
 const BATCH_FIELDS = new Set(['artist', 'track', 'album', 'timestamp', 'duration', 'trackNumber']);
 const ALLOWED_METHODS = new Set([
@@ -42,6 +45,7 @@ const ALLOWED_METHODS = new Set([
   'album.search',
   'track.getInfo',
   'album.getInfo',
+  'user.getRecentTracks',
 ]);
 const PRIORITY_METHODS = new Set(['auth.getToken', 'auth.getSession', 'track.updateNowPlaying', 'track.scrobble']);
 
