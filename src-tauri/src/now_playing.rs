@@ -34,6 +34,9 @@ pub struct NowPlayingPayload {
     /// file so we can hand the OS now-playing surface a file:// URL — most
     /// platforms reject long data URLs.
     pub cover_data_url: Option<String>,
+    /// Public Last.fm artwork URL used by Discord Rich Presence.
+    #[serde(default)]
+    pub lastfm_artwork_url: Option<String>,
 }
 
 #[derive(Default, Clone, serde::Deserialize)]
@@ -46,6 +49,7 @@ pub struct PlaybackStatePayload {
 pub struct NowPlayingInner {
     pub controls: Option<MediaControls>,
     pub cached_metadata: Option<NowPlayingPayload>,
+    pub cached_playback: PlaybackStatePayload,
 }
 
 pub type NowPlayingState = Arc<Mutex<NowPlayingInner>>;
@@ -179,6 +183,7 @@ pub fn init(app: &AppHandle) {
             let empty_inner = Arc::new(Mutex::new(NowPlayingInner {
                 controls: None,
                 cached_metadata: None,
+                cached_playback: PlaybackStatePayload::default(),
             }));
             app.manage(empty_inner);
             return;
@@ -188,6 +193,7 @@ pub fn init(app: &AppHandle) {
     let inner = Arc::new(Mutex::new(NowPlayingInner {
         controls: Some(controls),
         cached_metadata: None,
+        cached_playback: PlaybackStatePayload::default(),
     }));
 
     {
@@ -226,6 +232,7 @@ pub fn init(app: &AppHandle) {
 
 #[tauri::command]
 pub fn set_now_playing(
+    app: AppHandle,
     state: tauri::State<NowPlayingState>,
     discord_state: tauri::State<DiscordPresenceState>,
     payload: NowPlayingPayload,
@@ -240,9 +247,9 @@ pub fn set_now_playing(
 
     // Cache metadata for Discord presence updates
     inner.cached_metadata = Some(payload.clone());
-
-    let Some(controls) = inner.controls.as_mut() else {
-        return;
+    inner.cached_playback = PlaybackStatePayload {
+        is_playing: false,
+        elapsed_seconds: Some(0.0),
     };
 
     let cover_url = payload
@@ -279,20 +286,22 @@ pub fn set_now_playing(
         duration: payload.duration_seconds.map(Duration::from_secs),
     };
 
-    match controls.set_metadata(make_metadata(true)) {
-        Ok(()) => {}
-        Err(e) => {
-            log::warn!("set_metadata with cover failed: {:?}", e);
-            // If a cover was provided, try once more without it — this both
-            // gives users readable text on the OS now-playing card when the
-            // cover is the offending part, and tells us in the next log
-            // which side of the split caused the original failure.
-            if cover_url.is_some() {
-                match controls.set_metadata(make_metadata(false)) {
-                    Ok(()) => log::info!(
-                        "set_metadata without cover succeeded — the cover URL is the cause"
-                    ),
-                    Err(e2) => log::warn!("set_metadata without cover also failed: {:?}", e2),
+    if let Some(controls) = inner.controls.as_mut() {
+        match controls.set_metadata(make_metadata(true)) {
+            Ok(()) => {}
+            Err(e) => {
+                log::warn!("set_metadata with cover failed: {:?}", e);
+                // If a cover was provided, try once more without it — this both
+                // gives users readable text on the OS now-playing card when the
+                // cover is the offending part, and tells us in the next log
+                // which side of the split caused the original failure.
+                if cover_url.is_some() {
+                    match controls.set_metadata(make_metadata(false)) {
+                        Ok(()) => log::info!(
+                            "set_metadata without cover succeeded — the cover URL is the cause"
+                        ),
+                        Err(e2) => log::warn!("set_metadata without cover also failed: {:?}", e2),
+                    }
                 }
             }
         }
@@ -307,6 +316,43 @@ pub fn set_now_playing(
             elapsed_seconds: Some(0.0),
         },
     );
+
+    let (Some(artist), Some(album)) = (payload.artist.clone(), payload.album.clone()) else {
+        return;
+    };
+    if artist.trim().is_empty() || album.trim().is_empty() {
+        return;
+    }
+    let Some(service) = app
+        .try_state::<Arc<crate::lastfm::Service>>()
+        .map(|service| service.inner().clone())
+    else {
+        return;
+    };
+    let now_playing_state = state.inner().clone();
+    let discord_presence = discord_state.0.clone();
+    tauri::async_runtime::spawn(async move {
+        let artwork =
+            crate::lastfm::metadata::resolve_discord_artwork(&service, &artist, &album).await;
+        let Some((metadata, playback)) = (|| {
+            let mut inner = now_playing_state.lock().ok()?;
+            let metadata = inner.cached_metadata.as_mut()?;
+            if metadata.artist.as_deref() != Some(artist.as_str())
+                || metadata.album.as_deref() != Some(album.as_str())
+            {
+                return None;
+            }
+            metadata.lastfm_artwork_url = artwork.clone();
+            Some((metadata.clone(), inner.cached_playback.clone()))
+        })() else {
+            return;
+        };
+        if let Ok(guard) = discord_presence.lock() {
+            if let Some(discord) = guard.as_ref() {
+                discord.set_activity(&metadata, &playback);
+            }
+        }
+    });
 }
 
 #[tauri::command]
@@ -336,9 +382,7 @@ pub fn set_playback_state(
         }
     };
 
-    let Some(controls) = inner.controls.as_mut() else {
-        return;
-    };
+    inner.cached_playback = payload.clone();
 
     let progress = payload
         .elapsed_seconds
@@ -354,8 +398,10 @@ pub fn set_playback_state(
         payload.is_playing,
         payload.elapsed_seconds,
     );
-    if let Err(e) = controls.set_playback(playback) {
-        log::warn!("Failed to set playback state: {:?}", e);
+    if let Some(controls) = inner.controls.as_mut() {
+        if let Err(e) = controls.set_playback(playback) {
+            log::warn!("Failed to set playback state: {:?}", e);
+        }
     }
 
     // Update Discord presence with cached metadata
@@ -563,6 +609,7 @@ mod tests {
         let inner = NowPlayingInner {
             controls: None,
             cached_metadata: None,
+            cached_playback: PlaybackStatePayload::default(),
         };
 
         assert!(inner.cached_metadata.is_none());
@@ -573,6 +620,7 @@ mod tests {
             album: Some("Test Album".to_string()),
             duration_seconds: Some(180),
             cover_data_url: None,
+            lastfm_artwork_url: None,
         };
 
         let mut inner = inner;
@@ -619,6 +667,7 @@ mod tests {
             album: Some("Album".to_string()),
             duration_seconds: Some(200),
             cover_data_url: None,
+            lastfm_artwork_url: None,
         };
 
         assert_eq!(payload.album.as_deref(), Some("Album"));
@@ -632,6 +681,7 @@ mod tests {
             album: None,
             duration_seconds: Some(200),
             cover_data_url: None,
+            lastfm_artwork_url: None,
         };
 
         assert_eq!(payload.album.as_deref(), None);
@@ -647,6 +697,7 @@ mod tests {
             album: Some("Test Album".to_string()),
             duration_seconds: Some(240),
             cover_data_url: None,
+            lastfm_artwork_url: None,
         };
 
         let playback = PlaybackStatePayload {
@@ -669,6 +720,7 @@ mod tests {
             album: Some("Test Album".to_string()),
             duration_seconds: Some(240),
             cover_data_url: None,
+            lastfm_artwork_url: None,
         };
 
         let playback = PlaybackStatePayload {
