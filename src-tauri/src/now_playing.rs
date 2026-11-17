@@ -349,6 +349,13 @@ pub fn set_now_playing(
         };
         if let Ok(guard) = discord_presence.lock() {
             if let Some(discord) = guard.as_ref() {
+                let artwork_source = metadata
+                    .lastfm_artwork_url
+                    .as_deref()
+                    .filter(|url| crate::lastfm::metadata::valid_art_url(url))
+                    .map(|_| "lastfm_url")
+                    .unwrap_or("songbridge_logo");
+                log::info!("Submitting Discord Rich Presence artwork: source={artwork_source}");
                 discord.set_activity(&metadata, &playback);
             }
         }
