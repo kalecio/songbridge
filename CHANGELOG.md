@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0-rc.9] - 2026-11-17
+
+### Fixed
+- **Discord album artwork for multi-artist tags** — retry Last.fm lookups with the primary artist and an exact album match so full contributor credits do not hide available covers
+
 ## [1.0.0-rc.8] - 2026-11-17
 
 ### Added
