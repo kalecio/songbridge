@@ -78,6 +78,29 @@ const VirtualSearchSongs = ({
     getItemKey: (index) => songs[index].path ?? index,
   });
 
+  if (songs.length <= 100) {
+    return (
+      <div>
+        {songs.map((song, index) => {
+          const title = displayTitle(song);
+          return (
+            <SongRow
+              key={song.path ?? index}
+              onClick={() => onPlay(song)}
+              onContextMenu={(event) => onContextMenu(event, song)}
+            >
+              <AlbumImage metadata={song} height="2.5rem" width="2.5rem" />
+              <SongInfo>
+                <SongTitle title={title}>{title}</SongTitle>
+                <SongArtist title={song.artist}>{song.artist}</SongArtist>
+              </SongInfo>
+            </SongRow>
+          );
+        })}
+      </div>
+    );
+  }
+
   return (
     <div ref={parentRef} style={{ maxHeight: '60vh', overflowY: 'auto' }}>
       <div style={{ height: virtualizer.getTotalSize(), position: 'relative', width: '100%' }}>
