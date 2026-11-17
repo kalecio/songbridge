@@ -1,8 +1,13 @@
 use super::Service;
 use base64::Engine;
+use rusqlite::{params, OptionalExtension};
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
-use std::{collections::BTreeMap, sync::Arc, time::Duration};
+use std::{
+    collections::BTreeMap,
+    sync::Arc,
+    time::{Duration, SystemTime, UNIX_EPOCH},
+};
 use tauri::Manager;
 use tokio::task::JoinSet;
 
@@ -57,7 +62,101 @@ fn images(value: &Value) -> Option<String> {
                 .and_then(text)
                 .or_else(|| v.get("url").and_then(text))
         })
-        .find(|s| valid_art_url(s) && !s.contains("2a96cbd8b46e442fc41c2b86b821562f"))
+        .find_map(|value| {
+            normalize_art_url(&value)
+                .filter(|url| !url.contains("2a96cbd8b46e442fc41c2b86b821562f"))
+        })
+}
+
+const ARTWORK_CACHE_TTL_SECONDS: i64 = 30 * 24 * 60 * 60;
+
+/// Resolve a public Last.fm album image for Discord and persist the URL so
+/// subsequent tracks from the same album do not issue another API request.
+pub(crate) async fn resolve_discord_artwork(
+    service: &Service,
+    artist: &str,
+    album: &str,
+) -> Option<String> {
+    let artist_key = artist.trim().to_lowercase();
+    let album_key = album.trim().to_lowercase();
+    if artist_key.is_empty()
+        || album_key.is_empty()
+        || artist_key.len() > 500
+        || album_key.len() > 500
+    {
+        return None;
+    }
+
+    let _lookup = service.artwork_gate.lock().await;
+    let now = SystemTime::now()
+        .duration_since(UNIX_EPOCH)
+        .unwrap_or_default()
+        .as_secs() as i64;
+    let cached = {
+        let conn = service.db.lock().ok()?;
+        conn.query_row(
+            "SELECT artwork_url, fetched_at FROM lastfm_album_artwork
+             WHERE artist_key = ?1 AND album_key = ?2",
+            params![artist_key, album_key],
+            |row| Ok((row.get::<_, Option<String>>(0)?, row.get::<_, i64>(1)?)),
+        )
+        .optional()
+        .ok()?
+    };
+
+    if let Some((artwork_url, fetched_at)) = cached {
+        if now.saturating_sub(fetched_at) < ARTWORK_CACHE_TTL_SECONDS {
+            return artwork_url.and_then(|url| normalize_art_url(&url));
+        }
+    }
+
+    if !service.client.configured() {
+        return None;
+    }
+    let response = service
+        .client
+        .request(
+            "album.getInfo",
+            BTreeMap::from([
+                ("artist".into(), artist.trim().into()),
+                ("album".into(), album.trim().into()),
+                ("autocorrect".into(), "0".into()),
+            ]),
+            None,
+        )
+        .await
+        .ok()?;
+    let details = &response["album"];
+    let artwork = if details.is_object() {
+        if let Some(artwork) = images(&details["image"]) {
+            Some(artwork)
+        } else {
+            let page = source_url(&details["url"]);
+            if page == "https://www.last.fm/" {
+                None
+            } else {
+                page_artwork(&page).await
+            }
+        }
+    } else {
+        None
+    };
+
+    {
+        let conn = service.db.lock().ok()?;
+        if let Err(error) = conn.execute(
+            "INSERT INTO lastfm_album_artwork (artist_key, album_key, artwork_url, fetched_at)
+             VALUES (?1, ?2, ?3, ?4)
+             ON CONFLICT(artist_key, album_key) DO UPDATE SET
+                artwork_url = excluded.artwork_url,
+                fetched_at = excluded.fetched_at",
+            params![artist_key, album_key, artwork, now],
+        ) {
+            log::warn!("Failed to cache Last.fm album artwork: {error}");
+        }
+    }
+
+    artwork
 }
 fn release_year(value: &Value) -> Option<String> {
     let raw = text(value)?;
@@ -167,7 +266,9 @@ async fn page_artwork(url: &str) -> Option<String> {
         }) {
             if let Some(image) = html_attribute(tag, "content") {
                 let image = image.replace("&amp;", "&");
-                if valid_art_url(&image) && !image.contains("2a96cbd8b46e442fc41c2b86b821562f") {
+                if let Some(image) = normalize_art_url(&image)
+                    .filter(|url| !url.contains("2a96cbd8b46e442fc41c2b86b821562f"))
+                {
                     return Some(image);
                 }
             }
@@ -175,7 +276,7 @@ async fn page_artwork(url: &str) -> Option<String> {
     }
     None
 }
-fn valid_art_url(value: &str) -> bool {
+pub(crate) fn valid_art_url(value: &str) -> bool {
     url::Url::parse(value).ok().is_some_and(|u| {
         u.scheme() == "https"
             && u.username().is_empty()
@@ -185,11 +286,23 @@ fn valid_art_url(value: &str) -> bool {
                 u.host_str(),
                 Some(
                     "lastfm.freetls.fastly.net"
+                        | "lastfm-img.freetls.fastly.net"
                         | "lastfm-img2.akamaized.net"
                         | "userserve-ak.last.fm"
                 )
             )
     })
+}
+fn normalize_art_url(value: &str) -> Option<String> {
+    let mut url = url::Url::parse(value).ok()?;
+    if url.scheme() == "http" {
+        // Older Last.fm API responses still return userserve-ak links over
+        // HTTP. Upgrade only known image CDNs; downloads and redirects remain
+        // HTTPS-only in valid_art_url.
+        url.set_scheme("https").ok()?;
+    }
+    let normalized = url.to_string();
+    valid_art_url(&normalized).then_some(normalized)
 }
 fn valid_page_url(value: &str) -> bool {
     url::Url::parse(value).ok().is_some_and(|url| {
@@ -429,9 +542,7 @@ pub async fn lastfm_artwork(
     url: String,
 ) -> Result<Artwork, String> {
     service.session_key()?;
-    if !valid_art_url(&url) {
-        return Err("invalid_artwork".into());
-    }
+    let url = normalize_art_url(&url).ok_or("invalid_artwork")?;
     let http = reqwest::Client::builder()
         .timeout(Duration::from_secs(20))
         .redirect(reqwest::redirect::Policy::custom(|attempt| {

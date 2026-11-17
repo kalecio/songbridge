@@ -11,6 +11,15 @@ use tauri::AppHandle;
 
 use crate::now_playing::{NowPlayingPayload, PlaybackStatePayload};
 
+fn presence_artwork(metadata: &NowPlayingPayload) -> String {
+    metadata
+        .lastfm_artwork_url
+        .as_ref()
+        .filter(|url| url.len() <= 300 && crate::lastfm::metadata::valid_art_url(url))
+        .cloned()
+        .unwrap_or_else(|| "songbridge_logo".to_string())
+}
+
 #[derive(Deserialize, Default)]
 struct DiscordConfig {
     #[serde(rename = "applicationId")]
@@ -122,7 +131,7 @@ impl DiscordPresence {
             if !album.is_empty() {
                 activity = activity.assets(
                     Assets::new()
-                        .large_image("songbridge_logo")
+                        .large_image(presence_artwork(metadata))
                         .large_text(album.to_string())
                         .small_image(if is_playing { "play" } else { "pause" })
                         .small_text(if is_playing { "Playing" } else { "Paused" }),
@@ -131,7 +140,7 @@ impl DiscordPresence {
         } else {
             activity = activity.assets(
                 Assets::new()
-                    .large_image("songbridge_logo")
+                    .large_image(presence_artwork(metadata))
                     .large_text("Songbridge")
                     .small_image(if is_playing { "play" } else { "pause" })
                     .small_text(if is_playing { "Playing" } else { "Paused" }),
@@ -304,6 +313,7 @@ mod tests {
             album: Some("Test Album".to_string()),
             duration_seconds: Some(180),
             cover_data_url: None,
+            lastfm_artwork_url: None,
         };
 
         let playback = PlaybackStatePayload {
@@ -328,6 +338,7 @@ mod tests {
             album: Some("Test Album".to_string()),
             duration_seconds: Some(180),
             cover_data_url: None,
+            lastfm_artwork_url: None,
         };
 
         let playback = PlaybackStatePayload {
@@ -347,6 +358,7 @@ mod tests {
             album: None,
             duration_seconds: None,
             cover_data_url: None,
+            lastfm_artwork_url: None,
         };
 
         let playback = PlaybackStatePayload {
