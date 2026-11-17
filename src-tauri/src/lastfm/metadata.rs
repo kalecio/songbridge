@@ -69,6 +69,126 @@ fn images(value: &Value) -> Option<String> {
 }
 
 const ARTWORK_CACHE_TTL_SECONDS: i64 = 30 * 24 * 60 * 60;
+const NEGATIVE_ARTWORK_CACHE_TTL_SECONDS: i64 = 60 * 60;
+
+fn artwork_artist_candidates(artist: &str) -> Vec<String> {
+    let full_artist = artist.trim();
+    let mut candidates = Vec::new();
+    if !full_artist.is_empty() {
+        candidates.push(full_artist.to_string());
+    }
+
+    // Audio tags sometimes contain the full performer credit, while Last.fm
+    // indexes the album under the primary artist (for example,
+    // "Papangu, Marco Mayer, ..." vs. "Papangu").
+    if let Some(primary_artist) = full_artist
+        .split([',', ';'])
+        .next()
+        .map(str::trim)
+        .filter(|primary| !primary.is_empty() && !primary.eq_ignore_ascii_case(full_artist))
+    {
+        candidates.push(primary_artist.to_string());
+    }
+
+    candidates
+}
+
+async fn album_artwork_for_artist(service: &Service, artist: &str, album: &str) -> Option<String> {
+    let response = match service
+        .client
+        .request(
+            "album.getInfo",
+            BTreeMap::from([
+                ("artist".into(), artist.into()),
+                ("album".into(), album.into()),
+                ("autocorrect".into(), "0".into()),
+            ]),
+            None,
+        )
+        .await
+    {
+        Ok(response) => response,
+        Err(error) => {
+            log::debug!(
+                "Discord artwork lookup failed: method=album.getInfo, artist_candidate_len={}, album_len={}, error={}",
+                artist.len(),
+                album.len(),
+                error.code
+            );
+            return None;
+        }
+    };
+    let details = &response["album"];
+    if !details.is_object() {
+        return None;
+    }
+
+    if let Some(artwork) = images(&details["image"]) {
+        return Some(artwork);
+    }
+
+    let page = source_url(&details["url"]);
+    if page == "https://www.last.fm/" {
+        None
+    } else {
+        page_artwork(&page).await
+    }
+}
+
+async fn album_search_artwork(
+    service: &Service,
+    artist_candidates: &[String],
+    album: &str,
+) -> Option<String> {
+    let response = match service
+        .client
+        .request(
+            "album.search",
+            BTreeMap::from([("album".into(), album.into())]),
+            None,
+        )
+        .await
+    {
+        Ok(response) => response,
+        Err(error) => {
+            log::debug!(
+                "Discord artwork lookup failed: method=album.search, album_len={}, error={}",
+                album.len(),
+                error.code
+            );
+            return None;
+        }
+    };
+    let rows = &response["results"]["albummatches"]["album"];
+    let rows = if let Some(rows) = rows.as_array() {
+        rows.iter().collect::<Vec<_>>()
+    } else if rows.is_object() {
+        vec![rows]
+    } else {
+        return None;
+    };
+
+    let album_name = album.trim();
+    let result = rows.into_iter().find(|row| {
+        let exact_album_match =
+            text(&row["name"]).is_some_and(|name| name.eq_ignore_ascii_case(album_name));
+        let result_artist = artist(&row["artist"]);
+        exact_album_match
+            && artist_candidates
+                .iter()
+                .any(|candidate| candidate.eq_ignore_ascii_case(&result_artist))
+    })?;
+
+    if let Some(artwork) = images(&result["image"]) {
+        return Some(artwork);
+    }
+    let page = source_url(&result["url"]);
+    if page == "https://www.last.fm/" {
+        None
+    } else {
+        page_artwork(&page).await
+    }
+}
 
 /// Resolve a public Last.fm album image for Discord and persist the URL so
 /// subsequent tracks from the same album do not issue another API request.
@@ -77,11 +197,15 @@ pub(crate) async fn resolve_discord_artwork(
     artist: &str,
     album: &str,
 ) -> Option<String> {
-    let artist_key = artist.trim().to_lowercase();
-    let album_key = album.trim().to_lowercase();
-    if artist_key.is_empty()
+    // Bump the key namespace when changing lookup behavior so cached misses
+    // from an older resolver do not hide newly discoverable artwork.
+    let artist_name = artist.trim();
+    let album_name = album.trim();
+    let artist_key = format!("discord-artwork-v2:{}", artist_name.to_lowercase());
+    let album_key = album_name.to_lowercase();
+    if artist_name.is_empty()
         || album_key.is_empty()
-        || artist_key.len() > 500
+        || artist_name.len() > 500
         || album_key.len() > 500
     {
         return None;
@@ -105,42 +229,55 @@ pub(crate) async fn resolve_discord_artwork(
     };
 
     if let Some((artwork_url, fetched_at)) = cached {
-        if now.saturating_sub(fetched_at) < ARTWORK_CACHE_TTL_SECONDS {
-            return artwork_url.and_then(|url| normalize_art_url(&url));
+        let ttl = if artwork_url.is_some() {
+            ARTWORK_CACHE_TTL_SECONDS
+        } else {
+            NEGATIVE_ARTWORK_CACHE_TTL_SECONDS
+        };
+        if now.saturating_sub(fetched_at) < ttl {
+            match artwork_url {
+                Some(url) => {
+                    if let Some(url) = normalize_art_url(&url) {
+                        log::debug!("Discord artwork cache hit: result=found");
+                        return Some(url);
+                    }
+                }
+                None => {
+                    log::debug!("Discord artwork cache hit: result=not_found");
+                    return None;
+                }
+            }
         }
     }
 
     if !service.client.configured() {
         return None;
     }
-    let response = service
-        .client
-        .request(
-            "album.getInfo",
-            BTreeMap::from([
-                ("artist".into(), artist.trim().into()),
-                ("album".into(), album.trim().into()),
-                ("autocorrect".into(), "0".into()),
-            ]),
-            None,
-        )
-        .await
-        .ok()?;
-    let details = &response["album"];
-    let artwork = if details.is_object() {
-        if let Some(artwork) = images(&details["image"]) {
-            Some(artwork)
-        } else {
-            let page = source_url(&details["url"]);
-            if page == "https://www.last.fm/" {
-                None
-            } else {
-                page_artwork(&page).await
-            }
+    let artist_candidates = artwork_artist_candidates(artist);
+    let mut artwork = None;
+    for (index, candidate) in artist_candidates.iter().enumerate() {
+        artwork = album_artwork_for_artist(service, candidate, album).await;
+        if artwork.is_some() {
+            log::info!(
+                "Discord artwork resolved: source=album.getInfo, artist_candidate_index={index}, artist_candidates={}",
+                artist_candidates.len()
+            );
+            break;
         }
-    } else {
-        None
-    };
+    }
+    if artwork.is_none() {
+        artwork = album_search_artwork(service, &artist_candidates, album).await;
+        if artwork.is_some() {
+            log::info!("Discord artwork resolved: source=album.search");
+        }
+    }
+    if artwork.is_none() {
+        log::warn!(
+            "Discord artwork unavailable from Last.fm: artist_candidates={}, album_len={}",
+            artist_candidates.len(),
+            album.len()
+        );
+    }
 
     {
         let conn = service.db.lock().ok()?;
