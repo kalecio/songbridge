@@ -7,6 +7,21 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0-rc.10] - 2026-11-17
+
+### Added
+- **Weekly Last.fm stats in Discord Rich Presence** — show the listening account's scrobbles for the current week alongside the active track
+- **Queue controls** — remove tracks directly from the queue and reorder them with drag and drop
+- **Resizable playlist creation panel** — adjust the playlist sidebar width while editing
+
+### Changed
+- **Last.fm album results** — show artwork reliably in the result cards before selecting a match
+- **Queue ordering** — follow playback order and use drag and drop instead of a separate sort selector
+
+### Fixed
+- **Large library responsiveness** — virtualize album, artist, search, and playlist results, and avoid repeated full-library lookups during common interactions
+- **Playlist deletion feedback** — preserve the playlist and show an error if deletion fails
+
 ## [1.0.0-rc.9] - 2026-11-17
 
 ### Fixed
