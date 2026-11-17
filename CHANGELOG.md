@@ -7,6 +7,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0-rc.8] - 2026-11-17
+
+### Added
+- **Discord Rich Presence album artwork** — show public Last.fm album covers without requiring a Last.fm account and cache artwork URLs locally to avoid repeated lookups
+
+### Changed
+- **Last.fm artwork compatibility** — upgrade legacy image URLs to HTTPS so artwork can load from older Last.fm responses
+- **Update settings** — give manual update checks their own settings tab
+
 ## [1.0.0-rc.7] - 2026-11-16
 
 ### Added
