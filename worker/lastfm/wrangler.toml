@@ -1,0 +1,26 @@
+name = "songbridge-lastfm-api"
+main = "src/index.ts"
+compatibility_date = "2026-11-12"
+compatibility_flags = ["nodejs_compat"]
+
+[vars]
+LASTFM_GLOBAL_INTERVAL_MS = "1000"
+
+[[durable_objects.bindings]]
+name = "LASTFM_QUEUE"
+class_name = "LastfmRequestQueue"
+
+[exports.LastfmRequestQueue]
+type = "durable-object"
+storage = "sqlite"
+
+[observability]
+enabled = true
+
+[[ratelimits]]
+name = "REQUEST_LIMITER"
+namespace_id = "730401"
+
+  [ratelimits.simple]
+  limit = 120
+  period = 60

@@ -1,13 +1,30 @@
 import { useCallback, useContext, useEffect, useRef, useState } from 'react';
-import { ControlsContainer, Shuffle, Prev, Play, Next, RepeatButton, Pause, CurrentTime, Container } from './styles';
+import {
+  ControlsContainer,
+  Shuffle,
+  Prev,
+  Play,
+  Next,
+  RepeatButton,
+  Pause,
+  CurrentTime,
+  Container,
+  Timeline,
+  TransportButton,
+} from './styles';
 import { invoke } from '@tauri-apps/api/core';
 import { AppContext } from '../../Context/AppContext';
-import { error as logError } from '../../logger';
+import { error as logError, info as logInfo } from '../../logger';
 import { MetadataType, RepeatMode } from '../../types';
 import { AUDIO_EVENTS } from '../../audioEvents';
+import ProgressBar from '../ProgressBar/ProgressBar';
 import { TbRepeat, TbRepeatOnce } from 'react-icons/tb';
+import { useI18n } from '../../i18n/I18nProvider';
 
-const Controls = () => {
+const trackFileName = (path?: string) => path?.split(/[\\/]/).pop() || 'unknown';
+
+const Controls = ({ onSeek }: { onSeek?: (_ratio: number) => void }) => {
+  const { t } = useI18n();
   const [isSongLoaded, setIsSongLoaded] = useState(false);
 
   const context = useContext(AppContext);
@@ -28,9 +45,11 @@ const Controls = () => {
 
   const playNewSong = useCallback(async () => {
     try {
+      logInfo(`Playback command requested: action=load_and_play, track="${trackFileName(path)}"`).catch(() => {});
       const metadata = await invoke<MetadataType>('get_metadata', { path });
       await invoke('load_song', { path });
       await invoke('play_song');
+      logInfo(`Playback command acknowledged: action=load_and_play, track="${trackFileName(path)}"`).catch(() => {});
       setCurrentPath?.(path);
       setIsPlaying?.(true);
       setMetadata?.(metadata);
@@ -73,7 +92,9 @@ const Controls = () => {
 
   const pause = async () => {
     try {
+      logInfo(`Playback command requested: action=pause, track="${trackFileName(path)}"`).catch(() => {});
       await invoke('pause');
+      logInfo(`Playback command acknowledged: action=pause, track="${trackFileName(path)}"`).catch(() => {});
       setIsPlaying?.(false);
     } catch (error) {
       logError(`Pause failed: ${error}`).catch(() => {});
@@ -82,7 +103,9 @@ const Controls = () => {
 
   const resume = async () => {
     try {
+      logInfo(`Playback command requested: action=resume, track="${trackFileName(path)}"`).catch(() => {});
       await invoke('resume');
+      logInfo(`Playback command acknowledged: action=resume, track="${trackFileName(path)}"`).catch(() => {});
       setIsPlaying?.(true);
     } catch (error) {
       logError(`Resume failed: ${error}`).catch(() => {});
@@ -157,20 +180,37 @@ const Controls = () => {
 
   return (
     <Container>
-      <CurrentTime>{currentTimeStr}</CurrentTime>
       <ControlsContainer>
-        <Shuffle aria-label="shuffle" $onShuffle={onShuffle} onClick={() => setOnShuffle?.(!onShuffle)} />
-        <Prev aria-label="previous" onClick={handlePreviousSong} />
-        {isPlaying ? (
-          <Pause aria-label="pause" onClick={pause} />
-        ) : (
-          <Play aria-label="play" onClick={isSongLoaded ? resume : playNewSong} />
-        )}
-        <Next aria-label="next" onClick={handleNextSong} />
-        <RepeatButton aria-label="repeat" $onRepeat={onRepeat} onClick={handleToggleRepeat}>
+        <TransportButton
+          aria-label={t('common.shuffle')}
+          aria-pressed={onShuffle}
+          onClick={() => setOnShuffle?.(!onShuffle)}
+        >
+          <Shuffle $onShuffle={onShuffle} />
+        </TransportButton>
+        <TransportButton aria-label={t('common.previous')} onClick={handlePreviousSong}>
+          <Prev />
+        </TransportButton>
+        <TransportButton
+          $primary
+          aria-label={isPlaying ? t('common.pause') : t('common.play')}
+          onClick={togglePlayPause}
+        >
+          {isPlaying ? <Pause /> : <Play />}
+        </TransportButton>
+        <TransportButton aria-label={t('common.next')} onClick={handleNextSong}>
+          <Next />
+        </TransportButton>
+        <RepeatButton aria-label={t('common.repeat')} $onRepeat={onRepeat} onClick={handleToggleRepeat}>
           {onRepeat === 'one' ? <TbRepeatOnce /> : <TbRepeat />}
         </RepeatButton>
       </ControlsContainer>
+      <CurrentTime>{currentTimeStr}</CurrentTime>
+      <Timeline>
+        <time>{formatTime(currentSeconds)}</time>
+        <ProgressBar progress={progress} max={100} onSeek={onSeek} />
+        <time>{formatTime(totalSeconds)}</time>
+      </Timeline>
     </Container>
   );
 };

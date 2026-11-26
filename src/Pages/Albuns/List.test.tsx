@@ -60,6 +60,19 @@ describe('Albums', () => {
     expect(names[1]).toBe('Second Album');
   });
 
+  it('shows the full album gallery on the home page without a tab bar', () => {
+    const { queryByRole, getByText } = renderWithContext(<Albums home />, { library });
+    expect(queryByRole('navigation', { name: 'Biblioteca' })).not.toBeInTheDocument();
+    expect(getByText('First Album')).toBeInTheDocument();
+    expect(getByText('Second Album')).toBeInTheDocument();
+  });
+
+  it('opens library settings from the empty home screen', () => {
+    const { getByRole } = renderWithContext(<Albums home />, { library: [] });
+    fireEvent.click(getByRole('button', { name: 'Adicionar músicas' }));
+    expect(mockNavigate).toHaveBeenCalledWith('/settings');
+  });
+
   describe('context menu — Edit metadata', () => {
     it('shows an "Edit metadata" option in the album context menu', () => {
       renderWithContext(<Albums />, { library });

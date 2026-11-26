@@ -2,7 +2,16 @@ use super::utils::{calculate_track_duration, format_duration, get_audio_probe};
 use crate::audio::backend::{spawn_audio_thread, AudioCommand, PositionReport};
 use crate::metadata::types::AudioDuration;
 use crossbeam_channel::Sender;
-use std::{sync::mpsc, time::Duration};
+use std::{
+    sync::{mpsc, Arc, Mutex},
+    time::Duration,
+};
+
+#[derive(serde::Serialize)]
+pub struct PlaybackProgress {
+    pub path: Option<String>,
+    pub position_seconds: u64,
+}
 
 pub struct AudioState {
     pub path: String,
@@ -10,6 +19,7 @@ pub struct AudioState {
     original_volume: f32,
     is_muted: bool,
     pub track_duration: AudioDuration,
+    visualizer_levels: Arc<Mutex<Vec<f32>>>,
 }
 
 impl Default for AudioState {
@@ -20,13 +30,15 @@ impl Default for AudioState {
 
 impl AudioState {
     pub fn new() -> Self {
-        let audio_tx = spawn_audio_thread();
+        let visualizer_levels = Arc::new(Mutex::new(vec![0.0; 32]));
+        let audio_tx = spawn_audio_thread(Arc::clone(&visualizer_levels));
         AudioState {
             path: String::new(),
             audio_tx,
             original_volume: 1.0,
             is_muted: false,
             track_duration: AudioDuration::default(),
+            visualizer_levels,
         }
     }
 
@@ -35,6 +47,9 @@ impl AudioState {
         let track_duration = calculate_track_duration(&probe);
         self.track_duration = AudioDuration::new(track_duration, format_duration(track_duration));
         self.path = path.to_string();
+        if let Ok(mut levels) = self.visualizer_levels.lock() {
+            levels.fill(0.0);
+        }
         let _ = self.audio_tx.send(AudioCommand::Load(path.to_string()));
         Ok(())
     }
@@ -82,10 +97,22 @@ impl AudioState {
         let _ = self.audio_tx.send(AudioCommand::SetVolume(volume));
     }
 
-    pub fn current_position(&self) -> Duration {
+    pub fn current_progress(&self) -> PlaybackProgress {
         let (tx, rx) = mpsc::channel();
-        let _ = self.audio_tx.send(AudioCommand::GetPosition(tx));
-        let PositionReport { position, ended } = rx.recv().unwrap_or(PositionReport {
+        let expected_duration = self
+            .track_duration
+            .duration_seconds
+            .map(Duration::from_secs);
+        let _ = self.audio_tx.send(AudioCommand::GetPosition {
+            response: tx,
+            expected_duration,
+        });
+        let PositionReport {
+            track_path,
+            position,
+            ended,
+        } = rx.recv().unwrap_or(PositionReport {
+            track_path: None,
             position: Duration::from_secs(0),
             ended: false,
         });
@@ -94,16 +121,35 @@ impl AudioState {
         // is what makes the frontend's `progress >= duration` auto-advance
         // check fire even though rodio's `get_pos()` resets when the queue
         // empties.
-        if ended {
+        let belongs_to_current_track = track_path.as_deref() == Some(self.path.as_str());
+        let position = if ended && belongs_to_current_track {
             if let Some(d) = self.track_duration.duration_seconds {
-                return Duration::from_secs(d);
+                Duration::from_secs(d)
+            } else {
+                position
             }
+        } else {
+            position
+        };
+        PlaybackProgress {
+            path: track_path,
+            position_seconds: position.as_secs(),
         }
-        position
+    }
+
+    pub fn current_position(&self) -> Duration {
+        Duration::from_secs(self.current_progress().position_seconds)
     }
 
     pub fn seek(&mut self, position: Duration) {
         let _ = self.audio_tx.send(AudioCommand::Seek(position));
+    }
+
+    pub fn visualizer_levels(&self) -> Vec<f32> {
+        self.visualizer_levels
+            .lock()
+            .map(|levels| levels.clone())
+            .unwrap_or_else(|_| vec![0.0; 32])
     }
 }
 
@@ -123,6 +169,7 @@ mod tests {
             original_volume: 1.0,
             is_muted: false,
             track_duration: crate::metadata::types::AudioDuration::default(),
+            visualizer_levels: Arc::new(Mutex::new(vec![0.0; 32])),
         };
 
         state.play();
@@ -153,6 +200,7 @@ mod tests {
             original_volume: 1.0,
             is_muted: false,
             track_duration: crate::metadata::types::AudioDuration::default(),
+            visualizer_levels: Arc::new(Mutex::new(vec![0.0; 32])),
         };
 
         state.set_volume(0.6);
@@ -186,6 +234,7 @@ mod tests {
             original_volume: 0.8,
             is_muted: false,
             track_duration: crate::metadata::types::AudioDuration::default(),
+            visualizer_levels: Arc::new(Mutex::new(vec![0.0; 32])),
         };
 
         state.toggle_mute();
@@ -212,14 +261,16 @@ mod tests {
             original_volume: 1.0,
             is_muted: false,
             track_duration: crate::metadata::types::AudioDuration::default(),
+            visualizer_levels: Arc::new(Mutex::new(vec![0.0; 32])),
         };
 
         // Spawn a small helper thread that will respond to GetPosition requests
         let responder = thread::spawn(move || {
             if let Ok(cmd) = rx.recv() {
                 match cmd {
-                    AudioCommand::GetPosition(resp) => {
-                        let _ = resp.send(PositionReport {
+                    AudioCommand::GetPosition { response, .. } => {
+                        let _ = response.send(PositionReport {
+                            track_path: Some(String::new()),
                             position: StdDuration::from_secs(7),
                             ended: false,
                         });
@@ -245,16 +296,18 @@ mod tests {
             original_volume: 1.0,
             is_muted: false,
             track_duration: crate::metadata::types::AudioDuration::new(Some(82), None),
+            visualizer_levels: Arc::new(Mutex::new(vec![0.0; 32])),
         };
 
         let responder = thread::spawn(move || {
-            if let Ok(AudioCommand::GetPosition(resp)) = rx.recv() {
+            if let Ok(AudioCommand::GetPosition { response, .. }) = rx.recv() {
                 // Simulates rodio's behaviour when the source has finished:
                 // `get_pos()` returns 0 but the sink is empty. The backend
                 // then sets `ended: true`, and `current_position` must
                 // surface the track's duration so the frontend's
                 // `progress >= duration` auto-advance check fires.
-                let _ = resp.send(PositionReport {
+                let _ = response.send(PositionReport {
+                    track_path: Some(String::new()),
                     position: StdDuration::from_secs(0),
                     ended: true,
                 });
@@ -277,11 +330,13 @@ mod tests {
             original_volume: 1.0,
             is_muted: false,
             track_duration: crate::metadata::types::AudioDuration::default(),
+            visualizer_levels: Arc::new(Mutex::new(vec![0.0; 32])),
         };
 
         let responder = thread::spawn(move || {
-            if let Ok(AudioCommand::GetPosition(resp)) = rx.recv() {
-                let _ = resp.send(PositionReport {
+            if let Ok(AudioCommand::GetPosition { response, .. }) = rx.recv() {
+                let _ = response.send(PositionReport {
+                    track_path: Some(String::new()),
                     position: StdDuration::from_secs(0),
                     ended: true,
                 });

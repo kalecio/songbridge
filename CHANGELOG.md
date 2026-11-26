@@ -5,6 +5,60 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased]
+
+## [1.0.0-rc.4] - 2026-11-15
+
+### Fixed
+- **Queue auto-advance after track completion** — keep the backend end-of-track state available across progress polls until another track is loaded, so a missed poll does not leave playback stuck at the end
+- **Windows now-playing album art** — pass the native Windows temp-file path to the media controls, avoiding the malformed `/C:/...` path that caused SMTC to reject covers
+
+## [1.0.0-rc.3] - 2026-11-15
+
+### Added
+- **Playback stall diagnostics** — logs capture play and resume requests, backend command receipt, stalled playback progress, and audio sinks that empty before a track end is confirmed
+
+## [1.0.0-rc.2] - 2026-11-14
+
+### Added
+- **Automatic visualizer rotation** — change presets on a configurable interval and choose from all presets or favorites only
+
+### Fixed
+- **Visualizer preset changes in production builds** — load selected presets reliably on macOS and allow the bundled WebAssembly equations to compile
+
+## [1.0.0-rc.1] - 2026-11-13
+
+### Added
+- **Playback and runtime diagnostics** — logs include the app version, operating system and Linux distribution, playback end and queue decisions, decoder errors, and Last.fm configuration status
+
+### Changed
+- **Large library scanning** — defer embedded artwork loading until requested, reducing memory pressure during scans
+- **Linux AppImages** — update Tauri bundling tools to improve compatibility with current Mesa and Arch systems and use native Wayland where available
+
+### Fixed
+- **Windows pre-release installers** — map release-candidate versions to a valid MSI version while keeping the app's SemVer version unchanged
+
+## [1.0.0-rc] - 2026-11-13
+
+Release-candidate notes for the planned 1.0.0 release, covering expanded library controls, Last.fm integration, audio visualizers, and in-app updates.
+
+### Added
+- **Last.fm scrobbling and activity** — connect an account, submit qualifying plays, keep eligible plays queued while offline, and review recent activity and submission status
+- **Last.fm metadata review** — compare local tags and cover art with Last.fm, then approve the individual changes to apply
+- **Immersive audio visualizers** — choose from visualizer presets and customize their appearance
+- **Library sorting controls** — sort tracks by title, artist, album, or year across song lists, queues, and playlists
+- **Custom themes and a resizable sidebar** — create and customize themes, then adjust the library sidebar width
+- **Lyrics controls** — change lyric text size and find or download lyrics when a track has none
+- **Signed in-app updates** — review release notes, install an update in Songbridge, or defer the prompt until the next launch or the following day
+
+### Changed
+- **Refreshed desktop layout and navigation** — reorganized the home, library, and player surfaces around a more flexible sidebar and responsive controls
+- **Long music labels** — long song, artist, and album names scroll into view instead of being cut off
+
+### Fixed
+- **Linux folder selection** — use desktop portals for file and folder dialogs
+- **Pending Last.fm plays** — keep queued plays when authentication or network errors interrupt submission, so reconnecting does not silently discard them
+
 ## [0.6.0] - 2026-06-28
 
 A lyrics-and-presence release: full LRC lyrics support with lrclib.net search/preview/download, metadata editing for songs/albums/artists, Discord Rich Presence, three-state repeat mode, 60fps progress interpolation, and a centered responsive Controls bar.

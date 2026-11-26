@@ -72,11 +72,11 @@ describe('CreatePlaylist', () => {
   });
 
   describe('creating a playlist', () => {
-    it('adds a playlist to the sidebar and opens the editor when clicking "+ New Playlist"', () => {
+    it('adds a playlist to the sidebar and opens the editor when clicking "+ New playlist"', () => {
       const { getByText, getByLabelText } = render(<Wrapper />);
-      fireEvent.click(getByText('+ New Playlist'));
-      expect(getByText('New Playlist')).toBeInTheDocument();
-      expect(getByLabelText('Playlist name')).toHaveValue('New Playlist');
+      fireEvent.click(getByText('+ New playlist'));
+      expect(getByText('New playlist')).toBeInTheDocument();
+      expect(getByLabelText('Playlist name')).toHaveValue('New playlist');
     });
   });
 
@@ -248,10 +248,10 @@ describe('CreatePlaylist', () => {
       const { getByLabelText, getByText, getAllByText } = render(
         <Wrapper initialEntries={[{ pathname: '/playlist', state: { addSong: songA } }]} />,
       );
-      expect(getByLabelText('Playlist name')).toHaveValue('New Playlist');
+      expect(getByLabelText('Playlist name')).toHaveValue('New playlist');
       expect(getByText('Song Alpha')).toBeInTheDocument();
-      // "1 songs" appears in both the sidebar item count and the editor header
-      expect(getAllByText('1 songs').length).toBeGreaterThan(0);
+      // The singular count appears in both the sidebar item and editor header.
+      expect(getAllByText('1 song').length).toBeGreaterThan(0);
     });
 
     it('does not pre-add when state.addSong has no path', () => {
@@ -260,7 +260,7 @@ describe('CreatePlaylist', () => {
         <Wrapper initialEntries={[{ pathname: '/playlist', state: { addSong: seed } }]} />,
       );
       // Playlist is still created, but with no songs
-      expect(getByLabelText('Playlist name')).toHaveValue('New Playlist');
+      expect(getByLabelText('Playlist name')).toHaveValue('New playlist');
       expect(queryByText('Floating')).not.toBeInTheDocument();
     });
   });

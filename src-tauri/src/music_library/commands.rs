@@ -2,7 +2,7 @@ use crate::db::commands::{
     delete_tracks, get_cached_track_mtimes, get_cached_tracks, upsert_track,
 };
 use crate::db::state::DbState;
-use crate::metadata::commands::get_metadata;
+use crate::metadata::commands::get_metadata_without_art;
 use crate::metadata::types::AudioMetadata;
 use crate::music_library::state::LibraryState;
 use serde::Serialize;
@@ -168,7 +168,7 @@ pub async fn scan_music_library(
                 }
             } else {
                 // New or modified → parse and upsert.
-                match get_metadata(&path_str) {
+                match get_metadata_without_art(&path_str) {
                     Ok(meta) => {
                         let conn = conn_arc.lock().map_err(|e| e.to_string())?;
                         if let Err(e) = upsert_track(&conn, &meta, mtime) {
@@ -237,6 +237,50 @@ pub async fn scan_music_library(
     locked.songs = songs.songs.clone();
 
     Ok(songs)
+}
+
+/// Scan only the chosen folder for an open-folder playback queue. Unlike the
+/// library scan, this does not include the default music directory or replace
+/// the user's library cache.
+#[tauri::command]
+pub async fn scan_audio_folder(app: AppHandle, path: String) -> Result<Vec<AudioMetadata>, String> {
+    let directory = Path::new(&path);
+    if !directory.is_dir() {
+        return Err("not_a_directory".into());
+    }
+
+    let directory = directory.to_path_buf();
+    tauri::async_runtime::spawn_blocking(move || {
+        let (mut files, _) = collect_audio_files(std::slice::from_ref(&directory));
+        files.sort_by_cached_key(|file| file.to_string_lossy().to_lowercase());
+        let total = files.len();
+        let _ = app.emit(SCAN_PROGRESS_EVENT, ScanProgress { current: 0, total });
+        let emit_every = (total / 100).max(1);
+        let mut songs = Vec::with_capacity(total);
+
+        for (index, file) in files.iter().enumerate() {
+            if let Some(path) = file.to_str() {
+                match get_metadata_without_art(path) {
+                    Ok(metadata) => songs.push(metadata),
+                    Err(error) => log::warn!("Failed to read metadata for '{}': {}", path, error),
+                }
+            }
+            let current = index + 1;
+            if current == total || current % emit_every == 0 {
+                let _ = app.emit(SCAN_PROGRESS_EVENT, ScanProgress { current, total });
+            }
+        }
+        log::info!(
+            "Folder playback scan complete: {} tracks found",
+            songs.len()
+        );
+        Ok(songs)
+    })
+    .await
+    .map_err(|error| {
+        log::error!("Folder scan task failed: {}", error);
+        error.to_string()
+    })?
 }
 
 #[tauri::command]

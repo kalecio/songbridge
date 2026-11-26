@@ -34,6 +34,12 @@ pub struct NowPlayingPayload {
     /// file so we can hand the OS now-playing surface a file:// URL — most
     /// platforms reject long data URLs.
     pub cover_data_url: Option<String>,
+    /// Public Last.fm artwork URL used by Discord Rich Presence.
+    #[serde(default)]
+    pub lastfm_artwork_url: Option<String>,
+    /// Cached weekly Last.fm scrobble count displayed in Discord Rich Presence.
+    #[serde(default)]
+    pub lastfm_weekly_scrobbles: Option<u64>,
 }
 
 #[derive(Default, Clone, serde::Deserialize)]
@@ -46,6 +52,7 @@ pub struct PlaybackStatePayload {
 pub struct NowPlayingInner {
     pub controls: Option<MediaControls>,
     pub cached_metadata: Option<NowPlayingPayload>,
+    pub cached_playback: PlaybackStatePayload,
 }
 
 pub type NowPlayingState = Arc<Mutex<NowPlayingInner>>;
@@ -84,7 +91,14 @@ fn detect_image_kind(bytes: &[u8]) -> Option<&'static str> {
 /// Reverse of `cover_path_to_url` — used by the diagnostic log to confirm the
 /// file we just promised SMTC actually exists on disk.
 fn file_url_to_path(url: &str) -> Option<PathBuf> {
-    Url::parse(url).ok()?.to_file_path().ok()
+    #[cfg(target_os = "windows")]
+    {
+        return url.strip_prefix("file://").map(PathBuf::from);
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        Url::parse(url).ok()?.to_file_path().ok()
+    }
 }
 
 /// Build a properly-formatted `file://` URL for an absolute filesystem path.
@@ -96,11 +110,24 @@ fn file_url_to_path(url: &str) -> Option<PathBuf> {
 /// cases, surfacing as the cryptic
 /// `HRESULT(0x800700A1) … "(UNABLE_TO_MASK_PATH) … 1440741640"`.
 ///
-/// `Url::from_file_path` does the right thing on every platform: the path is
-/// percent-encoded, backslashes become forward slashes on Windows, and we
-/// always get the canonical three-slash `file:///` form.
+/// On non-Windows platforms, `Url::from_file_path` produces a canonical URL.
+/// On Windows, souvlaki 0.8 strips the `file://` prefix and passes the rest
+/// directly to `StorageFile::GetFileFromPathAsync`; therefore the value must
+/// contain the native `C:\...` path immediately after the prefix. A canonical
+/// `file:///C:/...` URL leaves `/C:/...` after stripping and makes WinRT
+/// report the misleading ERROR_BAD_PATHNAME / UNABLE_TO_MASK_PATH error.
 fn cover_path_to_url(path: &Path) -> Option<String> {
-    Url::from_file_path(path).ok().map(|u| u.to_string())
+    #[cfg(target_os = "windows")]
+    {
+        if !path.is_absolute() {
+            return None;
+        }
+        Some(format!("file://{}", path.to_string_lossy()))
+    }
+    #[cfg(not(target_os = "windows"))]
+    {
+        Url::from_file_path(path).ok().map(|u| u.to_string())
+    }
 }
 
 /// Resolve the temp-file path we write album art to.
@@ -159,6 +186,7 @@ pub fn init(app: &AppHandle) {
             let empty_inner = Arc::new(Mutex::new(NowPlayingInner {
                 controls: None,
                 cached_metadata: None,
+                cached_playback: PlaybackStatePayload::default(),
             }));
             app.manage(empty_inner);
             return;
@@ -168,6 +196,7 @@ pub fn init(app: &AppHandle) {
     let inner = Arc::new(Mutex::new(NowPlayingInner {
         controls: Some(controls),
         cached_metadata: None,
+        cached_playback: PlaybackStatePayload::default(),
     }));
 
     {
@@ -206,6 +235,7 @@ pub fn init(app: &AppHandle) {
 
 #[tauri::command]
 pub fn set_now_playing(
+    app: AppHandle,
     state: tauri::State<NowPlayingState>,
     discord_state: tauri::State<DiscordPresenceState>,
     payload: NowPlayingPayload,
@@ -220,9 +250,9 @@ pub fn set_now_playing(
 
     // Cache metadata for Discord presence updates
     inner.cached_metadata = Some(payload.clone());
-
-    let Some(controls) = inner.controls.as_mut() else {
-        return;
+    inner.cached_playback = PlaybackStatePayload {
+        is_playing: false,
+        elapsed_seconds: Some(0.0),
     };
 
     let cover_url = payload
@@ -259,20 +289,22 @@ pub fn set_now_playing(
         duration: payload.duration_seconds.map(Duration::from_secs),
     };
 
-    match controls.set_metadata(make_metadata(true)) {
-        Ok(()) => {}
-        Err(e) => {
-            log::warn!("set_metadata with cover failed: {:?}", e);
-            // If a cover was provided, try once more without it — this both
-            // gives users readable text on the OS now-playing card when the
-            // cover is the offending part, and tells us in the next log
-            // which side of the split caused the original failure.
-            if cover_url.is_some() {
-                match controls.set_metadata(make_metadata(false)) {
-                    Ok(()) => log::info!(
-                        "set_metadata without cover succeeded — the cover URL is the cause"
-                    ),
-                    Err(e2) => log::warn!("set_metadata without cover also failed: {:?}", e2),
+    if let Some(controls) = inner.controls.as_mut() {
+        match controls.set_metadata(make_metadata(true)) {
+            Ok(()) => {}
+            Err(e) => {
+                log::warn!("set_metadata with cover failed: {:?}", e);
+                // If a cover was provided, try once more without it — this both
+                // gives users readable text on the OS now-playing card when the
+                // cover is the offending part, and tells us in the next log
+                // which side of the split caused the original failure.
+                if cover_url.is_some() {
+                    match controls.set_metadata(make_metadata(false)) {
+                        Ok(()) => log::info!(
+                            "set_metadata without cover succeeded — the cover URL is the cause"
+                        ),
+                        Err(e2) => log::warn!("set_metadata without cover also failed: {:?}", e2),
+                    }
                 }
             }
         }
@@ -287,6 +319,53 @@ pub fn set_now_playing(
             elapsed_seconds: Some(0.0),
         },
     );
+
+    let (Some(artist), Some(album)) = (payload.artist.clone(), payload.album.clone()) else {
+        return;
+    };
+    if artist.trim().is_empty() || album.trim().is_empty() {
+        return;
+    }
+    let Some(service) = app
+        .try_state::<Arc<crate::lastfm::Service>>()
+        .map(|service| service.inner().clone())
+    else {
+        return;
+    };
+    let now_playing_state = state.inner().clone();
+    let discord_presence = discord_state.0.clone();
+    tauri::async_runtime::spawn(async move {
+        let (artwork, weekly_scrobbles) = tokio::join!(
+            crate::lastfm::metadata::resolve_discord_artwork(&service, &artist, &album),
+            crate::lastfm::resolve_weekly_scrobbles(&service),
+        );
+        let Some((metadata, playback)) = (|| {
+            let mut inner = now_playing_state.lock().ok()?;
+            let metadata = inner.cached_metadata.as_mut()?;
+            if metadata.artist.as_deref() != Some(artist.as_str())
+                || metadata.album.as_deref() != Some(album.as_str())
+            {
+                return None;
+            }
+            metadata.lastfm_artwork_url = artwork.clone();
+            metadata.lastfm_weekly_scrobbles = weekly_scrobbles;
+            Some((metadata.clone(), inner.cached_playback.clone()))
+        })() else {
+            return;
+        };
+        if let Ok(guard) = discord_presence.lock() {
+            if let Some(discord) = guard.as_ref() {
+                let artwork_source = metadata
+                    .lastfm_artwork_url
+                    .as_deref()
+                    .filter(|url| crate::lastfm::metadata::valid_art_url(url))
+                    .map(|_| "lastfm_url")
+                    .unwrap_or("songbridge_logo");
+                log::info!("Submitting Discord Rich Presence artwork: source={artwork_source}");
+                discord.set_activity(&metadata, &playback);
+            }
+        }
+    });
 }
 
 #[tauri::command]
@@ -316,9 +395,7 @@ pub fn set_playback_state(
         }
     };
 
-    let Some(controls) = inner.controls.as_mut() else {
-        return;
-    };
+    inner.cached_playback = payload.clone();
 
     let progress = payload
         .elapsed_seconds
@@ -334,8 +411,10 @@ pub fn set_playback_state(
         payload.is_playing,
         payload.elapsed_seconds,
     );
-    if let Err(e) = controls.set_playback(playback) {
-        log::warn!("Failed to set playback state: {:?}", e);
+    if let Some(controls) = inner.controls.as_mut() {
+        if let Err(e) = controls.set_playback(playback) {
+            log::warn!("Failed to set playback state: {:?}", e);
+        }
     }
 
     // Update Discord presence with cached metadata
@@ -401,10 +480,18 @@ mod tests {
     fn produces_a_valid_file_url_for_a_simple_path() {
         let path = std::env::temp_dir().join("songbridge-cover.jpg");
         let url = cover_path_to_url(&path).unwrap();
+        #[cfg(target_os = "windows")]
+        assert!(
+            url.starts_with("file://") && !url.starts_with("file:///"),
+            "got: {}",
+            url
+        );
+        #[cfg(not(target_os = "windows"))]
         assert!(url.starts_with("file:///"), "got: {}", url);
         assert!(url.ends_with("songbridge-cover.jpg"));
     }
 
+    #[cfg(not(target_os = "windows"))]
     #[test]
     fn percent_encodes_spaces_in_the_path() {
         let path = std::env::temp_dir()
@@ -423,6 +510,7 @@ mod tests {
         );
     }
 
+    #[cfg(not(target_os = "windows"))]
     #[test]
     fn percent_encodes_non_ascii_characters() {
         // Common real-world case: usernames with accents.
@@ -436,6 +524,7 @@ mod tests {
         );
     }
 
+    #[cfg(not(target_os = "windows"))]
     #[test]
     fn percent_encodes_uri_reserved_characters() {
         // `#`, `?`, and `%` would all break a URL parser if pasted in raw.
@@ -453,15 +542,6 @@ mod tests {
         // we want: a relative path would silently produce a bogus URL.
         let path = PathBuf::from("relative/path/cover.jpg");
         assert!(cover_path_to_url(&path).is_none());
-    }
-
-    #[cfg(target_os = "windows")]
-    #[test]
-    fn windows_paths_use_forward_slashes_and_three_slashes() {
-        let path = PathBuf::from(r"C:\Users\Foo\AppData\Local\Temp\songbridge-cover.jpg");
-        let url = cover_path_to_url(&path).unwrap();
-        assert!(url.starts_with("file:///C:/"), "got: {}", url);
-        assert!(!url.contains('\\'), "got: {}", url);
     }
 
     // ── cover_temp_path ─────────────────────────────────────────────────
@@ -542,6 +622,7 @@ mod tests {
         let inner = NowPlayingInner {
             controls: None,
             cached_metadata: None,
+            cached_playback: PlaybackStatePayload::default(),
         };
 
         assert!(inner.cached_metadata.is_none());
@@ -552,6 +633,8 @@ mod tests {
             album: Some("Test Album".to_string()),
             duration_seconds: Some(180),
             cover_data_url: None,
+            lastfm_artwork_url: None,
+            lastfm_weekly_scrobbles: None,
         };
 
         let mut inner = inner;
@@ -598,6 +681,8 @@ mod tests {
             album: Some("Album".to_string()),
             duration_seconds: Some(200),
             cover_data_url: None,
+            lastfm_artwork_url: None,
+            lastfm_weekly_scrobbles: None,
         };
 
         assert_eq!(payload.album.as_deref(), Some("Album"));
@@ -611,6 +696,8 @@ mod tests {
             album: None,
             duration_seconds: Some(200),
             cover_data_url: None,
+            lastfm_artwork_url: None,
+            lastfm_weekly_scrobbles: None,
         };
 
         assert_eq!(payload.album.as_deref(), None);
@@ -626,6 +713,8 @@ mod tests {
             album: Some("Test Album".to_string()),
             duration_seconds: Some(240),
             cover_data_url: None,
+            lastfm_artwork_url: None,
+            lastfm_weekly_scrobbles: None,
         };
 
         let playback = PlaybackStatePayload {
@@ -648,6 +737,8 @@ mod tests {
             album: Some("Test Album".to_string()),
             duration_seconds: Some(240),
             cover_data_url: None,
+            lastfm_artwork_url: None,
+            lastfm_weekly_scrobbles: None,
         };
 
         let playback = PlaybackStatePayload {

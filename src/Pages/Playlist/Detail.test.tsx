@@ -141,8 +141,8 @@ describe('Detail', () => {
         ],
       },
     ];
-    const { getByText } = renderDetail(playlists, { setCurrentPath, setCurrentPlaylist });
-    fireEvent.click(getByText('Play Now'));
+    const { getByRole } = renderDetail(playlists, { setCurrentPath, setCurrentPlaylist });
+    fireEvent.click(getByRole('button', { name: /play now/i }));
     expect(setCurrentPath).toHaveBeenCalledWith('/a.mp3');
     expect(setCurrentPlaylist).toHaveBeenCalledWith(['/a.mp3', '/b.mp3']);
   });

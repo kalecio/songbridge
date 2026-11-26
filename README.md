@@ -40,6 +40,10 @@ Songbridge is an open-source, cross-platform music player and library manager fo
 
 ## Development
 
+To enable Last.fm in local or release builds, see the [Last.fm setup and behavior guide](docs/lastfm.md).
+
+Interested in translating Songbridge? See the [translation contribution guide](docs/translations.md).
+
 ### Prerequisites
 
 - [Node.js](https://nodejs.org/) v22+
@@ -60,6 +64,15 @@ Follow the [Tauri prerequisites guide](https://v2.tauri.app/start/prerequisites/
 npm install
 npm run tauri dev
 ```
+
+### Visual app preview
+
+`npx vite --config vite.visual.config.ts` opens a preview of the actual components
+with sample data at http://127.0.0.1:5174. This entry point is for visual
+comparisons only: it does not modify the local library or participate in the
+desktop build. Drag the sidebar divider or focus it and use the arrow keys, Home,
+and End. Its width is saved locally between 175 and 360 px, preserving at least
+680 px for the library at the window sizes supported by the app.
 
 ### Building
 
@@ -103,6 +116,19 @@ For builds:
 NO_STRIP=true npm run tauri build
 ```
 
+### macOS
+
+If macOS blocks the app from opening, and you trust that it came from the official
+Songbridge release, remove its quarantine attribute with:
+
+```sh
+xattr -d com.apple.quarantine /Applications/songbridge.app
+```
+
+This is a workaround, not the expected installation step for a properly signed
+and notarized release. If the attribute is not present, `xattr` may report an
+error and no change is needed.
+
 ### Log files
 
 Songbridge writes timestamped logs to a file for debugging. The location depends on your OS:
@@ -111,7 +137,7 @@ Songbridge writes timestamped logs to a file for debugging. The location depends
 |---|---|
 | macOS | `~/Library/Logs/com.songbridge.app/songbridge.log` |
 | Linux | `~/.local/share/com.songbridge.app/logs/songbridge.log` |
-| Windows | `%APPDATA%\com.songbridge.app\logs\songbridge.log` |
+| Windows | `%LOCALAPPDATA%\com.songbridge.app\logs\songbridge.log` (`C:\Users\<user>\AppData\Local\com.songbridge.app\logs\songbridge.log`) |
 
 When reporting a bug, attaching this log file helps us diagnose the issue faster.
 
@@ -133,3 +159,13 @@ A special thanks to everyone who has contributed to this project:
 ## License
 
 [CC BY-NC-SA 4.0](./LICENSE)
+
+## Website
+
+The project website is in [`website/`](website/README.md), with an independent
+build and deployment to Cloudflare Pages at https://songbridge.kalec.io.
+
+```sh
+npm run website:dev
+npm run website:deploy
+```

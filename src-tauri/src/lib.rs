@@ -1,27 +1,74 @@
 use music_library::state::LibraryState;
 use std::sync::{Arc, Mutex};
-use tauri::Manager;
+use tauri::menu::{Menu, MenuItemBuilder, MenuItemKind, SubmenuBuilder, HELP_SUBMENU_ID};
+use tauri::{Emitter, Manager};
 use tauri_plugin_log::{Target, TargetKind};
 
 // Learn more about Tauri commands at https://tauri.app/develop/calling-rust/
 mod audio;
 mod db;
 mod discord_presence;
+mod lastfm;
 mod lyrics_api;
 mod metadata;
 mod music_library;
 mod now_playing;
+mod updates;
 
 // Re-export a minimal API for integration tests and external callers.
 pub use audio::utils::{calculate_track_duration, get_audio_probe};
 // Re-export selected audio API for integration tests.
 pub use audio::commands::{
-    get_progress, load_song, pause, play_song, resume, seek, set_volume, toggle_mute,
+    get_audio_visualizer_levels, get_progress, load_song, pause, play_song, resume, seek,
+    set_volume, toggle_mute,
 };
 pub use audio::state::AudioState;
 // Re-export metadata utils for integration tests
 pub use metadata::utils::apply_tags_from_revision;
 pub use metadata::utils::{determine_mime_type, extract_album_art_probed};
+
+fn os_release_value(contents: &str, key: &str) -> Option<String> {
+    contents.lines().find_map(|line| {
+        let (name, value) = line.split_once('=')?;
+        if name != key {
+            return None;
+        }
+
+        let value = value.trim();
+        let value = value
+            .strip_prefix('"')
+            .and_then(|value| value.strip_suffix('"'))
+            .or_else(|| {
+                value
+                    .strip_prefix('\'')
+                    .and_then(|value| value.strip_suffix('\''))
+            })
+            .unwrap_or(value);
+        Some(value.replace("\\\"", "\"").replace("\\\\", "\\"))
+    })
+}
+
+fn platform_label() -> String {
+    match std::env::consts::OS {
+        "linux" => {
+            let distribution = std::fs::read_to_string("/etc/os-release")
+                .ok()
+                .and_then(|contents| {
+                    os_release_value(&contents, "PRETTY_NAME").or_else(|| {
+                        let id = os_release_value(&contents, "ID")?;
+                        let version = os_release_value(&contents, "VERSION_ID");
+                        Some(match version {
+                            Some(version) => format!("{id} {version}"),
+                            None => id,
+                        })
+                    })
+                })
+                .unwrap_or_else(|| "unknown distribution".into());
+            format!("linux ({distribution})")
+        }
+        other => other.to_string(),
+    }
+}
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
@@ -43,9 +90,17 @@ pub fn run() {
         )
         .plugin(tauri_plugin_dialog::init())
         .plugin(tauri_plugin_opener::init())
+        .plugin(tauri_plugin_updater::Builder::new().build())
+        .plugin(tauri_plugin_process::init())
         .manage(audio_state)
         .manage(library_state)
         .setup(|app| {
+            log::info!(
+                "Application runtime: version={}, platform={}, architecture={}",
+                env!("CARGO_PKG_VERSION"),
+                platform_label(),
+                std::env::consts::ARCH
+            );
             let data_dir = app.path().app_data_dir()?;
             std::fs::create_dir_all(&data_dir)?;
             let db_path = data_dir.join("songbridge.db");
@@ -53,11 +108,50 @@ pub fn run() {
             let db_state = db::state::DbState::new(&db_path)
                 .map_err(|e| format!("Failed to open database: {e}"))?;
             app.manage(db_state);
+            lastfm::init(app.handle())?;
             now_playing::init(app.handle());
             let _discord = discord_presence::init(app.handle());
+
+            let menu = Menu::default(app.handle())?;
+            let open_menu = SubmenuBuilder::with_id(app.handle(), "open-media", "Open")
+                .text("open-audio-files", "Audio Files…")
+                .text("open-audio-folder", "Folder…")
+                .build()?;
+            menu.insert(&open_menu, 1)?;
+            let check_for_updates =
+                MenuItemBuilder::with_id("check-for-updates", "Check for Updates…")
+                    .build(app.handle())?;
+            let Some(MenuItemKind::Submenu(help_menu)) = menu.get(HELP_SUBMENU_ID) else {
+                return Err(std::io::Error::other("Default Tauri Help menu was not found").into());
+            };
+            help_menu.append(&check_for_updates)?;
+            app.set_menu(menu)?;
             Ok(())
         })
+        .on_menu_event(|app, event| match event.id().as_ref() {
+            "open-audio-files" | "open-audio-folder" => {
+                if let Err(error) = app.emit("songbridge-native-menu-action", event.id().as_ref()) {
+                    log::error!("Could not forward native menu action: {error}");
+                }
+            }
+            "check-for-updates" => {
+                if let Err(error) = app.emit("songbridge-check-for-updates", ()) {
+                    log::error!("Could not forward update menu action: {error}");
+                }
+            }
+            _ => {}
+        })
         .invoke_handler(tauri::generate_handler![
+            lastfm::lastfm_status,
+            lastfm::lastfm_connect,
+            lastfm::lastfm_cancel_connection,
+            lastfm::lastfm_complete_connection,
+            lastfm::lastfm_set_enabled,
+            lastfm::lastfm_disconnect,
+            lastfm::metadata::lastfm_search,
+            lastfm::metadata::lastfm_details,
+            lastfm::metadata::lastfm_album_tracks,
+            lastfm::metadata::lastfm_artwork,
             audio::commands::load_song,
             audio::commands::play_song,
             audio::commands::pause,
@@ -66,6 +160,7 @@ pub fn run() {
             audio::commands::set_volume,
             audio::commands::seek,
             audio::commands::get_progress,
+            audio::commands::get_audio_visualizer_levels,
             metadata::commands::get_metadata,
             metadata::commands::get_track_image,
             metadata::commands::get_image_preview,
@@ -77,6 +172,7 @@ pub fn run() {
             lyrics_api::commands::download_lrclib_lyrics,
             lyrics_api::commands::get_lrclib_lyrics_preview,
             music_library::commands::scan_music_library,
+            music_library::commands::scan_audio_folder,
             music_library::commands::get_all_songs,
             music_library::commands::get_songs_by_album,
             music_library::commands::get_songs_by_artist,
@@ -92,6 +188,8 @@ pub fn run() {
             db::commands::db_load_tracks,
             now_playing::set_now_playing,
             now_playing::set_playback_state,
+            updates::check_for_update,
+            updates::install_update,
         ])
         .run(tauri::generate_context!())
         .expect("error while running tauri application");

@@ -2,6 +2,9 @@ import { styled } from 'styled-components';
 
 export const Page = styled.div`
   width: 100%;
-  padding: 1rem 2rem;
-  align-self: flex-start;
+  min-width: 0;
+  min-height: 100%;
+  padding: 28px clamp(24px, 2.6vw, 48px) 48px;
+  align-self: stretch;
+  color: ${({ theme }) => theme.textPrimary};
 `;

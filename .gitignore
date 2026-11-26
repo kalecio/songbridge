@@ -22,3 +22,9 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Marketing website
+dist-website/
+.wrangler/
+.dev.vars*
+!.dev.vars.example

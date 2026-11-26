@@ -1,3 +1,4 @@
+import { LastfmProvider } from './Components/Lastfm/LastfmProvider';
 import { useEffect, useRef, useState } from 'react';
 import { createGlobalStyle, ThemeProvider } from 'styled-components';
 import './App.css';
@@ -6,10 +7,11 @@ import { AppContext, ScanProgress, ScanRootStatus } from './Context/AppContext';
 import { MetadataType, PlaylistType, RepeatMode } from './types';
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
-import { themes, defaultTheme } from './theme';
+import { themes, defaultTheme, AppTheme, loadCustomThemes, saveCustomThemes } from './theme';
 import { ShortcutBindings, loadShortcuts, saveShortcuts } from './keyboard';
 import { ModalProvider } from './Context/ModalContext';
 import { LyricsSearchModalProvider } from './Context/LyricsSearchModalContext';
+import UpdatePrompt from './Components/UpdatePrompt/UpdatePrompt';
 
 const GlobalStyle = createGlobalStyle`
   body {
@@ -34,6 +36,7 @@ function App() {
   const [scanProgress, setScanProgress] = useState<ScanProgress>({ current: 0, total: 0 });
   const [scanRoots, setScanRoots] = useState<ScanRootStatus[]>([]);
   const [currentTheme, setCurrentTheme] = useState<string>(defaultTheme.name);
+  const [customThemes, setCustomThemes] = useState<Record<string, AppTheme>>(() => loadCustomThemes());
   const [shortcuts, setShortcutsState] = useState<ShortcutBindings>(() => loadShortcuts());
   const playbackStateLastCall = useRef(0);
   const playbackStateLastPlaying = useRef(false);
@@ -43,7 +46,14 @@ function App() {
     saveShortcuts(next);
   };
 
-  const activeTheme = themes[currentTheme] ?? defaultTheme;
+  const themeCatalog = { ...themes, ...customThemes };
+  const themeCatalogRef = useRef(themeCatalog);
+  themeCatalogRef.current = themeCatalog;
+  const activeTheme = themeCatalog[currentTheme] ?? defaultTheme;
+
+  useEffect(() => {
+    saveCustomThemes(customThemes);
+  }, [customThemes]);
 
   const scanLibrary = async (paths: string[]) => {
     setIsScanning(true);
@@ -96,7 +106,7 @@ function App() {
         if (prefs.current_playlist.length) setCurrentPlaylist(prefs.current_playlist);
         setOnRepeat(prefs.on_repeat as RepeatMode);
         setOnShuffle(prefs.on_shuffle);
-        if (themes[prefs.theme]) setCurrentTheme(prefs.theme);
+        if (themeCatalogRef.current[prefs.theme]) setCurrentTheme(prefs.theme);
 
         const dbPlaylists =
           await invoke<{ id: string; name: string; songs: { path: string; title?: string; artist?: string }[] }[]>(
@@ -199,6 +209,7 @@ function App() {
         playlists,
         currentPlaylist,
         currentTheme,
+        customThemes,
         onRepeat,
         onShuffle,
         showQueue,
@@ -212,6 +223,7 @@ function App() {
         setCurrentPath,
         setCurrentPlaylist,
         setCurrentTheme,
+        setCustomThemes,
         setLibrary,
         setLibraryPaths,
         scanLibrary,
@@ -229,7 +241,10 @@ function App() {
         <GlobalStyle />
         <ModalProvider>
           <LyricsSearchModalProvider>
-            <Player />
+            <LastfmProvider>
+              <UpdatePrompt />
+              <Player />
+            </LastfmProvider>
           </LyricsSearchModalProvider>
         </ModalProvider>
       </ThemeProvider>

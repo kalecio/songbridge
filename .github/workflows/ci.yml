@@ -24,19 +24,25 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Install system dependencies
-        uses: awalsh128/cache-apt-pkgs-action@latest
-        with:
-          packages: >-
-            libwebkit2gtk-4.1-dev
-            libgtk-3-dev
-            libayatana-appindicator3-dev
-            librsvg2-dev
-            libasound2-dev
-            libasound2-plugins
-            pulseaudio
-            pulseaudio-utils
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            pkg-config \
+            libglib2.0-dev \
+            libwebkit2gtk-4.1-dev \
+            libgtk-3-dev \
+            libayatana-appindicator3-dev \
+            librsvg2-dev \
+            libasound2-dev \
+            libasound2-plugins \
+            pulseaudio \
+            pulseaudio-utils \
             alsa-utils
-          version: 1.0
+
+      - name: Verify native dependencies
+        run: |
+          pkg-config --atleast-version=2.70 glib-2.0 gobject-2.0 gio-2.0
+          pkg-config --modversion glib-2.0 gtk+-3.0 webkit2gtk-4.1 alsa
 
       - uses: dtolnay/rust-toolchain@stable
         with:

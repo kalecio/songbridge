@@ -1,3 +1,4 @@
+import LastfmImport, { LastfmImportButton } from '../Lastfm/LastfmImport';
 import { useEffect, useState } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { open } from '@tauri-apps/plugin-dialog';
@@ -5,12 +6,16 @@ import { FaImage } from 'react-icons/fa6';
 import Modal from '../Modal/Modal';
 import { Button, Input } from '../Modal/styles';
 import { MetadataType } from '../../types';
+import { useI18n } from '../../i18n/I18nProvider';
+import { copyTextToClipboard } from '../../utils/clipboard';
 import {
   CheckboxRow,
   CoverArtActions,
   CoverArtButton,
   CoverArtPreview,
   CoverArtSection,
+  ErrorCopyButton,
+  ErrorPanel,
   ErrorText,
   Extension,
   FieldGroup,
@@ -46,6 +51,7 @@ function parsePath(fullPath: string) {
 }
 
 const EditMetadataModal = ({ song, onClose, onSave }: Props) => {
+  const { t } = useI18n();
   const [title, setTitle] = useState('');
   const [artist, setArtist] = useState('');
   const [album, setAlbum] = useState('');
@@ -63,7 +69,9 @@ const EditMetadataModal = ({ song, onClose, onSave }: Props) => {
   const [previewLoading, setPreviewLoading] = useState(false);
 
   const [saving, setSaving] = useState(false);
+  const [importing, setImporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [errorCopied, setErrorCopied] = useState(false);
 
   // Reset all fields when the target song changes
   useEffect(() => {
@@ -85,7 +93,9 @@ const EditMetadataModal = ({ song, onClose, onSave }: Props) => {
       setPreviewUrl(null);
       setPreviewLoading(false);
       setSaving(false);
+      setImporting(false);
       setError(null);
+      setErrorCopied(false);
     }
   }, [song]);
 
@@ -98,7 +108,7 @@ const EditMetadataModal = ({ song, onClose, onSave }: Props) => {
     setFilename(suggested);
   }, [title, artist, useAutoFilename]);
 
-  const displayedArt = removeCoverArt ? null : (previewUrl ?? song?.image ?? null);
+  const displayedArt = removeCoverArt ? null : coverArtPath ? previewUrl : (song?.image ?? null);
   const hasArt = displayedArt !== null;
 
   const handleChangeCover = async () => {
@@ -112,13 +122,26 @@ const EditMetadataModal = ({ song, onClose, onSave }: Props) => {
     setRemoveCoverArt(false);
     setPreviewLoading(true);
     setPreviewUrl(null);
+    setError(null);
+    setErrorCopied(false);
     try {
       const preview = await invoke<string>('get_image_preview', { path });
       setPreviewUrl(preview);
-    } catch {
-      // Preview failed — the backend will still process it on save.
+    } catch (cause) {
+      setError(`${t('metadata.coverPreviewFailed')}: ${String(cause)}`);
     } finally {
       setPreviewLoading(false);
+    }
+  };
+
+  const handleCopyError = async () => {
+    if (!error) return;
+    try {
+      await copyTextToClipboard(error);
+      setErrorCopied(true);
+      window.setTimeout(() => setErrorCopied(false), 1500);
+    } catch {
+      setErrorCopied(false);
     }
   };
 
@@ -126,12 +149,15 @@ const EditMetadataModal = ({ song, onClose, onSave }: Props) => {
     setCoverArtPath(null);
     setRemoveCoverArt(true);
     setPreviewUrl(null);
+    setError(null);
+    setErrorCopied(false);
   };
 
   const handleSave = async () => {
     if (!song?.path || saving) return;
     setSaving(true);
     setError(null);
+    setErrorCopied(false);
     try {
       const trackNum = track.trim() ? parseInt(track.trim(), 10) : undefined;
       const trimmedFilename = filename.trim();
@@ -149,6 +175,7 @@ const EditMetadataModal = ({ song, onClose, onSave }: Props) => {
       onClose();
     } catch (e) {
       setError(String(e));
+      setErrorCopied(false);
       setSaving(false);
     }
   };
@@ -161,92 +188,119 @@ const EditMetadataModal = ({ song, onClose, onSave }: Props) => {
     <Modal
       isOpen={song !== null}
       onClose={onClose}
-      title="Edit metadata"
+      title={t('metadata.editTitle')}
       dismissible={!saving}
       footer={
-        <>
-          <Button $variant="ghost" onClick={onClose} disabled={saving}>
-            Cancel
-          </Button>
-          <Button $variant="primary" onClick={handleSave} disabled={saving}>
-            {saving ? 'Saving…' : 'Save'}
-          </Button>
-        </>
+        importing ? undefined : (
+          <>
+            <Button $variant="ghost" onClick={onClose} disabled={saving}>
+              {t('common.cancel')}
+            </Button>
+            <Button $variant="primary" onClick={handleSave} disabled={saving}>
+              {saving ? t('common.saving') : t('common.save')}
+            </Button>
+          </>
+        )
       }
     >
-      <CoverArtSection>
-        <CoverArtPreview $hasImage={hasArt}>
-          {displayedArt ? <img src={displayedArt} alt="Cover art" /> : <FaImage />}
-        </CoverArtPreview>
-        <CoverArtActions>
-          <CoverArtButton onClick={handleChangeCover} disabled={saving || previewLoading}>
-            {previewLoading ? 'Loading…' : 'Change cover'}
-          </CoverArtButton>
-          {(hasArt || coverArtPath) && (
-            <RemoveCoverButton onClick={handleRemoveCover} disabled={saving}>
-              Remove cover
-            </RemoveCoverButton>
+      {importing && song ? (
+        <LastfmImport
+          songs={[song]}
+          kind="track"
+          onBack={() => setImporting(false)}
+          onClose={onClose}
+          onBusy={setSaving}
+        />
+      ) : (
+        <>
+          <LastfmImportButton onClick={() => setImporting(true)} />
+          <CoverArtSection>
+            <CoverArtPreview $hasImage={hasArt}>
+              {displayedArt ? <img src={displayedArt} alt={t('metadata.coverArt')} /> : <FaImage />}
+            </CoverArtPreview>
+            <CoverArtActions>
+              <CoverArtButton onClick={handleChangeCover} disabled={saving || previewLoading}>
+                {previewLoading ? t('common.loading') : t('common.changeCover')}
+              </CoverArtButton>
+              {(hasArt || coverArtPath) && (
+                <RemoveCoverButton onClick={handleRemoveCover} disabled={saving}>
+                  {t('common.removeCover')}
+                </RemoveCoverButton>
+              )}
+            </CoverArtActions>
+          </CoverArtSection>
+
+          <FieldGroup>
+            <Label htmlFor="em-title">{t('metadata.title')}</Label>
+            <Input id="em-title" value={title} onChange={(e) => setTitle(e.target.value)} onKeyDown={handleKeyDown} />
+          </FieldGroup>
+          <FieldGroup>
+            <Label htmlFor="em-artist">{t('metadata.artist')}</Label>
+            <Input
+              id="em-artist"
+              value={artist}
+              onChange={(e) => setArtist(e.target.value)}
+              onKeyDown={handleKeyDown}
+            />
+          </FieldGroup>
+          <FieldGroup>
+            <Label htmlFor="em-album">{t('metadata.album')}</Label>
+            <Input id="em-album" value={album} onChange={(e) => setAlbum(e.target.value)} onKeyDown={handleKeyDown} />
+          </FieldGroup>
+          <FieldGroup>
+            <Label htmlFor="em-year">{t('metadata.year')}</Label>
+            <Input
+              id="em-year"
+              value={year}
+              onChange={(e) => setYear(e.target.value)}
+              onKeyDown={handleKeyDown}
+              maxLength={4}
+            />
+          </FieldGroup>
+          <FieldGroup>
+            <Label htmlFor="em-track">{t('metadata.trackNumber')}</Label>
+            <Input
+              id="em-track"
+              type="number"
+              min="1"
+              value={track}
+              onChange={(e) => setTrack(e.target.value)}
+              onKeyDown={handleKeyDown}
+            />
+          </FieldGroup>
+
+          <FieldGroup>
+            <Label htmlFor="em-filename">{t('metadata.filename')}</Label>
+            <FilenameRow>
+              <Input
+                id="em-filename"
+                value={filename}
+                onChange={(e) => {
+                  setFilename(e.target.value);
+                  setUseAutoFilename(false);
+                }}
+                onKeyDown={handleKeyDown}
+                disabled={useAutoFilename}
+                style={{ flex: 1, minWidth: 0 }}
+              />
+              {extension && <Extension>{extension}</Extension>}
+            </FilenameRow>
+            <CheckboxRow>
+              <input type="checkbox" checked={useAutoFilename} onChange={(e) => setUseAutoFilename(e.target.checked)} />
+              {t('metadata.autoFilename')}
+            </CheckboxRow>
+          </FieldGroup>
+
+          {error && (
+            <ErrorPanel role="alert">
+              <ErrorText>{error}</ErrorText>
+              <ErrorCopyButton type="button" onClick={() => void handleCopyError()}>
+                {errorCopied ? t('metadata.errorCopied') : t('metadata.copyError')}
+              </ErrorCopyButton>
+            </ErrorPanel>
           )}
-        </CoverArtActions>
-      </CoverArtSection>
-
-      <FieldGroup>
-        <Label htmlFor="em-title">Title</Label>
-        <Input id="em-title" value={title} onChange={(e) => setTitle(e.target.value)} onKeyDown={handleKeyDown} />
-      </FieldGroup>
-      <FieldGroup>
-        <Label htmlFor="em-artist">Artist</Label>
-        <Input id="em-artist" value={artist} onChange={(e) => setArtist(e.target.value)} onKeyDown={handleKeyDown} />
-      </FieldGroup>
-      <FieldGroup>
-        <Label htmlFor="em-album">Album</Label>
-        <Input id="em-album" value={album} onChange={(e) => setAlbum(e.target.value)} onKeyDown={handleKeyDown} />
-      </FieldGroup>
-      <FieldGroup>
-        <Label htmlFor="em-year">Year</Label>
-        <Input
-          id="em-year"
-          value={year}
-          onChange={(e) => setYear(e.target.value)}
-          onKeyDown={handleKeyDown}
-          maxLength={4}
-        />
-      </FieldGroup>
-      <FieldGroup>
-        <Label htmlFor="em-track">Track number</Label>
-        <Input
-          id="em-track"
-          type="number"
-          min="1"
-          value={track}
-          onChange={(e) => setTrack(e.target.value)}
-          onKeyDown={handleKeyDown}
-        />
-      </FieldGroup>
-
-      <FieldGroup>
-        <Label htmlFor="em-filename">Filename</Label>
-        <FilenameRow>
-          <Input
-            id="em-filename"
-            value={filename}
-            onChange={(e) => {
-              setFilename(e.target.value);
-              setUseAutoFilename(false);
-            }}
-            onKeyDown={handleKeyDown}
-            disabled={useAutoFilename}
-            style={{ flex: 1, minWidth: 0 }}
-          />
-          {extension && <Extension>{extension}</Extension>}
-        </FilenameRow>
-        <CheckboxRow>
-          <input type="checkbox" checked={useAutoFilename} onChange={(e) => setUseAutoFilename(e.target.checked)} />
-          Use artist and title as filename
-        </CheckboxRow>
-      </FieldGroup>
-
-      {error && <ErrorText>{error}</ErrorText>}
+        </>
+      )}
     </Modal>
   );
 };

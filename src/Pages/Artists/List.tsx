@@ -1,4 +1,4 @@
-import { useCallback, useContext, useState } from 'react';
+import { useCallback, useContext, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router';
 import { FaPlay, FaListUl, FaPenToSquare } from 'react-icons/fa6';
 import { AppContext } from '../../Context/AppContext';
@@ -15,7 +15,13 @@ import { useLazyAlbumArt } from '../../hooks/useLazyAlbumArt';
 import { useQueueActions } from '../../hooks/useQueueActions';
 import { useMetadataActions } from '../../hooks/useMetadataActions';
 import { splitArtists } from '../../utils/artistUtils';
-import { Grid, Card, Avatar, ArtistName, ArtistMeta, AvatarImage } from './styles';
+import { useI18n } from '../../i18n/I18nProvider';
+import SongSortControl from '../../Components/SongSortControl/SongSortControl';
+import type { SongSortDirection } from '../../hooks/useSongSort';
+import VirtualizedGrid from '../../Components/VirtualizedGrid/VirtualizedGrid';
+import { Card, Avatar, ArtistName, ArtistMeta, AvatarImage, ArtistSortRow } from './styles';
+
+const collator = new Intl.Collator(undefined, { numeric: true, sensitivity: 'base' });
 
 interface ArtistEntry {
   name: string;
@@ -26,23 +32,30 @@ interface ArtistEntry {
 }
 
 function groupByArtist(library: MetadataType[]): ArtistEntry[] {
-  const map = new Map<string, MetadataType[]>();
+  const map = new Map<string, { songs: MetadataType[]; albums: Set<string>; albumArt?: string; coverPath?: string }>();
   for (const song of library) {
     const artists = splitArtists(song.artist ?? 'Unknown Artist');
     for (const artist of artists) {
-      if (!map.has(artist)) map.set(artist, []);
-      map.get(artist)!.push(song);
+      let entry = map.get(artist);
+      if (!entry) {
+        entry = { songs: [], albums: new Set<string>() };
+        map.set(artist, entry);
+      }
+      entry.songs.push(song);
+      entry.albums.add(song.album ?? 'Unknown Album');
+      if (!entry.albumArt && song.image) entry.albumArt = song.image;
+      if (!entry.coverPath && song.path) entry.coverPath = song.path;
     }
   }
   return Array.from(map.entries())
-    .map(([name, songs]) => ({
+    .map(([name, entry]) => ({
       name,
-      songs,
-      albumCount: new Set(songs.map((s) => s.album ?? 'Unknown Album')).size,
-      albumArt: songs.find((s) => s.image)?.image,
-      coverPath: songs.find((s) => s.path)?.path,
+      songs: entry.songs,
+      albumCount: entry.albums.size,
+      albumArt: entry.albumArt,
+      coverPath: entry.coverPath,
     }))
-    .sort((a, b) => a.name.localeCompare(b.name));
+    .sort((a, b) => collator.compare(a.name, b.name));
 }
 
 const ArtistAvatar = ({ artist }: { artist: ArtistEntry }) => {
@@ -51,10 +64,12 @@ const ArtistAvatar = ({ artist }: { artist: ArtistEntry }) => {
 };
 
 const Artists = () => {
+  const { t } = useI18n();
   const { library, isScanning } = useContext(AppContext);
   const navigate = useNavigate();
   const [menu, setMenu] = useState<{ x: number; y: number; artist: ArtistEntry } | null>(null);
   const [editArtist, setEditArtist] = useState<ArtistEntry | null>(null);
+  const [sortDirection, setSortDirection] = useState<SongSortDirection>('asc');
   const { playSongs, addToQueue } = useQueueActions();
   const { batchUpdateSongsMetadata } = useMetadataActions();
 
@@ -62,29 +77,32 @@ const Artists = () => {
     async (fields: GroupEditFields) => {
       if (!editArtist) return;
       const paths = editArtist.songs.map((s) => s.path).filter((p): p is string => Boolean(p));
-      await batchUpdateSongsMetadata(paths, { artist: fields.artist });
+      await batchUpdateSongsMetadata(paths, fields);
     },
     [editArtist, batchUpdateSongsMetadata],
   );
 
+  const artists = useMemo(() => {
+    const grouped = groupByArtist(library);
+    return sortDirection === 'asc' ? grouped : grouped.reverse();
+  }, [library, sortDirection]);
+
   if (isScanning) {
-    return <StatusMessage>Scanning music library…</StatusMessage>;
+    return <StatusMessage>{t('album.scanning')}</StatusMessage>;
   }
 
-  const artists = groupByArtist(library);
-
   if (artists.length === 0) {
-    return <StatusMessage>No artists found in your music library.</StatusMessage>;
+    return <StatusMessage>{t('artist.noArtists')}</StatusMessage>;
   }
 
   const artistMenuItems = (artist: ArtistEntry): ContextMenuItem[] => {
     const empty = artist.songs.length === 0;
     return [
-      { label: 'Play', icon: <FaPlay />, onSelect: () => playSongs(artist.songs), disabled: empty },
-      { label: 'Add to queue', icon: <FaListUl />, onSelect: () => addToQueue(artist.songs), disabled: empty },
+      { label: t('common.play'), icon: <FaPlay />, onSelect: () => playSongs(artist.songs), disabled: empty },
+      { label: t('common.addToQueue'), icon: <FaListUl />, onSelect: () => addToQueue(artist.songs), disabled: empty },
       { type: 'divider' },
       {
-        label: 'Edit metadata',
+        label: t('common.editMetadata'),
         icon: <FaPenToSquare />,
         onSelect: () => {
           setMenu(null);
@@ -98,12 +116,25 @@ const Artists = () => {
   return (
     <Page>
       <PageHeader>
-        Artists <Count>{artists.length}</Count>
+        {t('sidebar.artists')} <Count>{artists.length}</Count>
       </PageHeader>
-      <Grid>
-        {artists.map((artist) => (
+      {artists.length > 1 && (
+        <ArtistSortRow>
+          <SongSortControl
+            sortField="artist"
+            sortDirection={sortDirection}
+            sortFields={['artist']}
+            includeOriginalOrder={false}
+            onSortFieldChange={() => {}}
+            onSortDirectionChange={setSortDirection}
+          />
+        </ArtistSortRow>
+      )}
+      <VirtualizedGrid
+        items={artists}
+        getItemKey={(artist) => artist.name}
+        renderItem={(artist) => (
           <Card
-            key={artist.name}
             onClick={() => navigate(`/artists/${encodeURIComponent(artist.name)}`)}
             onContextMenu={(e) => {
               e.preventDefault();
@@ -111,13 +142,15 @@ const Artists = () => {
             }}
           >
             <ArtistAvatar artist={artist} />
-            <ArtistName title={artist.name}>{artist.name}</ArtistName>
+            <ArtistName hoverOnly title={artist.name}>
+              {artist.name}
+            </ArtistName>
             <ArtistMeta>
               {artist.albumCount} {artist.albumCount === 1 ? 'album' : 'albums'}
             </ArtistMeta>
           </Card>
-        ))}
-      </Grid>
+        )}
+      />
       {menu && <ContextMenu x={menu.x} y={menu.y} items={artistMenuItems(menu.artist)} onClose={() => setMenu(null)} />}
       <EditGroupMetadataModal
         groupType="artist"

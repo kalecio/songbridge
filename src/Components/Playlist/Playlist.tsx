@@ -8,6 +8,9 @@ import { useQueueActions } from '../../hooks/useQueueActions';
 import { useAddToPlaylistMenu } from '../../hooks/useAddToPlaylistMenu';
 import { useMetadataActions } from '../../hooks/useMetadataActions';
 import { useLyricsMenu } from '../../hooks/useLyricsMenu';
+import { useI18n } from '../../i18n/I18nProvider';
+import { useSongSort, type SongSortField } from '../../hooks/useSongSort';
+import SongSortControl from '../SongSortControl/SongSortControl';
 import EditMetadataModal from '../EditMetadataModal/EditMetadataModal';
 import AlbumImage from '../AlbumImage/AlbumImage';
 import ContextMenu, { ContextMenuItem } from '../ContextMenu/ContextMenu';
@@ -30,6 +33,7 @@ import {
   MissingIcon,
   RemoveMissingButton,
   RemoveMissingIcon,
+  SortRow,
 } from './styles';
 
 interface Props {
@@ -38,8 +42,9 @@ interface Props {
   type?: string;
   activePath?: string;
   scroll?: boolean;
-  onSongClick?: (_song: MetadataType) => void;
-  onPlayAll?: () => void;
+  defaultSort?: SongSortField;
+  onSongClick?: (_song: MetadataType, _orderedSongs?: MetadataType[]) => void;
+  onPlayAll?: (_orderedSongs?: MetadataType[]) => void;
   onRemoveMissing?: (_song: MetadataType) => void;
   onRemoveSong?: (_song: MetadataType) => void;
   /** When provided, song rows become draggable to reorder. `to` is the index
@@ -52,15 +57,16 @@ interface Props {
 // so unit tests (which run in a zero-height JSDOM viewport where the
 // virtualizer can't measure anything) keep working as before.
 const VIRTUALIZE_THRESHOLD = 100;
-// Approximate row height (3rem image + 0.75rem*2 padding + 1rem gap ≈ 80px).
-const ROW_HEIGHT = 80;
+// Approximate row height (3rem artwork + 0.5rem*2 vertical padding ≈ 64px).
+const ROW_HEIGHT = 64;
 
 const Playlist = ({
   songs,
   name,
-  type = 'Playlist',
+  type,
   activePath,
   scroll = true,
+  defaultSort = 'original',
   onSongClick,
   onPlayAll,
   onRemoveMissing,
@@ -72,6 +78,8 @@ const Playlist = ({
   const [editSong, setEditSong] = useState<MetadataType | null>(null);
   const [dragFromIndex, setDragFromIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+  const { sortedSongs, sortField, setSortField, sortDirection, setSortDirection } = useSongSort(songs, defaultSort);
+  const { t, tc } = useI18n();
   const { playNext, addToQueue } = useQueueActions();
   const buildAddToPlaylistItem = useAddToPlaylistMenu();
   const { updateSongMetadata } = useMetadataActions();
@@ -101,7 +109,7 @@ const Playlist = ({
   const renderRow = (song: MetadataType, key: string | number, index: number) => {
     const isMissing = Boolean(song.path && missingPaths.has(song.path));
     const title = displayTitle(song);
-    const reorderable = Boolean(onReorder);
+    const reorderable = Boolean(onReorder) && sortField === 'original';
     const isDragging = reorderable && dragFromIndex === index;
     const showIndicator = reorderable && dragFromIndex !== null && dragOverIndex === index && dragFromIndex !== index;
     const dropAbove = showIndicator && (dragFromIndex as number) > index;
@@ -116,7 +124,11 @@ const Playlist = ({
         $dropAbove={dropAbove}
         $dropBelow={dropBelow}
         draggable={reorderable || undefined}
-        onClick={() => !isMissing && onSongClick?.(song)}
+        onClick={() => {
+          if (isMissing) return;
+          if (sortField === 'original') onSongClick?.(song);
+          else onSongClick?.(song, sortedSongs);
+        }}
         onContextMenu={(e) => {
           e.preventDefault();
           setMenuState({ x: e.clientX, y: e.clientY, song });
@@ -163,10 +175,10 @@ const Playlist = ({
         </SongInfo>
         {isMissing ? (
           <>
-            <MissingIcon title="File not found on disk" />
+            <MissingIcon title={t('common.fileNotFound')} />
             {onRemoveMissing && (
               <RemoveMissingButton
-                aria-label={`Remove missing track ${title}`}
+                aria-label={t('common.removeMissingTrack', { title })}
                 onClick={(e) => {
                   e.stopPropagation();
                   onRemoveMissing(song);
@@ -185,17 +197,17 @@ const Playlist = ({
 
   // DnD relies on every drop target being mounted; virtualization can unmount
   // rows the user is dragging toward, so we disable it when reorder is wired.
-  const useVirtualization = scroll && songs.length > VIRTUALIZE_THRESHOLD && !onReorder;
+  const useVirtualization = scroll && sortedSongs.length > VIRTUALIZE_THRESHOLD && !onReorder;
 
   const menuItems = (song: MetadataType): ContextMenuItem[] => {
     const isMissing = Boolean(song.path && missingPaths.has(song.path));
     const items: ContextMenuItem[] = [
-      { label: 'Play next', icon: <FaPlay />, onSelect: () => playNext(song), disabled: isMissing },
-      { label: 'Add to queue', icon: <FaListUl />, onSelect: () => addToQueue([song]), disabled: isMissing },
+      { label: t('common.playNext'), icon: <FaPlay />, onSelect: () => playNext(song), disabled: isMissing },
+      { label: t('common.addToQueue'), icon: <FaListUl />, onSelect: () => addToQueue([song]), disabled: isMissing },
       buildAddToPlaylistItem(song),
       { type: 'divider' },
       {
-        label: 'Edit metadata',
+        label: t('common.editMetadata'),
         icon: <FaPenToSquare />,
         onSelect: () => setEditSong(song),
         disabled: isMissing,
@@ -205,7 +217,7 @@ const Playlist = ({
     if (onRemoveSong) {
       items.push(
         { type: 'divider' },
-        { label: 'Remove from playlist', icon: <FaTrash />, onSelect: () => onRemoveSong(song), danger: true },
+        { label: t('common.removeFromPlaylist'), icon: <FaTrash />, onSelect: () => onRemoveSong(song), danger: true },
       );
     }
     return items;
@@ -217,19 +229,36 @@ const Playlist = ({
         <PlaylistInfo>
           {type !== 'Library' && <AlbumImage metadata={songs[0]} height="10rem" width="10rem" />}
           <PlaylistDetails>
-            <Type>{type}</Type>
+            <Type>{type ?? t('playlist.type')}</Type>
             <PlaylistName>{name}</PlaylistName>
-            <SongsQuantity>{songs.length} songs</SongsQuantity>
-            <PlayNowButton onClick={onPlayAll}>
-              <Play /> Play Now
+            <SongsQuantity>{tc('count.song', songs.length)}</SongsQuantity>
+            <PlayNowButton
+              onClick={() => {
+                if (sortField === 'original') onPlayAll?.();
+                else onPlayAll?.(sortedSongs);
+              }}
+            >
+              <Play /> {t('common.playNow')}
             </PlayNowButton>
           </PlaylistDetails>
         </PlaylistInfo>
       </Header>
+      {songs.length > 1 && (
+        <SortRow>
+          <SongSortControl
+            sortField={sortField}
+            sortDirection={sortDirection}
+            onSortFieldChange={setSortField}
+            onSortDirectionChange={setSortDirection}
+          />
+        </SortRow>
+      )}
       {useVirtualization ? (
-        <VirtualSongList songs={songs} renderRow={renderRow} />
+        <VirtualSongList songs={sortedSongs} renderRow={renderRow} />
       ) : (
-        <SongList $scroll={scroll}>{songs.map((song, index) => renderRow(song, song.path ?? index, index))}</SongList>
+        <SongList $scroll={scroll}>
+          {sortedSongs.map((song, index) => renderRow(song, song.path ?? index, index))}
+        </SongList>
       )}
       {menuState && (
         <ContextMenu

@@ -1,3 +1,4 @@
+import LastfmImport, { LastfmImportButton } from '../Lastfm/LastfmImport';
 import { useEffect, useState } from 'react';
 import { invoke } from '@tauri-apps/api/core';
 import { open } from '@tauri-apps/plugin-dialog';
@@ -10,12 +11,16 @@ import {
   CoverArtButton,
   CoverArtPreview,
   CoverArtSection,
+  ErrorCopyButton,
+  ErrorPanel,
   ErrorText,
   FieldGroup,
   Label,
   RemoveCoverButton,
 } from '../EditMetadataModal/styles';
 import { SubtitleText } from './styles';
+import { useI18n } from '../../i18n/I18nProvider';
+import { copyTextToClipboard } from '../../utils/clipboard';
 
 export interface GroupEditFields {
   artist?: string;
@@ -23,6 +28,7 @@ export interface GroupEditFields {
   year?: string;
   coverArtPath?: string;
   removeCoverArt?: boolean;
+  updateFields?: Array<'artist' | 'album' | 'year'>;
 }
 
 interface Props {
@@ -33,6 +39,7 @@ interface Props {
 }
 
 const EditGroupMetadataModal = ({ groupType, songs, onClose, onSave }: Props) => {
+  const { t, tc } = useI18n();
   const [artist, setArtist] = useState('');
   const [album, setAlbum] = useState('');
   const [year, setYear] = useState('');
@@ -43,7 +50,9 @@ const EditGroupMetadataModal = ({ groupType, songs, onClose, onSave }: Props) =>
   const [previewLoading, setPreviewLoading] = useState(false);
 
   const [saving, setSaving] = useState(false);
+  const [importing, setImporting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [errorCopied, setErrorCopied] = useState(false);
 
   useEffect(() => {
     if (!songs || songs.length === 0) return;
@@ -56,11 +65,13 @@ const EditGroupMetadataModal = ({ groupType, songs, onClose, onSave }: Props) =>
     setPreviewUrl(null);
     setPreviewLoading(false);
     setSaving(false);
+    setImporting(false);
     setError(null);
+    setErrorCopied(false);
   }, [songs]);
 
   const existingArt = songs?.[0]?.image ?? null;
-  const displayedArt = removeCoverArt ? null : (previewUrl ?? existingArt);
+  const displayedArt = removeCoverArt ? null : coverArtPath ? previewUrl : existingArt;
   const hasArt = displayedArt !== null;
 
   const handleChangeCover = async () => {
@@ -74,13 +85,26 @@ const EditGroupMetadataModal = ({ groupType, songs, onClose, onSave }: Props) =>
     setRemoveCoverArt(false);
     setPreviewLoading(true);
     setPreviewUrl(null);
+    setError(null);
+    setErrorCopied(false);
     try {
       const preview = await invoke<string>('get_image_preview', { path });
       setPreviewUrl(preview);
-    } catch {
-      // Preview failed — backend still processes it on save.
+    } catch (cause) {
+      setError(`${t('metadata.coverPreviewFailed')}: ${String(cause)}`);
     } finally {
       setPreviewLoading(false);
+    }
+  };
+
+  const handleCopyError = async () => {
+    if (!error) return;
+    try {
+      await copyTextToClipboard(error);
+      setErrorCopied(true);
+      window.setTimeout(() => setErrorCopied(false), 1500);
+    } catch {
+      setErrorCopied(false);
     }
   };
 
@@ -88,27 +112,35 @@ const EditGroupMetadataModal = ({ groupType, songs, onClose, onSave }: Props) =>
     setCoverArtPath(null);
     setRemoveCoverArt(true);
     setPreviewUrl(null);
+    setError(null);
+    setErrorCopied(false);
   };
 
   const handleSave = async () => {
     if (saving) return;
     setSaving(true);
     setError(null);
+    setErrorCopied(false);
     try {
-      const fields: GroupEditFields =
-        groupType === 'album'
-          ? {
-              artist: artist.trim() || undefined,
-              album: album.trim() || undefined,
-              year: year.trim() || undefined,
-              coverArtPath: coverArtPath ?? undefined,
-              removeCoverArt,
-            }
-          : { artist: artist.trim() || undefined };
+      const firstSong = songs?.[0];
+      const updateFields: GroupEditFields['updateFields'] = [];
+      if (artist.trim() !== (firstSong?.artist ?? '')) updateFields.push('artist');
+      if (groupType === 'album' && album.trim() !== (firstSong?.album ?? '')) updateFields.push('album');
+      if (groupType === 'album' && year.trim() !== (firstSong?.year ?? '')) updateFields.push('year');
+
+      const fields: GroupEditFields = {
+        artist: artist.trim() || undefined,
+        album: groupType === 'album' ? album.trim() || undefined : undefined,
+        year: groupType === 'album' ? year.trim() || undefined : undefined,
+        coverArtPath: coverArtPath ?? undefined,
+        removeCoverArt: groupType === 'album' ? removeCoverArt : undefined,
+        updateFields,
+      };
       await onSave(fields);
       onClose();
     } catch (e) {
       setError(String(e));
+      setErrorCopied(false);
       setSaving(false);
     }
   };
@@ -120,8 +152,8 @@ const EditGroupMetadataModal = ({ groupType, songs, onClose, onSave }: Props) =>
   const count = songs?.length ?? 0;
   const modalTitle =
     groupType === 'album'
-      ? `Edit album — ${songs?.[0]?.album ?? 'Unknown Album'}`
-      : `Edit artist — ${songs?.[0]?.artist ?? 'Unknown Artist'}`;
+      ? t('metadata.editAlbum', { name: songs?.[0]?.album ?? t('common.unknownAlbum') })
+      : t('metadata.editArtist', { name: songs?.[0]?.artist ?? t('common.unknownArtist') });
 
   return (
     <Modal
@@ -130,63 +162,93 @@ const EditGroupMetadataModal = ({ groupType, songs, onClose, onSave }: Props) =>
       title={modalTitle}
       dismissible={!saving}
       footer={
-        <>
-          <Button $variant="ghost" onClick={onClose} disabled={saving}>
-            Cancel
-          </Button>
-          <Button $variant="primary" onClick={handleSave} disabled={saving}>
-            {saving ? 'Saving…' : 'Save'}
-          </Button>
-        </>
+        importing ? undefined : (
+          <>
+            <Button $variant="ghost" onClick={onClose} disabled={saving}>
+              {t('common.cancel')}
+            </Button>
+            <Button $variant="primary" onClick={handleSave} disabled={saving}>
+              {saving ? t('common.saving') : t('common.save')}
+            </Button>
+          </>
+        )
       }
     >
-      <SubtitleText>
-        {count} {count === 1 ? 'song' : 'songs'} will be updated
-      </SubtitleText>
-
-      {groupType === 'album' && (
-        <CoverArtSection>
-          <CoverArtPreview $hasImage={hasArt}>
-            {displayedArt ? <img src={displayedArt} alt="Cover art" /> : <FaImage />}
-          </CoverArtPreview>
-          <CoverArtActions>
-            <CoverArtButton onClick={handleChangeCover} disabled={saving || previewLoading}>
-              {previewLoading ? 'Loading…' : 'Change cover'}
-            </CoverArtButton>
-            {(hasArt || coverArtPath) && (
-              <RemoveCoverButton onClick={handleRemoveCover} disabled={saving}>
-                Remove cover
-              </RemoveCoverButton>
-            )}
-          </CoverArtActions>
-        </CoverArtSection>
-      )}
-
-      <FieldGroup>
-        <Label htmlFor="egm-artist">Artist</Label>
-        <Input id="egm-artist" value={artist} onChange={(e) => setArtist(e.target.value)} onKeyDown={handleKeyDown} />
-      </FieldGroup>
-
-      {groupType === 'album' && (
+      {importing && songs ? (
+        <LastfmImport
+          songs={songs}
+          kind="album"
+          onBack={() => setImporting(false)}
+          onClose={onClose}
+          onBusy={setSaving}
+        />
+      ) : (
         <>
+          {groupType === 'album' && <LastfmImportButton onClick={() => setImporting(true)} />}
+          <SubtitleText>{tc('count.trackWillUpdate', count)}</SubtitleText>
+
+          {groupType === 'album' && (
+            <CoverArtSection>
+              <CoverArtPreview $hasImage={hasArt}>
+                {displayedArt ? <img src={displayedArt} alt={t('metadata.coverArt')} /> : <FaImage />}
+              </CoverArtPreview>
+              <CoverArtActions>
+                <CoverArtButton onClick={handleChangeCover} disabled={saving || previewLoading}>
+                  {previewLoading ? t('common.loading') : t('common.changeCover')}
+                </CoverArtButton>
+                {(hasArt || coverArtPath) && (
+                  <RemoveCoverButton onClick={handleRemoveCover} disabled={saving}>
+                    {t('common.removeCover')}
+                  </RemoveCoverButton>
+                )}
+              </CoverArtActions>
+            </CoverArtSection>
+          )}
+
           <FieldGroup>
-            <Label htmlFor="egm-album">Album</Label>
-            <Input id="egm-album" value={album} onChange={(e) => setAlbum(e.target.value)} onKeyDown={handleKeyDown} />
-          </FieldGroup>
-          <FieldGroup>
-            <Label htmlFor="egm-year">Year</Label>
+            <Label htmlFor="egm-artist">{t('metadata.artist')}</Label>
             <Input
-              id="egm-year"
-              value={year}
-              onChange={(e) => setYear(e.target.value)}
+              id="egm-artist"
+              value={artist}
+              onChange={(e) => setArtist(e.target.value)}
               onKeyDown={handleKeyDown}
-              maxLength={4}
             />
           </FieldGroup>
+
+          {groupType === 'album' && (
+            <>
+              <FieldGroup>
+                <Label htmlFor="egm-album">{t('metadata.album')}</Label>
+                <Input
+                  id="egm-album"
+                  value={album}
+                  onChange={(e) => setAlbum(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                />
+              </FieldGroup>
+              <FieldGroup>
+                <Label htmlFor="egm-year">{t('metadata.year')}</Label>
+                <Input
+                  id="egm-year"
+                  value={year}
+                  onChange={(e) => setYear(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  maxLength={4}
+                />
+              </FieldGroup>
+            </>
+          )}
+
+          {error && (
+            <ErrorPanel role="alert">
+              <ErrorText>{error}</ErrorText>
+              <ErrorCopyButton type="button" onClick={() => void handleCopyError()}>
+                {errorCopied ? t('metadata.errorCopied') : t('metadata.copyError')}
+              </ErrorCopyButton>
+            </ErrorPanel>
+          )}
         </>
       )}
-
-      {error && <ErrorText>{error}</ErrorText>}
     </Modal>
   );
 };

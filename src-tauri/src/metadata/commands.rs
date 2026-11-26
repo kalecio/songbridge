@@ -19,7 +19,23 @@ pub fn get_track_image(path: &str) -> Result<Option<String>, String> {
 
 #[tauri::command]
 pub fn get_metadata(path: &str) -> Result<AudioMetadata, String> {
-    println!("Getting metadata for file: {}", path);
+    get_metadata_with_art(path, true)
+}
+
+/// Read a track's tags without loading its embedded artwork.
+///
+/// Library scans use this path so a large collection does not retain a
+/// base64 copy of every cover in memory or send all of those images to the UI.
+pub(crate) fn get_metadata_without_art(path: &str) -> Result<AudioMetadata, String> {
+    get_metadata_with_art(path, false)
+}
+
+fn get_metadata_with_art(path: &str, include_art: bool) -> Result<AudioMetadata, String> {
+    log::debug!(
+        "Reading audio metadata for '{}'; include_art={}",
+        path,
+        include_art
+    );
     let mut probe = get_audio_probe(path)?;
     let total_duration = calculate_track_duration(&probe);
     let formatted_duration = format_duration(total_duration);
@@ -65,12 +81,21 @@ pub fn get_metadata(path: &str) -> Result<AudioMetadata, String> {
     }
 
     // Album art: prefer container art, fall back to probed art.
-    let image = extract_album_art(probe.format.as_mut())
-        .or_else(|| extract_album_art_probed(&mut probe.metadata));
+    let image = if include_art {
+        extract_album_art(probe.format.as_mut())
+            .or_else(|| extract_album_art_probed(&mut probe.metadata))
+    } else {
+        None
+    };
 
-    println!(
+    log::debug!(
         "Title: {:?}, Artist: {:?}, Album: {:?}, Year: {:?}, Track: {:?}, Duration: {:?}",
-        title, artist, album, year, track, duration
+        title,
+        artist,
+        album,
+        year,
+        track,
+        duration
     );
     Ok(AudioMetadata {
         title,
@@ -117,9 +142,59 @@ pub fn update_track_metadata(
     track: Option<u32>,
     cover_art_path: Option<String>,
     remove_cover_art: bool,
+    update_fields: Option<Vec<String>>,
     // Base name (no extension) for the new filename, or null to keep existing.
     new_filename: Option<String>,
 ) -> Result<AudioMetadata, String> {
+    let update_fields = update_fields.unwrap_or_else(|| {
+        vec![
+            "title".to_string(),
+            "artist".to_string(),
+            "album".to_string(),
+            "year".to_string(),
+            "track".to_string(),
+        ]
+    });
+    let update_title = update_fields.iter().any(|field| field == "title");
+    let update_artist = update_fields.iter().any(|field| field == "artist");
+    let update_album = update_fields.iter().any(|field| field == "album");
+    let update_year = update_fields.iter().any(|field| field == "year");
+    let update_track = update_fields.iter().any(|field| field == "track");
+
+    // Group metadata edits update only selected tags. Read untouched values
+    // from each file so writing one album field cannot erase track metadata.
+    let preserved = if update_title && update_artist && update_album && update_year && update_track
+    {
+        None
+    } else {
+        Some(get_metadata(&path)?)
+    };
+    let title = if update_title {
+        title
+    } else {
+        preserved.as_ref().and_then(|m| m.title.clone())
+    };
+    let artist = if update_artist {
+        artist
+    } else {
+        preserved.as_ref().and_then(|m| m.artist.clone())
+    };
+    let album = if update_album {
+        album
+    } else {
+        preserved.as_ref().and_then(|m| m.album.clone())
+    };
+    let year = if update_year {
+        year
+    } else {
+        preserved.as_ref().and_then(|m| m.year.clone())
+    };
+    let track = if update_track {
+        track
+    } else {
+        preserved.as_ref().and_then(|m| m.track)
+    };
+
     // ── Cover art ────────────────────────────────────────────────────────────
     let cover_art_update = if remove_cover_art {
         CoverArtUpdate::Remove

@@ -130,3 +130,23 @@ describe('useLrclibLyrics', () => {
     });
   });
 });
+
+describe('download refresh notifications', () => {
+  it('notifies the lyrics page only after a successful save', async () => {
+    const listener = vi.fn();
+    window.addEventListener('songbridge:lyrics-updated', listener);
+    try {
+      const { result } = renderHook(() => useLrclibLyrics());
+      const params = { songPath: '/music/test.mp3', trackId: 1, preferSynced: false, plainLyrics: 'Lyrics' };
+      mockInvoke.mockRejectedValueOnce(new Error('Cannot write file'));
+      await expect(result.current.downloadLyrics(params)).rejects.toThrow('Cannot write file');
+      expect(listener).not.toHaveBeenCalled();
+      mockInvoke.mockResolvedValueOnce(undefined);
+      await result.current.downloadLyrics(params);
+      expect(listener).toHaveBeenCalledOnce();
+      expect(listener.mock.calls[0][0].detail).toBe(params.songPath);
+    } finally {
+      window.removeEventListener('songbridge:lyrics-updated', listener);
+    }
+  });
+});

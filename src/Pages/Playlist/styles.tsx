@@ -1,5 +1,6 @@
 import { styled } from 'styled-components';
 import { FaHeart, FaTrash, FaMinus, FaPlus } from 'react-icons/fa6';
+import TextMarquee from '../../Components/TextMarquee/TextMarquee';
 
 export const Container = styled.div`
   display: flex;
@@ -9,29 +10,79 @@ export const Container = styled.div`
   overflow: hidden;
 `;
 
-export const LeftPanel = styled.aside`
-  width: 220px;
+export const LeftPanel = styled.aside<{ $width: number; $resizing: boolean }>`
+  position: relative;
+  width: ${({ $width }) => $width}px;
+  min-width: 210px;
   flex-shrink: 0;
-  background: ${({ theme }) => theme.surfaceRaised};
-  border-right: 1px solid ${({ theme }) => theme.borderLight};
+  background: ${({ theme }) => theme.background};
+  border-right: 1px solid ${({ theme }) => theme.border};
   display: flex;
   flex-direction: column;
-  overflow-y: auto;
+  overflow: hidden;
   align-items: center;
+  ${({ $resizing }) => $resizing && 'cursor: col-resize; & * { cursor: col-resize !important; }'}
+`;
+
+export const LeftPanelContent = styled.div`
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  width: 100%;
+  min-height: 0;
+  overflow-y: auto;
+  overflow-x: hidden;
+`;
+
+export const PlaylistDeleteError = styled.p`
+  margin: 0 0.75rem 0.75rem;
+  color: ${({ theme }) => theme.error};
+  font-size: 0.8rem;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+`;
+
+export const AsideResizeHandle = styled.div`
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 10;
+  width: 8px;
+  cursor: col-resize;
+  touch-action: none;
+
+  &:hover,
+  &:focus-visible {
+    background: ${({ theme }) => theme.accentBg};
+    outline: none;
+  }
+
+  &:hover::after,
+  &:focus-visible::after {
+    content: '';
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 3px;
+    width: 2px;
+    background: ${({ theme }) => theme.accent};
+  }
 `;
 
 export const NewButton = styled.button`
-  margin: 0.75rem;
+  margin: 1rem;
   padding: 0.5rem 0.75rem;
   background: ${({ theme }) => theme.primary};
   color: ${({ theme }) => theme.textOnPrimary};
   border: none;
-  border-radius: 2rem;
+  border-radius: 0.4rem;
   font-size: 0.8rem;
   cursor: pointer;
   transition: background 0.15s;
   max-height: 2.5rem;
-  max-width: 8rem;
+  max-width: none;
 
   &:hover {
     background: ${({ theme }) => theme.primaryDark};
@@ -42,10 +93,10 @@ export const PlaylistItem = styled.div<{ $active?: boolean }>`
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  padding: 0.6rem 0.75rem;
+  padding: 0.7rem 1rem;
   cursor: pointer;
   background: ${(p) => (p.$active ? p.theme.active : 'transparent')};
-  border-left: 3px solid ${(p) => (p.$active ? p.theme.primary : 'transparent')};
+  border-left: 3px solid ${(p) => (p.$active ? p.theme.accent : 'transparent')};
   transition: background 0.15s;
   width: 100%;
 
@@ -66,12 +117,13 @@ export const PlaylistItemName = styled.div`
   font-size: 0.85rem;
   font-weight: 500;
   color: ${({ theme }) => theme.textPrimary};
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
   display: flex;
   align-items: center;
   gap: 0.4rem;
+
+  > span {
+    flex: 1;
+  }
 `;
 
 export const FavouriteBadge = styled(FaHeart)`
@@ -99,6 +151,11 @@ export const DeleteBtn = styled.button`
   transition: color 0.15s;
   max-width: 1.5rem;
 
+  &:disabled {
+    cursor: wait;
+    opacity: 0.5;
+  }
+
   &:hover {
     color: ${({ theme }) => theme.error};
   }
@@ -109,8 +166,9 @@ export const RightPanel = styled.main`
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  padding: 1.5rem 2rem;
-  gap: 1rem;
+  padding: 28px clamp(24px, 2.6vw, 48px);
+  gap: 1.5rem;
+  min-width: 0;
 `;
 
 export const EmptyState = styled.p`
@@ -163,18 +221,26 @@ export const Column = styled.div`
   overflow: hidden;
 `;
 
+export const ColumnHeader = styled.div`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+  min-height: 2rem;
+`;
+
 export const ColumnTitle = styled.h3`
   font-size: 0.75rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: ${({ theme }) => theme.primaryDark};
-  margin: 0 0 0.25rem;
+  color: ${({ theme }) => theme.textMuted};
+  margin: 0;
 `;
 
 export const SearchInput = styled.input`
-  padding: 0.4rem 0.75rem;
-  border: 1px solid ${({ theme }) => theme.borderLight};
-  border-radius: 2rem;
+  padding: 0.65rem 0.85rem;
+  border: 1px solid ${({ theme }) => theme.border};
+  border-radius: 0.4rem;
   font-size: 0.8rem;
   outline: none;
   background: ${({ theme }) => theme.surface};
@@ -214,21 +280,19 @@ export const SongMeta = styled.div`
   justify-content: center;
 `;
 
-export const SongTitle = styled.div`
+export const SongTitle = styled(TextMarquee)`
   font-size: 0.82rem;
   font-weight: 500;
   color: ${({ theme }) => theme.textPrimary};
   white-space: nowrap;
   overflow: hidden;
-  text-overflow: ellipsis;
 `;
 
-export const SongArtist = styled.div`
+export const SongArtist = styled(TextMarquee)`
   font-size: 0.72rem;
   color: ${({ theme }) => theme.primary};
   white-space: nowrap;
   overflow: hidden;
-  text-overflow: ellipsis;
 `;
 
 export const IconButton = styled.button`

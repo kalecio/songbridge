@@ -3,20 +3,22 @@ import { AppContext } from '../../Context/AppContext';
 import { MetadataType } from '../../types';
 import Playlist from '../../Components/Playlist/Playlist';
 import StatusMessage from '../../Components/StatusMessage/StatusMessage';
+import { useI18n } from '../../i18n/I18nProvider';
 
 const Songs = () => {
+  const { t } = useI18n();
   const { library, isScanning, currentPath, setCurrentPath, setCurrentPlaylist } = useContext(AppContext);
 
   if (isScanning) {
-    return <StatusMessage>Scanning music library…</StatusMessage>;
+    return <StatusMessage>{t('song.scanning')}</StatusMessage>;
   }
 
   if (library.length === 0) {
-    return <StatusMessage>No songs found in your music library.</StatusMessage>;
+    return <StatusMessage>{t('song.noSongs')}</StatusMessage>;
   }
 
-  const playSong = (song: MetadataType) => {
-    const paths = library.map((s) => s.path).filter((p): p is string => Boolean(p));
+  const playSong = (song: MetadataType, orderedSongs: MetadataType[] = library) => {
+    const paths = orderedSongs.map((s) => s.path).filter((p): p is string => Boolean(p));
     setCurrentPlaylist?.(paths);
     setCurrentPath?.(song.path);
   };
@@ -24,11 +26,15 @@ const Songs = () => {
   return (
     <Playlist
       songs={library}
-      name="Songs"
-      type="Library"
+      name={t('sidebar.songs')}
+      type={t('sidebar.library')}
+      defaultSort="title"
       activePath={currentPath}
       onSongClick={playSong}
-      onPlayAll={() => library[0] && playSong(library[0])}
+      onPlayAll={(orderedSongs) => {
+        const list = orderedSongs ?? library;
+        if (list[0]) playSong(list[0], list);
+      }}
     />
   );
 };

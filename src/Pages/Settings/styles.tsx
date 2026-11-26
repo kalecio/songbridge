@@ -1,19 +1,130 @@
 import { styled, keyframes, css } from 'styled-components';
-import { FaFolderPlus, FaTrash, FaArrowsRotate } from 'react-icons/fa6';
+import { FaFolderPlus, FaTrash, FaArrowsRotate, FaMagnifyingGlass } from 'react-icons/fa6';
 
 export const SettingsContainer = styled.div`
   display: flex;
   flex-direction: column;
   width: 100%;
-  max-width: 720px;
-  padding: 2.5rem 2rem;
-  gap: 2rem;
+  max-width: 900px;
+  padding: 0;
+  gap: 1.25rem;
+`;
+
+export const SettingsToolbar = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.1rem;
+  border: 1px solid ${({ theme }) => theme.border};
+  border-radius: 0.9rem;
+  background: ${({ theme }) => theme.surface};
+`;
+
+export const SearchWrap = styled.label`
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-height: 2.9rem;
+  padding: 0 0.9rem;
+  border: 1px solid ${({ theme }) => theme.borderLight};
+  border-radius: 0.65rem;
+  background: ${({ theme }) => theme.background};
+  color: ${({ theme }) => theme.textSecondary};
+  &:focus-within {
+    border-color: ${({ theme }) => theme.primary};
+  }
+`;
+
+export const SearchIcon = styled(FaMagnifyingGlass)`
+  flex: 0 0 auto;
+  font-size: 0.9rem;
+`;
+
+export const SearchInput = styled.input`
+  flex: 1;
+  min-width: 0;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: ${({ theme }) => theme.textPrimary};
+  font: inherit;
+  &::placeholder {
+    color: ${({ theme }) => theme.textSecondary};
+  }
+`;
+
+export const TabList = styled.div`
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+`;
+
+export const TabButton = styled.button<{ $active: boolean }>`
+  min-height: 2.4rem;
+  padding: 0.45rem 0.85rem;
+  border: 1px solid ${({ theme, $active }) => ($active ? theme.primary : theme.border)};
+  border-radius: 999px;
+  background: ${({ theme, $active }) => ($active ? theme.accentBg : 'transparent')};
+  color: ${({ theme, $active }) => ($active ? theme.primary : theme.textSecondary)};
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+`;
+
+export const SearchResults = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  padding-top: 0.25rem;
+  border-top: 1px solid ${({ theme }) => theme.border};
+`;
+
+export const SearchResultButton = styled.button`
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 1rem;
+  width: 100%;
+  padding: 0.65rem 0.75rem;
+  border: 0;
+  border-radius: 0.5rem;
+  background: transparent;
+  color: ${({ theme }) => theme.textPrimary};
+  text-align: left;
+  font: inherit;
+  cursor: pointer;
+  &:hover,
+  &:focus-visible {
+    background: ${({ theme }) => theme.surfaceRaised};
+    outline: none;
+  }
+  small {
+    color: ${({ theme }) => theme.textSecondary};
+  }
+`;
+
+export const SearchEmpty = styled.p`
+  margin: 0;
+  padding: 0.65rem 0.75rem;
+  color: ${({ theme }) => theme.textSecondary};
+  font-size: 0.875rem;
+`;
+
+export const SettingsPanel = styled.div`
+  padding: 1.5rem;
+  border: 1px solid ${({ theme }) => theme.border};
+  border-radius: 0.9rem;
+  background: ${({ theme }) => theme.surfaceRaised};
+  @media (max-width: 600px) {
+    padding: 1rem;
+  }
 `;
 
 export const Section = styled.section`
   display: flex;
   flex-direction: column;
   gap: 1rem;
+  padding: 0;
 `;
 
 export const SectionTitle = styled.h2`
@@ -21,9 +132,9 @@ export const SectionTitle = styled.h2`
   font-weight: 600;
   color: ${({ theme }) => theme.textPrimary};
   margin: 0;
-  padding-bottom: 0.5rem;
-  border-bottom: 1px solid ${({ theme }) => theme.borderLight};
-  max-height: 1.5rem;
+  padding-bottom: 0.75rem;
+  border-bottom: 1px solid ${({ theme }) => theme.border};
+  letter-spacing: -0.02em;
 `;
 
 export const PathList = styled.ul`
@@ -40,10 +151,10 @@ export const PathItem = styled.li`
   align-items: center;
   gap: 0.75rem;
   background: ${({ theme }) => theme.surfaceRaised};
-  border: 1px solid ${({ theme }) => theme.borderLight};
-  border-radius: 0.5rem;
-  padding: 0.6rem 0.9rem;
-  max-height: 2.5rem;
+  border: 1px solid ${({ theme }) => theme.border};
+  border-radius: 0.65rem;
+  padding: 0.8rem 1rem;
+  min-height: 2.75rem;
 `;
 
 export const PathText = styled.span`
@@ -78,16 +189,25 @@ export const AddButton = styled.button`
   background: ${({ theme }) => theme.primary};
   color: ${({ theme }) => theme.textOnPrimary};
   border: none;
-  border-radius: 2rem;
-  padding: 0.5rem 1.2rem;
+  border-radius: 0.5rem;
+  padding: 0.5rem 0.9rem;
   font-size: 0.875rem;
+  font-weight: 500;
   cursor: pointer;
   align-self: flex-start;
-  transition: background 0.15s;
-  max-height: 2.5rem;
+  transition:
+    background 0.15s,
+    transform 0.15s;
+  min-height: 2.5rem;
 
   &:hover {
     background: ${({ theme }) => theme.primaryDark};
+    transform: translateY(-1px);
+  }
+
+  &:focus-visible {
+    outline: 2px solid ${({ theme }) => theme.accent};
+    outline-offset: 2px;
   }
 
   &:disabled {
@@ -121,31 +241,41 @@ const spin = keyframes`
 
 export const ButtonRow = styled.div`
   display: flex;
-  justify-content: flex-start;
-  flex-direction: column;
-  gap: 0.75rem;
-  max-height: 12rem;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  margin-top: 0.25rem;
 `;
 
 export const RescanButton = styled.button`
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  background: none;
-  color: ${({ theme }) => theme.primary};
-  border: 1.5px solid ${({ theme }) => theme.primary};
-  border-radius: 2rem;
-  padding: 0.5rem 1.2rem;
+  background: transparent;
+  color: ${({ theme }) => theme.textPrimary};
+  border: 1px solid ${({ theme }) => theme.border};
+  border-radius: 0.5rem;
+  padding: 0.5rem 0.9rem;
   font-size: 0.875rem;
+  font-weight: 500;
   cursor: pointer;
   align-self: flex-start;
   transition:
     background 0.15s,
-    color 0.15s;
-  max-height: 2.5rem;
+    color 0.15s,
+    border-color 0.15s,
+    transform 0.15s;
+  min-height: 2.5rem;
 
   &:hover {
-    background: ${({ theme }) => theme.surfaceRaised};
+    background: ${({ theme }) => theme.hover};
+    border-color: ${({ theme }) => theme.borderLight};
+    transform: translateY(-1px);
+  }
+
+  &:focus-visible {
+    outline: 2px solid ${({ theme }) => theme.accent};
+    outline-offset: 2px;
   }
 
   &:disabled {
@@ -176,14 +306,192 @@ export const SuccessBadge = styled.span`
 export const ThemeRow = styled.div`
   display: flex;
   align-items: center;
+  flex-wrap: wrap;
   gap: 1rem;
-  max-height: 2.5rem;
+  min-height: 2.5rem;
 `;
 
 export const ThemeLabel = styled.label`
   font-size: 0.9rem;
   color: ${({ theme }) => theme.textPrimary};
   min-width: 4rem;
+`;
+
+export const CreateThemePanel = styled.div`
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  padding: 1.25rem;
+  border: 1px solid ${({ theme }) => theme.border};
+  border-radius: 0.5rem;
+  background: ${({ theme }) => theme.surface};
+  > p {
+    margin: -0.5rem 0 0;
+    color: ${({ theme }) => theme.textSecondary};
+    font-size: 0.85rem;
+    line-height: 1.55;
+  }
+`;
+
+export const CreateThemeHeader = styled.h3`
+  margin: 0;
+  color: ${({ theme }) => theme.textPrimary};
+  font-size: 1rem;
+  font-weight: 600;
+`;
+
+export const ThemeTextField = styled.label`
+  display: flex;
+  flex: 1 1 220px;
+  flex-direction: column;
+  gap: 0.4rem;
+  color: ${({ theme }) => theme.textSecondary};
+  font-size: 0.8rem;
+`;
+
+export const VisualizerRandomToggle = styled.label`
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  color: ${({ theme }) => theme.textPrimary};
+  font-size: 0.9rem;
+  cursor: pointer;
+
+  input {
+    width: 1rem;
+    height: 1rem;
+    accent-color: ${({ theme }) => theme.primary};
+  }
+`;
+
+export const VisualizerIntervalInput = styled.input`
+  width: 7rem;
+  min-height: 2.5rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid ${({ theme }) => theme.borderLight};
+  border-radius: 0.4rem;
+  background: ${({ theme }) => theme.background};
+  color: ${({ theme }) => theme.textPrimary};
+  font: inherit;
+
+  &:focus {
+    border-color: ${({ theme }) => theme.accent};
+    outline: none;
+  }
+`;
+
+export const ThemeSourceField = styled(ThemeTextField)`
+  max-width: 260px;
+`;
+
+export const ThemeNameInput = styled.input`
+  width: 100%;
+  min-height: 2.5rem;
+  padding: 0.5rem 0.75rem;
+  border: 1px solid ${({ theme }) => theme.borderLight};
+  border-radius: 0.4rem;
+  background: ${({ theme }) => theme.background};
+  color: ${({ theme }) => theme.textPrimary};
+  font: inherit;
+
+  &:focus {
+    border-color: ${({ theme }) => theme.accent};
+    outline: none;
+  }
+`;
+
+export const ThemeNameError = styled.p`
+  margin: 0;
+  color: ${({ theme }) => theme.error};
+  font-size: 0.8rem;
+`;
+
+export const ThemeColorGrid = styled.div`
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.6rem;
+
+  @media (max-width: 760px) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+  @media (max-width: 480px) {
+    grid-template-columns: minmax(0, 1fr);
+  }
+`;
+
+export const ThemeColorField = styled.label`
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.75rem;
+  min-width: 0;
+  padding: 0.55rem 0.7rem;
+  border: 1px solid ${({ theme }) => theme.border};
+  border-radius: 0.4rem;
+  color: ${({ theme }) => theme.textSecondary};
+  font-size: 0.8rem;
+`;
+
+export const ThemeColorInput = styled.input`
+  width: 2.5rem;
+  height: 2rem;
+  padding: 2px;
+  border: 1px solid ${({ theme }) => theme.borderLight};
+  border-radius: 0.3rem;
+  background: ${({ theme }) => theme.background};
+  cursor: pointer;
+`;
+
+export const CreateThemeActions = styled.div`
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.65rem;
+`;
+
+export const CreateThemeButton = styled.button`
+  min-height: 2.5rem;
+  padding: 0.5rem 1rem;
+  border: 0;
+  border-radius: 0.4rem;
+  background: ${({ theme }) => theme.primary};
+  color: ${({ theme }) => theme.textOnPrimary};
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+
+  &:hover:not(:disabled) {
+    background: ${({ theme }) => theme.primaryDark};
+  }
+
+  &:disabled {
+    cursor: default;
+    opacity: 0.55;
+  }
+`;
+
+export const CancelThemeButton = styled.button`
+  min-height: 2.5rem;
+  padding: 0.5rem 1rem;
+  border: 1px solid ${({ theme }) => theme.borderLight};
+  border-radius: 0.4rem;
+  background: transparent;
+  color: ${({ theme }) => theme.textSecondary};
+  font: inherit;
+  font-size: 0.85rem;
+  cursor: pointer;
+
+  &:hover {
+    background: ${({ theme }) => theme.hover};
+  }
+`;
+
+export const DeleteThemeButton = styled(CancelThemeButton)`
+  color: ${({ theme }) => theme.error};
+  border-color: ${({ theme }) => theme.error};
+
+  &:hover {
+    background: ${({ theme }) => theme.accentBg};
+  }
 `;
 
 export const ShortcutList = styled.ul`
@@ -199,10 +507,10 @@ export const ShortcutRow = styled.li`
   display: flex;
   align-items: center;
   gap: 0.75rem;
-  background: ${({ theme }) => theme.surfaceRaised};
-  border: 1px solid ${({ theme }) => theme.borderLight};
-  border-radius: 0.5rem;
-  padding: 0.6rem 0.9rem;
+  background: ${({ theme }) => theme.surface};
+  border: 1px solid ${({ theme }) => theme.border};
+  border-radius: 0.4rem;
+  padding: 0.75rem 0.9rem;
 `;
 
 export const ShortcutLabel = styled.span`
@@ -265,4 +573,15 @@ export const ThemeSelect = styled.select`
   &:focus {
     border-color: ${({ theme }) => theme.primary};
   }
+`;
+
+export const LyricsPreviewText = styled.p`
+  margin: 0;
+  padding: 16px;
+  line-height: 1.45;
+  overflow-wrap: anywhere;
+  background: ${({ theme }) => theme.surface};
+  border: 1px solid ${({ theme }) => theme.border};
+  border-radius: 8px;
+  color: ${({ theme }) => theme.textSecondary};
 `;

@@ -27,13 +27,15 @@ export const renderWithContext = (
   contextOverrides?: Partial<AppContextValue>,
   options?: RenderOptions,
 ) =>
-  render(
-    <MemoryRouter>
-      <ThemeProvider theme={defaultTheme}>
-        <LyricsSearchModalProvider>
-          <AppContext.Provider value={{ ...defaultContext, ...contextOverrides }}>{ui}</AppContext.Provider>
-        </LyricsSearchModalProvider>
-      </ThemeProvider>
-    </MemoryRouter>,
-    options,
-  );
+  render(ui, {
+    ...options,
+    wrapper: ({ children }) => (
+      <MemoryRouter>
+        <ThemeProvider theme={defaultTheme}>
+          <LyricsSearchModalProvider>
+            <AppContext.Provider value={{ ...defaultContext, ...contextOverrides }}>{children}</AppContext.Provider>
+          </LyricsSearchModalProvider>
+        </ThemeProvider>
+      </MemoryRouter>
+    ),
+  });

@@ -1,7 +1,7 @@
 {
   "name": "songbridge",
   "private": true,
-  "version": "0.6.0",
+  "version": "1.0.0-rc.4",
   "author": "Kalécio Santana <kalecio.santana@gmail.com>",
   "description": "A desktop music player with library scanning, playlist management, and search",
   "type": "module",
@@ -14,14 +14,23 @@
     "lint:fix": "eslint . --ext .ts,.tsx --fix",
     "format": "prettier --write \"**/*.{ts,tsx,json}\"",
     "tauri": "tauri",
-    "prepare": "husky"
+    "prepare": "husky",
+    "website:build": "node scripts/build-website.mjs",
+    "website:dev": "vite website --host 127.0.0.1",
+    "website:deploy": "npm run website:build && wrangler pages deploy dist-website --project-name=songbridge-website --branch=main",
+    "lastfm:worker:dev": "wrangler dev --config worker/lastfm/wrangler.toml",
+    "lastfm:worker:deploy": "wrangler deploy --config worker/lastfm/wrangler.toml"
   },
   "dependencies": {
     "@tanstack/react-virtual": "^3.13.24",
     "@tauri-apps/api": "^2",
-    "@tauri-apps/plugin-dialog": "^2.6.0",
-    "@tauri-apps/plugin-log": "^2.8.0",
-    "@tauri-apps/plugin-opener": "^2",
+    "@tauri-apps/plugin-dialog": "^2.8.4",
+    "@tauri-apps/plugin-log": "^2.10.1",
+    "@tauri-apps/plugin-opener": "^2.7.2",
+    "butterchurn": "3.0.0-beta.5",
+    "butterchurn-presets": "3.0.0-beta.4",
+    "@tauri-apps/plugin-process": "^2.4.0",
+    "@tauri-apps/plugin-updater": "^2.14.1",
     "lint-staged": "^16.1.2",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
@@ -34,7 +43,7 @@
     "@eslint/compat": "^1.3.1",
     "@eslint/eslintrc": "^3.3.1",
     "@eslint/js": "^9.32.0",
-    "@tauri-apps/cli": "^2",
+    "@tauri-apps/cli": "^2.12.4",
     "@testing-library/jest-dom": "^6.4.0",
     "@testing-library/react": "^16.0.0",
     "@testing-library/user-event": "^14.5.0",
@@ -56,7 +65,8 @@
     "typescript": "~5.6.2",
     "vite": "^6.0.3",
     "vite-plugin-svgr": "^4.3.0",
-    "vitest": "^3.0.0"
+    "vitest": "^3.0.0",
+    "wrangler": "^4.158.0"
   },
   "resolutions": {
     "styled-components": "^6"

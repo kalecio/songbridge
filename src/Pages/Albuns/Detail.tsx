@@ -18,8 +18,10 @@ import {
   HeroContent,
 } from '../../Components/HeroSection/HeroSection';
 import Playlist from '../../Components/Playlist/Playlist';
+import { useI18n } from '../../i18n/I18nProvider';
 
 const AlbumDetail = () => {
+  const { t, tc } = useI18n();
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { library, currentPath, setCurrentPath, setCurrentPlaylist } = useContext(AppContext);
@@ -42,8 +44,8 @@ const AlbumDetail = () => {
   const artist = songs[0]?.artist;
   const year = songs[0]?.year;
 
-  const playSong = (song: MetadataType) => {
-    const paths = songs.map((s) => s.path).filter((p): p is string => Boolean(p));
+  const playSong = (song: MetadataType, orderedSongs: MetadataType[] = songs) => {
+    const paths = orderedSongs.map((s) => s.path).filter((p): p is string => Boolean(p));
     setCurrentPlaylist?.(paths);
     setCurrentPath?.(song.path);
   };
@@ -60,14 +62,14 @@ const AlbumDetail = () => {
         )}
         <HeroOverlay />
         <HeroTop>
-          <BackButton onClick={() => navigate('/albums')}>Albums</BackButton>
+          <BackButton onClick={() => navigate('/albums')}>{t('album.backToAlbums')}</BackButton>
         </HeroTop>
         <HeroBottom>
           <HeroTitle title={albumName}>{albumName}</HeroTitle>
           <HeroStats>
             {artist && <>{artist} · </>}
             {year && <>{year} · </>}
-            {songs.length} {songs.length === 1 ? 'song' : 'songs'}
+            {tc('count.song', songs.length)}
           </HeroStats>
         </HeroBottom>
       </Hero>
@@ -76,11 +78,14 @@ const AlbumDetail = () => {
         <Playlist
           songs={songs}
           name={albumName}
-          type="Album"
+          type={t('sidebar.albums')}
           scroll={false}
           activePath={currentPath}
           onSongClick={playSong}
-          onPlayAll={() => songs[0] && playSong(songs[0])}
+          onPlayAll={(orderedSongs) => {
+            const list = orderedSongs ?? songs;
+            if (list[0]) playSong(list[0], list);
+          }}
         />
       </HeroContent>
     </HeroWrapper>

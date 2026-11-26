@@ -11,6 +11,25 @@ use tauri::AppHandle;
 
 use crate::now_playing::{NowPlayingPayload, PlaybackStatePayload};
 
+fn presence_artwork(metadata: &NowPlayingPayload) -> String {
+    metadata
+        .lastfm_artwork_url
+        .as_ref()
+        .filter(|url| url.len() <= 300 && crate::lastfm::metadata::valid_art_url(url))
+        .cloned()
+        .unwrap_or_else(|| "songbridge_logo".to_string())
+}
+
+fn truncate_chars(value: String, max_chars: usize) -> String {
+    let mut chars = value.chars();
+    let mut output: String = chars.by_ref().take(max_chars).collect();
+    if chars.next().is_some() && max_chars > 0 {
+        output.pop();
+        output.push('…');
+    }
+    output
+}
+
 #[derive(Deserialize, Default)]
 struct DiscordConfig {
     #[serde(rename = "applicationId")]
@@ -29,6 +48,7 @@ pub struct DiscordPresence {
     client: Arc<Mutex<Option<DiscordIpcClient>>>,
     app_id: String,
     connected: Arc<Mutex<bool>>,
+    reconnecting: Arc<Mutex<bool>>,
 }
 
 impl DiscordPresence {
@@ -37,6 +57,7 @@ impl DiscordPresence {
             client: Arc::new(Mutex::new(None)),
             app_id,
             connected: Arc::new(Mutex::new(false)),
+            reconnecting: Arc::new(Mutex::new(false)),
         }
     }
 
@@ -44,9 +65,10 @@ impl DiscordPresence {
         let client = self.client.clone();
         let app_id = self.app_id.clone();
         let connected = self.connected.clone();
+        let reconnecting = self.reconnecting.clone();
 
         std::thread::spawn(move || {
-            Self::connect_loop(client, app_id, connected);
+            Self::connect_loop(client, app_id, connected, reconnecting, None);
         });
     }
 
@@ -54,14 +76,28 @@ impl DiscordPresence {
         client: Arc<Mutex<Option<DiscordIpcClient>>>,
         app_id: String,
         connected: Arc<Mutex<bool>>,
+        reconnecting: Arc<Mutex<bool>>,
+        pending_activity: Option<Activity>,
     ) {
         loop {
             let mut ipc = DiscordIpcClient::new(&app_id);
             match ipc.connect() {
                 Ok(()) => {
+                    if let Some(activity) = pending_activity.as_ref() {
+                        if let Err(error) = ipc.set_activity(activity.clone()) {
+                            debug!(
+                                "Discord reconnected but could not restore activity: {}",
+                                error
+                            );
+                            let _ = ipc.close();
+                            std::thread::sleep(Duration::from_secs(10));
+                            continue;
+                        }
+                    }
                     info!("Discord Rich Presence connected");
                     *connected.lock().unwrap() = true;
                     *client.lock().unwrap() = Some(ipc);
+                    *reconnecting.lock().unwrap() = false;
                     break;
                 }
                 Err(e) => {
@@ -84,28 +120,37 @@ impl DiscordPresence {
         let elapsed = playback.elapsed_seconds.unwrap_or(0.0);
         let total = metadata.duration_seconds.unwrap_or(0);
 
+        let artist = metadata.artist.as_deref().unwrap_or("Unknown Artist");
+        let title = metadata.title.as_deref().unwrap_or("Unknown Title");
+        let album = metadata.album.as_deref().filter(|value| !value.is_empty());
+        let state = match metadata.lastfm_weekly_scrobbles {
+            Some(count) => {
+                let suffix = format!(" · {count} plays this week");
+                let artist_limit = 128usize.saturating_sub(suffix.chars().count());
+                format!(
+                    "{}{suffix}",
+                    truncate_chars(artist.to_string(), artist_limit)
+                )
+            }
+            None => truncate_chars(artist.to_string(), 128),
+        };
+        let details = truncate_chars(
+            match album {
+                Some(album) => format!("{title} · {album}"),
+                None => title.to_string(),
+            },
+            128,
+        );
         let mut activity = Activity::new()
-            .state(
-                metadata
-                    .artist
-                    .as_deref()
-                    .unwrap_or("Unknown Artist")
-                    .to_string(),
-            )
-            .details(
-                metadata
-                    .title
-                    .as_deref()
-                    .unwrap_or("Unknown Title")
-                    .to_string(),
-            )
+            .state(state)
+            .details(details)
             .activity_type(ActivityType::Listening);
 
         if let Some(album) = metadata.album.as_deref() {
             if !album.is_empty() {
                 activity = activity.assets(
                     Assets::new()
-                        .large_image("songbridge_logo")
+                        .large_image(presence_artwork(metadata))
                         .large_text(album.to_string())
                         .small_image(if is_playing { "play" } else { "pause" })
                         .small_text(if is_playing { "Playing" } else { "Paused" }),
@@ -114,7 +159,7 @@ impl DiscordPresence {
         } else {
             activity = activity.assets(
                 Assets::new()
-                    .large_image("songbridge_logo")
+                    .large_image(presence_artwork(metadata))
                     .large_text("Songbridge")
                     .small_image(if is_playing { "play" } else { "pause" })
                     .small_text(if is_playing { "Playing" } else { "Paused" }),
@@ -150,9 +195,25 @@ impl DiscordPresence {
             "https://github.com/kalecio/songbridge/releases",
         )]);
 
-        if let Err(e) = client.set_activity(activity) {
+        if let Err(e) = client.set_activity(activity.clone()) {
             warn!("Failed to set Discord activity: {}", e);
             *self.connected.lock().unwrap() = false;
+            let mut stale_client = client_guard.take();
+            drop(client_guard);
+            if let Some(client) = stale_client.as_mut() {
+                let _ = client.close();
+            }
+            let mut reconnecting = self.reconnecting.lock().unwrap();
+            if !*reconnecting {
+                *reconnecting = true;
+                let client = self.client.clone();
+                let app_id = self.app_id.clone();
+                let connected = self.connected.clone();
+                let reconnecting = self.reconnecting.clone();
+                std::thread::spawn(move || {
+                    Self::connect_loop(client, app_id, connected, reconnecting, Some(activity));
+                });
+            }
         }
     }
 
@@ -271,6 +332,8 @@ mod tests {
             album: Some("Test Album".to_string()),
             duration_seconds: Some(180),
             cover_data_url: None,
+            lastfm_artwork_url: None,
+            lastfm_weekly_scrobbles: None,
         };
 
         let playback = PlaybackStatePayload {
@@ -295,6 +358,8 @@ mod tests {
             album: Some("Test Album".to_string()),
             duration_seconds: Some(180),
             cover_data_url: None,
+            lastfm_artwork_url: None,
+            lastfm_weekly_scrobbles: None,
         };
 
         let playback = PlaybackStatePayload {
@@ -314,6 +379,8 @@ mod tests {
             album: None,
             duration_seconds: None,
             cover_data_url: None,
+            lastfm_artwork_url: None,
+            lastfm_weekly_scrobbles: None,
         };
 
         let playback = PlaybackStatePayload {
