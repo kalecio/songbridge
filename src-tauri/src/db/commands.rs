@@ -75,21 +75,23 @@ pub(crate) fn upsert_playlist(
     name: &str,
     songs: &[DbSong],
 ) -> Result<(), String> {
-    conn.execute(
+    // Commit the name and ordered songs together; any error rolls back on drop.
+    let tx = conn.unchecked_transaction().map_err(|e| e.to_string())?;
+    tx.execute(
         "INSERT INTO playlists (id, name) VALUES (?1, ?2)
          ON CONFLICT(id) DO UPDATE SET name = ?2",
         params![id, name],
     )
     .map_err(|e| e.to_string())?;
 
-    conn.execute(
+    tx.execute(
         "DELETE FROM playlist_songs WHERE playlist_id = ?1",
         params![id],
     )
     .map_err(|e| e.to_string())?;
 
     for (position, song) in songs.iter().enumerate() {
-        conn.execute(
+        tx.execute(
             "INSERT INTO playlist_songs (playlist_id, song_path, position, title, artist) \
              VALUES (?1, ?2, ?3, ?4, ?5)",
             params![id, song.path, position as i64, song.title, song.artist],
@@ -97,7 +99,7 @@ pub(crate) fn upsert_playlist(
         .map_err(|e| e.to_string())?;
     }
 
-    Ok(())
+    tx.commit().map_err(|e| e.to_string())
 }
 
 pub(crate) fn delete_playlist(conn: &Connection, id: &str) -> Result<(), String> {
@@ -516,11 +518,87 @@ mod tests {
         let db = setup();
         let conn = db.conn.lock().unwrap();
 
-        upsert_playlist(&conn, "pl-1", "Mix", &make_songs(&["/a.mp3", "/b.mp3"])).unwrap();
-        upsert_playlist(&conn, "pl-1", "Mix", &make_songs(&["/c.mp3"])).unwrap();
+        upsert_playlist(&conn, "pl-1", "Old Mix", &make_songs(&["/a.mp3", "/b.mp3"])).unwrap();
+        let replacements = make_songs(&["/d.mp3", "/c.mp3", "/e.mp3"]);
+        upsert_playlist(&conn, "pl-1", "New Mix", &replacements).unwrap();
 
         let playlists = get_playlists(&conn).unwrap();
-        assert_eq!(playlists[0].songs[0].path, "/c.mp3");
+        assert_eq!(playlists.len(), 1);
+        assert_eq!(playlists[0].name, "New Mix");
+        assert_eq!(
+            serde_json::to_value(&playlists[0].songs).unwrap(),
+            serde_json::to_value(&replacements).unwrap()
+        );
+    }
+
+    fn fail_second_song_insert(conn: &Connection) {
+        conn.execute_batch(
+            "CREATE TEMP TRIGGER fail_second_song_insert
+             BEFORE INSERT ON playlist_songs WHEN NEW.position = 1
+             BEGIN
+                 SELECT RAISE(ABORT, 'injected song insert failure');
+             END;",
+        )
+        .unwrap();
+    }
+
+    #[test]
+    fn failed_replacement_preserves_playlist_name_songs_and_order() {
+        let db = setup();
+        let conn = db.conn.lock().unwrap();
+        let originals = vec![
+            DbSong {
+                path: "/b.mp3".into(),
+                title: Some("Track B".into()),
+                artist: Some("Artist B".into()),
+            },
+            DbSong {
+                path: "/a.mp3".into(),
+                title: None,
+                artist: None,
+            },
+        ];
+        upsert_playlist(&conn, "pl-1", "Original Mix", &originals).unwrap();
+        let before = serde_json::to_value(get_playlists(&conn).unwrap()).unwrap();
+        fail_second_song_insert(&conn);
+
+        let replacements = make_songs(&["/d.mp3", "/c.mp3", "/e.mp3"]);
+        let error = upsert_playlist(&conn, "pl-1", "Replacement Mix", &replacements).unwrap_err();
+
+        assert!(error.contains("injected song insert failure"));
+        assert_eq!(
+            serde_json::to_value(get_playlists(&conn).unwrap()).unwrap(),
+            before
+        );
+        assert!(conn.is_autocommit(), "failed save must end its transaction");
+
+        // A failed save must also leave the connection usable for the next save.
+        conn.execute_batch("DROP TRIGGER fail_second_song_insert")
+            .unwrap();
+        upsert_playlist(&conn, "pl-1", "Replacement Mix", &replacements).unwrap();
+        let playlists = get_playlists(&conn).unwrap();
+        assert_eq!(playlists[0].name, "Replacement Mix");
+        assert_eq!(
+            serde_json::to_value(&playlists[0].songs).unwrap(),
+            serde_json::to_value(&replacements).unwrap()
+        );
+    }
+
+    #[test]
+    fn failed_playlist_creation_leaves_no_partial_playlist() {
+        let db = setup();
+        let conn = db.conn.lock().unwrap();
+        fail_second_song_insert(&conn);
+
+        let error = upsert_playlist(&conn, "pl-1", "New Mix", &make_songs(&["/a.mp3", "/b.mp3"]))
+            .unwrap_err();
+
+        assert!(error.contains("injected song insert failure"));
+        assert!(get_playlists(&conn).unwrap().is_empty());
+        let song_count: i64 = conn
+            .query_row("SELECT COUNT(*) FROM playlist_songs", [], |row| row.get(0))
+            .unwrap();
+        assert_eq!(song_count, 0);
     }
 
     #[test]
