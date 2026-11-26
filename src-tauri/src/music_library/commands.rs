@@ -113,6 +113,27 @@ fn is_successfully_covered(path: &str, roots: &[ScanRootStatus]) -> bool {
     })
 }
 
+fn preserve_cached_track_after_metadata_error(
+    path: &str,
+    cached_by_path: &mut HashMap<String, AudioMetadata>,
+    roots: &mut [ScanRootStatus],
+    songs: &mut Vec<AudioMetadata>,
+) {
+    let failed_path = Path::new(path);
+    for root in roots
+        .iter_mut()
+        .filter(|root| failed_path.starts_with(Path::new(&root.path)))
+    {
+        root.success = false;
+        if !root.incomplete_paths.iter().any(|failed| failed == path) {
+            root.incomplete_paths.push(path.to_string());
+        }
+    }
+    if let Some(meta) = cached_by_path.remove(path) {
+        songs.push(meta);
+    }
+}
+
 #[tauri::command]
 pub async fn scan_music_library(
     app: AppHandle,
@@ -142,7 +163,7 @@ pub async fn scan_music_library(
     };
 
     let songs = tauri::async_runtime::spawn_blocking(move || -> Result<ScanResult, String> {
-        let (files, root_statuses) = collect_audio_files(&dirs);
+        let (files, mut root_statuses) = collect_audio_files(&dirs);
         let total = files.len();
         let _ = app.emit(SCAN_PROGRESS_EVENT, ScanProgress { current: 0, total });
 
@@ -178,7 +199,13 @@ pub async fn scan_music_library(
                         songs.push(meta);
                     }
                     Err(err) => {
-                        log::warn!("Failed to read metadata for '{}': {}", path_str, err)
+                        log::warn!("Failed to read metadata for '{}': {}", path_str, err);
+                        preserve_cached_track_after_metadata_error(
+                            &path_str,
+                            &mut cached_by_path,
+                            &mut root_statuses,
+                            &mut songs,
+                        );
                     }
                 }
             }
@@ -419,6 +446,47 @@ mod tests {
             "/music/unreadable/old.mp3",
             &roots
         ));
+        assert!(is_successfully_covered("/music/deleted.mp3", &roots));
+    }
+
+    #[test]
+    fn metadata_read_failure_preserves_cached_song_and_marks_scan_coverage_incomplete() {
+        let failed_path = "/music/track.mp3";
+        let cached = AudioMetadata {
+            title: Some("Cached title".into()),
+            artist: None,
+            album: None,
+            year: None,
+            track: None,
+            duration: Default::default(),
+            path: Some(failed_path.into()),
+            image: None,
+        };
+        let mut cached_by_path = HashMap::from([(failed_path.into(), cached)]);
+        let mut songs = Vec::new();
+        let mut roots = vec![ScanRootStatus {
+            path: "/music".into(),
+            success: true,
+            incomplete_paths: Vec::new(),
+        }];
+
+        // This is the same merge branch used when an enumerated, changed file
+        // cannot be opened or parsed. It is already in seen_paths, so keeping
+        // it requires both restoring cached metadata and marking coverage.
+        preserve_cached_track_after_metadata_error(
+            failed_path,
+            &mut cached_by_path,
+            &mut roots,
+            &mut songs,
+        );
+
+        assert_eq!(songs.len(), 1);
+        assert_eq!(songs[0].path.as_deref(), Some(failed_path));
+        assert_eq!(songs[0].title.as_deref(), Some("Cached title"));
+        assert!(cached_by_path.is_empty());
+        assert!(!roots[0].success);
+        assert_eq!(roots[0].incomplete_paths, vec![failed_path]);
+        assert!(!is_successfully_covered(failed_path, &roots));
         assert!(is_successfully_covered("/music/deleted.mp3", &roots));
     }
 }
