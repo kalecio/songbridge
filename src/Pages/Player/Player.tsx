@@ -554,7 +554,7 @@ const Player = () => {
               />
             </ScanBanner>
           )}
-          {!isScanning && scanRoots.some((root) => !root.success) && (
+          {!isScanning && scanRoots?.some((root) => !root.success) && (
             <ScanBanner role="status" aria-live="polite">
               Some music folders are unavailable or could not be fully scanned. Cached tracks from those locations are being kept.
             </ScanBanner>

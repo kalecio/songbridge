@@ -204,7 +204,6 @@ pub async fn scan_music_library(
             }
         }
 
-        let mut songs = songs;
         for (path, meta) in cached_by_path {
             if root_statuses.iter().any(|root| {
                 let cached_path = Path::new(&path);
