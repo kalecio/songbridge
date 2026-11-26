@@ -54,6 +54,7 @@ const Player = () => {
     isPlaying,
     isScanning,
     scanProgress,
+    scanRoots,
     shortcuts,
     metadata,
     playlists,
@@ -316,6 +317,11 @@ const Player = () => {
                 progress={scanProgress.total > 0 ? (scanProgress.current / scanProgress.total) * 100 : 0}
                 max={100}
               />
+            </ScanBanner>
+          )}
+          {!isScanning && scanRoots.some((root) => !root.success) && (
+            <ScanBanner role="status" aria-live="polite">
+              Some music folders are unavailable or could not be fully scanned. Cached tracks from those locations are being kept.
             </ScanBanner>
           )}
           <Main>

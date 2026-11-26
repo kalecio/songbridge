@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { createGlobalStyle, ThemeProvider } from 'styled-components';
 import './App.css';
 import Player from './Pages/Player/Player';
-import { AppContext, ScanProgress } from './Context/AppContext';
+import { AppContext, ScanProgress, ScanRootStatus } from './Context/AppContext';
 import { MetadataType, PlaylistType, RepeatMode } from './types';
 import { invoke } from '@tauri-apps/api/core';
 import { listen } from '@tauri-apps/api/event';
@@ -32,6 +32,7 @@ function App() {
   const [libraryPaths, setLibraryPaths] = useState<string[]>([]);
   const [isScanning, setIsScanning] = useState<boolean>(false);
   const [scanProgress, setScanProgress] = useState<ScanProgress>({ current: 0, total: 0 });
+  const [scanRoots, setScanRoots] = useState<ScanRootStatus[]>([]);
   const [currentTheme, setCurrentTheme] = useState<string>(defaultTheme.name);
   const [shortcuts, setShortcutsState] = useState<ShortcutBindings>(() => loadShortcuts());
   const playbackStateLastCall = useRef(0);
@@ -48,8 +49,9 @@ function App() {
     setIsScanning(true);
     setScanProgress({ current: 0, total: 0 });
     try {
-      const songs = await invoke<MetadataType[]>('scan_music_library', { paths });
-      setLibrary(songs);
+      const result = await invoke<{ songs: MetadataType[]; roots: ScanRootStatus[] }>('scan_music_library', { paths });
+      setLibrary(result.songs);
+      setScanRoots(result.roots);
     } catch {
       // music directory not found or empty — silently ignore
     } finally {
@@ -204,6 +206,7 @@ function App() {
         libraryPaths,
         isScanning,
         scanProgress,
+        scanRoots,
         shortcuts,
         setShortcuts,
         setCurrentPath,
