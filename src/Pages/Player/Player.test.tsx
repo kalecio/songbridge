@@ -21,6 +21,7 @@ const defaultContext = {
   isPlaying: false,
   isScanning: false,
   scanProgress: { current: 0, total: 0 },
+  scanRoots: [],
   shortcuts: DEFAULT_SHORTCUTS,
   library: [],
   libraryPaths: [],
@@ -135,5 +136,17 @@ describe('Player interpolation', () => {
     });
 
     unmount();
+  });
+});
+
+describe('Player scan status', () => {
+  it('shows a status when a music folder could not be fully scanned', () => {
+    const { getByText } = renderWithContext({
+      scanRoots: [{ path: '/music', success: false, incomplete_paths: ['/music/unavailable'] }],
+    });
+
+    expect(
+      getByText(/Some music folders are unavailable or could not be fully scanned/),
+    ).toBeInTheDocument();
   });
 });

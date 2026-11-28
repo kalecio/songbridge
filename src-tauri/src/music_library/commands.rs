@@ -40,33 +40,56 @@ pub struct ScanProgress {
     pub total: usize,
 }
 
+#[derive(Clone, Serialize)]
+pub struct ScanRootStatus {
+    pub path: String,
+    pub success: bool,
+    pub incomplete_paths: Vec<String>,
+}
+
+#[derive(Serialize)]
+pub struct ScanResult {
+    pub songs: Vec<AudioMetadata>,
+    pub roots: Vec<ScanRootStatus>,
+}
+
 const SCAN_PROGRESS_EVENT: &str = "scan-progress";
 
-fn collect_audio_files(dirs: &[std::path::PathBuf]) -> Vec<std::path::PathBuf> {
-    dirs.iter()
-        .flat_map(|dir| {
-            WalkDir::new(dir)
-                .follow_links(true)
-                .into_iter()
-                .filter_map(|e| match e {
-                    Ok(entry) => Some(entry),
-                    Err(err) => {
-                        log::warn!("Directory walk error: {}", err);
-                        None
-                    }
-                })
-                .filter(|e| e.file_type().is_file())
-                .filter(|e| {
-                    e.path()
-                        .extension()
-                        .and_then(|ext| ext.to_str())
-                        .map(|ext| AUDIO_EXTENSIONS.contains(&ext.to_lowercase().as_str()))
-                        .unwrap_or(false)
-                })
-                .map(|e| e.path().to_path_buf())
-                .collect::<Vec<_>>()
-        })
-        .collect()
+fn collect_audio_files(
+    dirs: &[std::path::PathBuf],
+) -> (Vec<std::path::PathBuf>, Vec<ScanRootStatus>) {
+    let mut files = Vec::new();
+    let mut statuses = Vec::new();
+    for dir in dirs {
+        let mut incomplete_paths = Vec::new();
+        for item in WalkDir::new(dir).follow_links(true) {
+            match item {
+                Ok(entry)
+                    if entry.file_type().is_file()
+                        && entry
+                            .path()
+                            .extension()
+                            .and_then(|e| e.to_str())
+                            .map(|e| AUDIO_EXTENSIONS.contains(&e.to_lowercase().as_str()))
+                            .unwrap_or(false) =>
+                {
+                    files.push(entry.path().to_path_buf())
+                }
+                Ok(_) => {}
+                Err(err) => {
+                    let path = err.path().unwrap_or(dir).to_string_lossy().into_owned();
+                    log::warn!("Directory walk error: {}", err);
+                    incomplete_paths.push(path);
+                }
+            }
+        }
+        statuses.push(ScanRootStatus {
+            path: dir.to_string_lossy().into_owned(),
+            success: incomplete_paths.is_empty(),
+            incomplete_paths,
+        });
+    }
+    (files, statuses)
 }
 
 fn file_mtime(path: &Path) -> Option<i64> {
@@ -78,12 +101,45 @@ fn file_mtime(path: &Path) -> Option<i64> {
     Some(duration as i64)
 }
 
+fn is_successfully_covered(path: &str, roots: &[ScanRootStatus]) -> bool {
+    let path = Path::new(path);
+    roots.iter().any(|root| {
+        let root_path = Path::new(&root.path);
+        path.starts_with(root_path)
+            && root
+                .incomplete_paths
+                .iter()
+                .all(|failed| !path.starts_with(Path::new(failed)))
+    })
+}
+
+fn preserve_cached_track_after_metadata_error(
+    path: &str,
+    cached_by_path: &mut HashMap<String, AudioMetadata>,
+    roots: &mut [ScanRootStatus],
+    songs: &mut Vec<AudioMetadata>,
+) {
+    let failed_path = Path::new(path);
+    for root in roots
+        .iter_mut()
+        .filter(|root| failed_path.starts_with(Path::new(&root.path)))
+    {
+        root.success = false;
+        if !root.incomplete_paths.iter().any(|failed| failed == path) {
+            root.incomplete_paths.push(path.to_string());
+        }
+    }
+    if let Some(meta) = cached_by_path.remove(path) {
+        songs.push(meta);
+    }
+}
+
 #[tauri::command]
 pub async fn scan_music_library(
     app: AppHandle,
     paths: Vec<String>,
     library: State<'_, Arc<Mutex<LibraryState>>>,
-) -> Result<Vec<AudioMetadata>, String> {
+) -> Result<ScanResult, String> {
     let dirs = build_scan_dirs(paths, default_music_dir());
 
     log::info!(
@@ -106,83 +162,105 @@ pub async fn scan_music_library(
         (mtimes, by_path)
     };
 
-    let songs =
-        tauri::async_runtime::spawn_blocking(move || -> Result<Vec<AudioMetadata>, String> {
-            let files = collect_audio_files(&dirs);
-            let total = files.len();
-            let _ = app.emit(SCAN_PROGRESS_EVENT, ScanProgress { current: 0, total });
+    let songs = tauri::async_runtime::spawn_blocking(move || -> Result<ScanResult, String> {
+        let (files, mut root_statuses) = collect_audio_files(&dirs);
+        let total = files.len();
+        let _ = app.emit(SCAN_PROGRESS_EVENT, ScanProgress { current: 0, total });
 
-            let emit_every = (total / 100).max(1);
-            let mut seen_paths: std::collections::HashSet<String> =
-                std::collections::HashSet::with_capacity(total);
-            let mut songs: Vec<AudioMetadata> = Vec::with_capacity(total);
+        let emit_every = (total / 100).max(1);
+        let mut seen_paths: std::collections::HashSet<String> =
+            std::collections::HashSet::with_capacity(total);
+        let mut songs: Vec<AudioMetadata> = Vec::with_capacity(total);
 
-            for (idx, path) in files.iter().enumerate() {
-                let path_str = match path.to_str() {
-                    Some(s) => s.to_string(),
-                    None => continue,
-                };
-                seen_paths.insert(path_str.clone());
+        for (idx, path) in files.iter().enumerate() {
+            let path_str = match path.to_str() {
+                Some(s) => s.to_string(),
+                None => continue,
+            };
+            seen_paths.insert(path_str.clone());
 
-                let mtime = file_mtime(path).unwrap_or(0);
-                let cached_mtime = cached_mtimes.get(&path_str).copied();
+            let mtime = file_mtime(path).unwrap_or(0);
+            let cached_mtime = cached_mtimes.get(&path_str).copied();
 
-                // Unchanged file → reuse the cached metadata (no parse, no DB write).
-                if cached_mtime == Some(mtime) {
-                    if let Some(meta) = cached_by_path.remove(&path_str) {
+            // Unchanged file → reuse the cached metadata (no parse, no DB write).
+            if cached_mtime == Some(mtime) {
+                if let Some(meta) = cached_by_path.remove(&path_str) {
+                    songs.push(meta);
+                }
+            } else {
+                // New or modified → parse and upsert.
+                match get_metadata_without_art(&path_str) {
+                    Ok(meta) => {
+                        let conn = conn_arc.lock().map_err(|e| e.to_string())?;
+                        if let Err(e) = upsert_track(&conn, &meta, mtime) {
+                            log::warn!("Failed to cache '{}': {}", path_str, e);
+                        }
+                        drop(conn);
                         songs.push(meta);
                     }
-                } else {
-                    // New or modified → parse and upsert.
-                    match get_metadata_without_art(&path_str) {
-                        Ok(meta) => {
-                            let conn = conn_arc.lock().map_err(|e| e.to_string())?;
-                            if let Err(e) = upsert_track(&conn, &meta, mtime) {
-                                log::warn!("Failed to cache '{}': {}", path_str, e);
-                            }
-                            drop(conn);
-                            songs.push(meta);
-                        }
-                        Err(err) => {
-                            log::warn!("Failed to read metadata for '{}': {}", path_str, err)
-                        }
+                    Err(err) => {
+                        log::warn!("Failed to read metadata for '{}': {}", path_str, err);
+                        preserve_cached_track_after_metadata_error(
+                            &path_str,
+                            &mut cached_by_path,
+                            &mut root_statuses,
+                            &mut songs,
+                        );
                     }
                 }
-
-                let current = idx + 1;
-                if current == total || current % emit_every == 0 {
-                    let _ = app.emit(SCAN_PROGRESS_EVENT, ScanProgress { current, total });
-                }
             }
 
-            // Files that exist in the cache but not on disk → drop from DB.
-            let to_delete: Vec<String> = cached_mtimes
-                .keys()
-                .filter(|p| !seen_paths.contains(*p))
-                .cloned()
-                .collect();
-            if !to_delete.is_empty() {
-                let conn = conn_arc.lock().map_err(|e| e.to_string())?;
-                if let Err(e) = delete_tracks(&conn, &to_delete) {
-                    log::warn!("Failed to prune {} stale tracks: {}", to_delete.len(), e);
-                }
+            let current = idx + 1;
+            if current == total || current % emit_every == 0 {
+                let _ = app.emit(SCAN_PROGRESS_EVENT, ScanProgress { current, total });
             }
+        }
 
-            Ok(songs)
+        // Prune only cached entries in successfully covered portions of roots.
+        // Failed paths and their descendants remain covered by the cache.
+        let to_delete: Vec<String> = cached_mtimes
+            .keys()
+            .filter(|p| !seen_paths.contains(*p))
+            .filter(|p| is_successfully_covered(p, &root_statuses))
+            .cloned()
+            .collect();
+        if !to_delete.is_empty() {
+            let conn = conn_arc.lock().map_err(|e| e.to_string())?;
+            if let Err(e) = delete_tracks(&conn, &to_delete) {
+                log::warn!("Failed to prune {} stale tracks: {}", to_delete.len(), e);
+            }
+        }
+
+        for (path, meta) in cached_by_path {
+            if root_statuses.iter().any(|root| {
+                let cached_path = Path::new(&path);
+                cached_path.starts_with(Path::new(&root.path))
+                    && root
+                        .incomplete_paths
+                        .iter()
+                        .any(|failed| cached_path.starts_with(Path::new(failed)))
+            }) {
+                songs.push(meta);
+            }
+        }
+        Ok(ScanResult {
+            songs,
+            roots: root_statuses,
         })
-        .await
-        .map_err(|e| {
-            log::error!("Scan task failed: {}", e);
-            e.to_string()
-        })??;
+    })
+    .await
+    .map_err(|e| {
+        log::error!("Scan task failed: {}", e);
+        e.to_string()
+    })??;
 
-    log::info!("Scan complete: {} tracks found", songs.len());
+    log::info!("Scan complete: {} tracks found", songs.songs.len());
 
     let mut locked = library.lock().map_err(|e| {
         log::error!("Failed to acquire library lock: {}", e);
         e.to_string()
     })?;
-    locked.songs = songs.clone();
+    locked.songs = songs.songs.clone();
 
     Ok(songs)
 }
@@ -199,7 +277,7 @@ pub async fn scan_audio_folder(app: AppHandle, path: String) -> Result<Vec<Audio
 
     let directory = directory.to_path_buf();
     tauri::async_runtime::spawn_blocking(move || {
-        let mut files = collect_audio_files(std::slice::from_ref(&directory));
+        let (mut files, _) = collect_audio_files(std::slice::from_ref(&directory));
         files.sort_by_cached_key(|file| file.to_string_lossy().to_lowercase());
         let total = files.len();
         let _ = app.emit(SCAN_PROGRESS_EVENT, ScanProgress { current: 0, total });
@@ -336,5 +414,79 @@ mod tests {
                 PathBuf::from("/b")
             ]
         );
+    }
+
+    #[test]
+    fn incomplete_roots_preserve_cached_tracks_but_readable_roots_are_prunable() {
+        let roots = vec![
+            ScanRootStatus {
+                path: "/mnt/offline".into(),
+                success: false,
+                incomplete_paths: vec!["/mnt/offline".into()],
+            },
+            ScanRootStatus {
+                path: "/music".into(),
+                success: true,
+                incomplete_paths: vec![],
+            },
+        ];
+        assert!(!is_successfully_covered("/mnt/offline/old.mp3", &roots));
+        assert!(is_successfully_covered("/music/deleted.mp3", &roots));
+        assert!(!is_successfully_covered("/music-extra/track.mp3", &roots));
+    }
+
+    #[test]
+    fn scan_errors_preserve_only_the_failed_subtree() {
+        let roots = vec![ScanRootStatus {
+            path: "/music".into(),
+            success: false,
+            incomplete_paths: vec!["/music/unreadable".into()],
+        }];
+        assert!(!is_successfully_covered(
+            "/music/unreadable/old.mp3",
+            &roots
+        ));
+        assert!(is_successfully_covered("/music/deleted.mp3", &roots));
+    }
+
+    #[test]
+    fn metadata_read_failure_preserves_cached_song_and_marks_scan_coverage_incomplete() {
+        let failed_path = "/music/track.mp3";
+        let cached = AudioMetadata {
+            title: Some("Cached title".into()),
+            artist: None,
+            album: None,
+            year: None,
+            track: None,
+            duration: Default::default(),
+            path: Some(failed_path.into()),
+            image: None,
+        };
+        let mut cached_by_path = HashMap::from([(failed_path.into(), cached)]);
+        let mut songs = Vec::new();
+        let mut roots = vec![ScanRootStatus {
+            path: "/music".into(),
+            success: true,
+            incomplete_paths: Vec::new(),
+        }];
+
+        // This is the same merge branch used when an enumerated, changed file
+        // cannot be opened or parsed. It is already in seen_paths, so keeping
+        // it requires both restoring cached metadata and marking coverage.
+        preserve_cached_track_after_metadata_error(
+            failed_path,
+            &mut cached_by_path,
+            &mut roots,
+            &mut songs,
+        );
+
+        assert_eq!(songs.len(), 1);
+        assert_eq!(songs[0].path.as_deref(), Some(failed_path));
+        assert_eq!(songs[0].title.as_deref(), Some("Cached title"));
+        assert!(cached_by_path.is_empty());
+        assert!(!roots[0].success);
+        assert_eq!(roots[0].incomplete_paths, vec![failed_path]);
+        assert!(!is_successfully_covered(failed_path, &roots));
+        assert!(is_successfully_covered("/music/deleted.mp3", &roots));
     }
 }

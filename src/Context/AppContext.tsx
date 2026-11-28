@@ -8,6 +8,12 @@ export interface ScanProgress {
   total: number;
 }
 
+export interface ScanRootStatus {
+  path: string;
+  success: boolean;
+  incomplete_paths: string[];
+}
+
 interface AppContext {
   currentPath?: string;
   currentPlaylist: string[];
@@ -16,6 +22,7 @@ interface AppContext {
   isPlaying: boolean;
   isScanning: boolean;
   scanProgress: ScanProgress;
+  scanRoots: ScanRootStatus[];
   shortcuts: ShortcutBindings;
   library: MetadataType[];
   libraryPaths: string[];
@@ -49,6 +56,7 @@ export const AppContext = createContext<AppContext>({
   isPlaying: false,
   isScanning: false,
   scanProgress: { current: 0, total: 0 },
+  scanRoots: [],
   shortcuts: DEFAULT_SHORTCUTS,
   library: [],
   libraryPaths: [],
